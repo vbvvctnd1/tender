@@ -2,191 +2,261 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Дневник тренера</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
-body{font-family:-apple-system,Arial,sans-serif;background:#f4f7f7;margin:0;padding:10px;color:#0d2b2b}
-h1{font-size:20px;text-align:center;margin:6px 0}
-.tabs{display:flex;gap:5px;margin:10px 0}
-.tab{flex:1;padding:10px 2px;border:none;border-radius:12px;background:#e3ecec;font-size:13px;font-weight:600}
-.tab.active{background:#0d3b3b;color:#fff}
-.now{background:#0d3b3b;color:#fff;border-radius:12px;padding:10px;text-align:center;font-size:14px;margin-bottom:10px}
-.card{background:#fff;border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
-h3{margin:4px 0 10px;font-size:16px}
-label{font-size:12px;color:#556}
-input,select,textarea{width:100%;padding:9px;border:1px solid #ccc;border-radius:10px;font-size:16px;margin:4px 0 8px;box-sizing:border-box}
-textarea{min-height:56px;resize:vertical}
-button{border:none;border-radius:10px;font-weight:600;font-size:13px;padding:10px}
-.b-g{background:#27ae60;color:#fff}
-.b-s{background:#e3ecec;color:#0d2b2b}
-.b-d{background:#c0392b;color:#fff}
-.big{width:100%;padding:14px;font-size:16px}
-.row{display:flex;gap:6px}.row>*{flex:1}
-.item{background:#eef4f4;border-radius:10px;padding:8px;margin:6px 0;font-size:14px}
-.muted{color:#789;font-size:13px}
-pre{white-space:pre-wrap;background:#eef4f4;border-radius:10px;padding:10px;font-size:14px;font-family:inherit}
-.tile{width:48%;margin:1%;padding:10px;border:none;border-radius:12px;background:#e3ecec;font-size:14px;font-weight:600;text-align:left;vertical-align:top;display:inline-block}
-.chip{display:inline-block;border:2px solid transparent;background:#e3ecec;border-radius:12px;padding:8px 10px;margin:2px;font-size:13px;font-weight:600}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+ --bg:#f5f5f7;--card:#fff;--text:#1d1d1f;--muted:#86868b;
+ --brand:#0d3b3b;--ok-bg:#e8f5ee;--ok-t:#1e8e3e;--warn-bg:#fff4e5;--warn-t:#e67e22;
+ --bad-bg:#fdecea;--bad-t:#ff3b30;--gray:#e9e9eb;--r:20px;
+ --shadow:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.06);
+}
+body{margin:0;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;color:var(--text)}
+.app{max-width:430px;margin:0 auto;min-height:100vh;padding:16px 16px 130px}
+.screen{display:none}.screen.active{display:block;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.title{font-size:32px;font-weight:700;letter-spacing:-.5px;margin:8px 0 2px}
+.sub{font-size:13px;color:var(--muted);margin:0 0 14px}
+h3{font-size:16px;font-weight:700;margin:0 0 10px}
+.card{background:var(--card);border-radius:var(--r);padding:16px;box-shadow:var(--shadow);margin-bottom:12px}
+.search{display:flex;align-items:center;gap:8px;background:var(--gray);border-radius:12px;padding:10px 12px;color:var(--muted);font-size:15px;margin-bottom:12px}
+.search svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;flex:0 0 auto}
+.search input{border:none;background:none;flex:1;font-size:15px;outline:none;color:var(--text);font-family:inherit}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 12px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;display:flex;align-items:center;gap:8px;background:#fff;border:2px solid transparent;border-radius:16px;padding:6px 14px 6px 6px;box-shadow:var(--shadow);font-size:14px;font-weight:600;font-family:inherit}
+.chip.on{border-color:var(--ok-t)}
+.avatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;flex:0 0 auto}
+.a1{background:var(--ok-bg);color:var(--brand)}.a2{background:#e8f0fe;color:#1d5bd8}
+.a3{background:var(--warn-bg);color:#c77700}.a4{background:#fdecef;color:#c2405f}
+.client{display:flex;align-items:center;gap:12px;background:#fff;border-radius:var(--r);padding:14px;box-shadow:var(--shadow);margin-bottom:10px;border:none;width:100%;text-align:left;font-family:inherit}
+.client .info{flex:1}.client b{font-size:16px}
+.client .meta{font-size:12px;color:var(--muted);margin-top:2px}
+.chev{width:18px;height:18px;stroke:#c7c7cc;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+.badge{font-size:12px;font-weight:700;padding:5px 9px;border-radius:9px;white-space:nowrap}
+.ok{background:var(--ok-bg);color:var(--ok-t)}.warn{background:var(--warn-bg);color:var(--warn-t)}.bad{background:var(--bad-bg);color:var(--bad-t)}
+.alert .row{display:flex;align-items:center;gap:10px;padding:9px 0;font-size:14px;border-bottom:1px solid #f2f2f4;border:none;background:none;width:100%;text-align:left;font-family:inherit}
+.dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
+.frow{display:flex;gap:8px}
+.field{flex:1;background:var(--bg);border-radius:12px;padding:9px 4px;text-align:center}
+.field input{border:none;background:none;text-align:center;font-size:16px;font-weight:700;width:100%;padding:0;outline:none;color:var(--text);font-family:inherit}
+.field span{display:block;font-size:10px;color:var(--muted);margin-top:2px}
+.ton{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:12px;color:var(--muted)}
+.x{width:26px;height:26px;border-radius:50%;background:var(--bg);color:var(--muted);display:grid;place-items:center;font-size:13px;border:none}
+.tag{font-size:11px;color:var(--muted);font-weight:500;margin-left:6px}
+.bchips{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.bchip{padding:6px 12px;border-radius:999px;background:var(--bg);font-size:12px;font-weight:600;color:var(--muted);border:none;font-family:inherit}
+.bchip.on{background:var(--brand);color:#fff}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:3px;background:linear-gradient(90deg,#34c759,#ffcc00,#ff3b30);outline:none;margin:18px 0 8px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;background:#fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.28)}
+.scale{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
+.btn{display:block;width:100%;border:none;border-radius:14px;padding:14px;font-size:15px;font-weight:600;font-family:inherit;text-align:center}
+.primary{background:var(--brand);color:#fff}
+.gray{background:var(--gray);color:var(--text)}
+.danger{background:var(--bad-bg);color:var(--bad-t)}
+.half{flex:1}
+.rowbtn{display:flex;gap:8px;margin-top:12px}
+.seg{display:flex;background:var(--gray);border-radius:10px;padding:2px;margin-bottom:12px}
+.seg button{flex:1;border:none;background:none;padding:8px;border-radius:8px;font-size:13px;font-weight:600;color:var(--text);font-family:inherit}
+.seg button.on{background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.tiles{display:flex;gap:10px}
+.tile{flex:1;border-radius:16px;padding:14px 10px;background:var(--bg);text-align:center}
+.tile b{font-size:21px;letter-spacing:-.5px;display:block}
+.tile span{font-size:10px;color:var(--muted)}
+.pay{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid #f2f2f4;font-size:14px}
+.pay:last-child{border:none;padding-bottom:0}
+.pay b{font-variant-numeric:tabular-nums}
+.ibtn{border:none;background:none;font-size:15px;padding:4px 6px}
+.nowcard{display:flex;align-items:center;gap:12px;border:none;width:100%;text-align:left;font-family:inherit}
+.nowcard .avatar{width:44px;height:44px;font-size:15px}
+.fab{position:fixed;bottom:96px;right:max(20px,calc(50% - 195px));width:56px;height:56px;border-radius:50%;background:var(--brand);color:#fff;border:none;box-shadow:0 6px 20px rgba(13,59,59,.4);display:grid;place-items:center;z-index:5}
+.fab svg{width:24px;height:24px;stroke:#fff;stroke-width:2.4;stroke-linecap:round;fill:none}
+.tabbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;display:flex;background:rgba(255,255,255,.85);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border-top:1px solid rgba(0,0,0,.08);padding:8px 6px calc(10px + env(safe-area-inset-bottom));z-index:6}
+.tabbar button{flex:1;border:none;background:none;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--muted);font-size:10px;font-weight:600;font-family:inherit}
+.tabbar button.on{color:var(--brand)}
+.tabbar svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.mini{font-size:12px;color:var(--muted);margin:6px 0}
+select{width:100%;padding:12px;border:none;border-radius:12px;background:var(--bg);font-size:15px;font-family:inherit;color:var(--text);margin:4px 0 8px}
+textarea{width:100%;border:none;border-radius:12px;background:var(--bg);padding:12px;font-size:15px;font-family:inherit;min-height:56px;margin:4px 0 8px}
+pre{white-space:pre-wrap;background:var(--bg);border-radius:12px;padding:12px;font-size:14px;font-family:inherit}
+label{font-size:12px;color:var(--muted)}
 </style>
 </head>
 <body>
-<h1>🏋️ Дневник тренера</h1>
-<div class="tabs">
-<button class="tab active" onclick="showTab('c')">Клиент</button>
-<button class="tab" onclick="showTab('w')">Зал</button>
-<button class="tab" onclick="showTab('m')">Деньги</button>
-<button class="tab" onclick="showTab('d')">Данные</button>
-</div>
-<div class="now" id="nowBar" onclick="showTab('c')"></div>
+<div class="app">
 
-<div id="tab-c">
- <div class="card" id="alertCard" style="display:none"><div id="alertBox"></div></div>
- <div class="card">
-  <h3>👥 Клиенты</h3>
-  <div id="recRow"></div>
-  <input id="q" placeholder="🔍 Поиск по имени" oninput="q=this.value.toLowerCase();renderTiles()">
-  <div id="clientTiles"></div>
-  <button class="b-g" onclick="newClientForm()">+ Клиент</button>
- </div>
- <div class="card">
-  <button class="b-s" onclick="toggleForm()">✎ Анкета клиента</button>
-  <div id="formBox" style="display:none">
-   <input id="cName" placeholder="Имя клиента">
-   <div class="row">
-    <div><label>Пол</label><select id="cSex"><option value="m">М</option><option value="f">Ж</option></select></div>
-    <div><label>Возраст</label><input type="number" id="cAge"></div>
-   </div>
-   <div class="row">
-    <div><label>Рост, см</label><input type="number" id="cH"></div>
-    <div><label>Вес, кг</label><input type="number" id="cW"></div>
-   </div>
-   <div class="row">
-    <div><label>Цель</label><select id="cGoal"><option value="cut">Похудение</option><option value="maintain">Поддержание</option><option value="gain">Набор массы</option></select></div>
-    <div><label>Приёмов пищи</label><select id="cMeals"><option>3</option><option>4</option><option>5</option></select></div>
-   </div>
-   <label>Отметка в списке (даты, напр. 6–16 августа)</label>
-   <input id="cBreak" placeholder="напр. отпуск 6–16 августа">
-   <label>Заметки (травмы, ограничения, привычки)</label>
-   <textarea id="cNotes" placeholder="Напр.: болит колено — убрать осевую"></textarea>
-   <div class="row">
-    <button class="b-g" onclick="saveClient()">Сохранить</button>
-    <button class="b-d" onclick="delClient()">Удалить</button>
-    <button class="b-s" onclick="toggleForm()">Скрыть</button>
-   </div>
+<section class="screen active" id="s-c">
+ <div class="title">Клиенты</div>
+ <p class="sub" id="subDate"></p>
+ <div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="q" placeholder="Поиск по имени" oninput="q=this.value.toLowerCase();renderTiles()"></div>
+ <div class="chips" id="recRow"></div>
+ <div class="card alert" id="alertCard" style="display:none"><h3>✍️ Кому написать</h3><div id="alertBox"></div></div>
+ <div id="clientList"></div>
+ <button class="btn gray" onclick="toggleForm()">✎ Анкета клиента</button>
+ <div class="card" id="formBox" style="display:none;margin-top:12px">
+  <input id="cName" placeholder="Имя клиента" style="width:100%;border:none;border-radius:12px;background:var(--bg);padding:12px;font-size:16px;font-family:inherit;margin-bottom:8px">
+  <div class="frow">
+   <div class="field"><select id="cSex" style="margin:0"><option value="m">М</option><option value="f">Ж</option></select></div>
+   <div class="field"><input type="number" id="cAge" placeholder="возраст"></div>
   </div>
+  <div class="frow">
+   <div class="field"><input type="number" id="cH" placeholder="рост"></div>
+   <div class="field"><input type="number" id="cW" placeholder="вес"></div>
+  </div>
+  <div class="frow">
+   <div class="field"><select id="cGoal" style="margin:0"><option value="cut">похудение</option><option value="maintain">поддержание</option><option value="gain">набор</option></select></div>
+   <div class="field"><select id="cMeals" style="margin:0"><option>3</option><option>4</option><option>5</option></select></div>
+  </div>
+  <input id="cBreak" placeholder="Отметка в списке (даты)" style="width:100%;border:none;border-radius:12px;background:var(--bg);padding:12px;font-size:14px;font-family:inherit;margin-bottom:8px">
+  <textarea id="cNotes" placeholder="Заметки (травмы, ограничения)"></textarea>
+  <div class="rowbtn" style="margin-top:4px">
+   <button class="btn primary half" onclick="saveClient()">Сохранить</button>
+   <button class="btn danger half" onclick="delClient()">Удалить</button>
+  </div>
+  <button class="btn gray" style="margin-top:8px" onclick="toggleForm()">Скрыть</button>
  </div>
- <div class="card">
+ <div class="card" style="margin-top:12px">
   <h3>📤 Отчёт клиенту</h3>
   <select id="repPeriod"><option value="30">За 30 дней</option><option value="90">За 90 дней</option></select>
-  <button class="b-s" onclick="makeReport()">Собрать отчёт</button>
-  <pre id="reportBox" style="display:none"></pre>
-  <button class="b-s" id="copyBtn" style="display:none" onclick="copyReport()">Скопировать для Телеграма</button>
+  <button class="btn gray" onclick="makeReport()">Собрать отчёт</button>
+  <pre id="reportBox" style="display:none;margin-top:10px"></pre>
+  <button class="btn gray" id="copyBtn" style="display:none;margin-top:8px" onclick="copyReport()">Скопировать для Телеграма</button>
  </div>
-</div>
+</section>
 
-<div id="tab-w" style="display:none">
+<section class="screen" id="s-w">
+ <div class="title">Зал</div>
+ <p class="sub" id="wDate"></p>
+ <button class="card nowcard" onclick="showTab('c')">
+  <span class="avatar a1" id="nowAv">—</span>
+  <span class="info" style="flex:1"><b id="nowName">Клиент не выбран</b><div class="meta" id="nowMeta"></div></span>
+  <svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+ </button>
  <div class="card">
   <h3>📜 Прошлые занятия</h3>
   <div id="histBox"></div>
-  <button class="b-s" id="histMore" onclick="moreHist()">Показать ещё</button>
+  <button class="btn gray" id="histMore" style="margin-top:8px" onclick="moreHist()">Показать ещё</button>
  </div>
  <div class="card">
   <h3>📋 Шаблоны программ</h3>
   <select id="tplSel"></select>
-  <div class="row">
-   <button class="b-s" onclick="loadTemplate()">Загрузить шаблон</button>
-   <button class="b-d" onclick="delTemplate()">Удалить</button>
+  <div class="rowbtn" style="margin-top:0">
+   <button class="btn gray half" onclick="loadTemplate()">Загрузить</button>
+   <button class="btn danger half" onclick="delTemplate()">Удалить</button>
   </div>
-  <input id="tplName" placeholder="Имя шаблона (напр. Настя день А)">
-  <button class="b-g" onclick="saveTemplate()">Сохранить текущий список как шаблон</button>
+  <input id="tplName" placeholder="Имя шаблона (напр. Настя день А)" style="width:100%;border:none;border-radius:12px;background:var(--bg);padding:12px;font-size:14px;font-family:inherit;margin:8px 0">
+  <button class="btn gray" onclick="saveTemplate()">Сохранить текущий список как шаблон</button>
  </div>
  <div class="card">
-  <h3>Упражнения</h3>
+  <h3>Добавить упражнение</h3>
   <select id="exSel" onchange="lastHint()"></select>
-  <div id="lastHint" class="muted"></div>
-  <div class="row"><label>Подходы</label><label>Повторы</label><label>Кг</label></div>
-  <div class="row">
-   <input type="number" id="wSets" value="3">
-   <input type="number" id="wReps" placeholder="8">
-   <input type="number" id="wKg" placeholder="авто">
+  <div id="lastHint" class="mini"></div>
+  <div class="frow">
+   <div class="field"><input type="number" id="wSets" value="3"><span>подходы</span></div>
+   <div class="field"><input type="number" id="wReps" placeholder="8"><span>повторы</span></div>
+   <div class="field"><input type="number" id="wKg" placeholder="авто"><span>кг</span></div>
   </div>
-  <button class="b-g" onclick="addEx()">+ Добавить</button>
-  <p class="muted">В строках ниже: подходы × повторы × кг — всё можно менять прямо в списке.</p>
-  <div id="exList"></div>
-  <div id="curForNote" class="muted"></div>
-  <button class="b-s" onclick="clearList()">Очистить список</button>
+  <button class="btn gray" style="margin-top:10px" onclick="addEx()">+ Добавить упражнение</button>
  </div>
+ <div id="exList"></div>
+ <div id="curForNote" class="mini"></div>
+ <button class="btn gray" id="clearBtn" style="display:none;margin-bottom:12px" onclick="clearList()">Очистить список</button>
  <div class="card">
-  <label>Тяжесть занятия (1 легко – 10 на пределе)</label>
-  <input type="number" id="rpe" min="1" max="10" value="7">
-  <button class="b-g big" id="saveWBtn" onclick="saveWorkout()">Сохранить тренировку</button>
+  <h3>Тяжесть занятия · <span id="rpeVal">7</span></h3>
+  <input type="range" id="rpe" min="1" max="10" value="7" oninput="$('rpeVal').innerHTML=this.value">
+  <div class="scale"><span>😌 легко</span><span>🙂</span><span>😮</span><span>🥵 предел</span></div>
  </div>
- <div class="card">
+ <button class="btn primary" id="saveWBtn" onclick="saveWorkout()">Сохранить тренировку</button>
+ <div class="card" style="margin-top:12px">
   <h3>➕ Своё упражнение</h3>
-  <input id="exName" placeholder="Название">
-  <div class="row">
-   <input id="exP" placeholder="Целевая мышца">
-   <input id="exS" placeholder="Помощники через запятую">
+  <input id="exName" placeholder="Название" style="width:100%;border:none;border-radius:12px;background:var(--bg);padding:12px;font-size:15px;font-family:inherit;margin-bottom:8px">
+  <div class="frow">
+   <div class="field"><input id="exP" placeholder="мышца"></div>
+   <div class="field"><input id="exS" placeholder="помощники"></div>
   </div>
-  <div class="row">
-   <div><label>Свой вес</label><input type="checkbox" id="exBw" style="width:auto"></div>
-   <div><label>Коэффициент</label><select id="exBwK"><option value="0.3">0.3 (пресс)</option><option value="0.65">0.65 (отжимания)</option><option value="1">1 (подтягивания)</option></select></div>
+  <div class="frow">
+   <div class="field"><select id="exBwK" style="margin:0"><option value="">обычное</option><option value="0.3">свой вес 0.3</option><option value="0.65">свой вес 0.65</option><option value="1">свой вес 1</option></select></div>
   </div>
-  <button class="b-g" onclick="addCustomEx()">Добавить</button>
+  <button class="btn gray" onclick="addCustomEx()">Добавить</button>
  </div>
-</div>
+</section>
 
-<div id="tab-m" style="display:none">
+<section class="screen" id="s-m">
+ <div class="title">Деньги</div>
+ <p class="sub">Абонемент и оплаты</p>
  <div class="card">
-  <h3>💳 Абонемент клиента</h3>
-  <div id="subInfo" class="item"></div>
-  <button class="b-g big" id="addSessBtn" onclick="addSession()">+1 проведённая</button>
-  <label>Цена разового, ₽</label>
-  <input type="number" id="subPrice" onchange="savePrice()">
-  <div class="row">
-   <input type="number" id="payCount" placeholder="Занятий в блоке" oninput="autoPay()">
-   <input type="number" id="payAmount" placeholder="Сумма, ₽">
+  <h3 id="subHead">Абонемент</h3>
+  <div class="tiles">
+   <div class="tile" id="tileRem" style="background:var(--ok-bg)"><b>0</b><span>осталось</span></div>
+   <div class="tile"><b id="tileDone">0</b><span>проведено</span></div>
+   <div class="tile"><b id="tilePrice">0</b><span>₽ / занятие</span></div>
   </div>
-  <div class="row">
-   <button class="b-g" id="payBtn" onclick="recordPayment()">Записать оплату</button>
-   <button class="b-s" onclick="repeatLast()">Повторить</button>
-   <button class="b-s" id="payCancel" style="display:none" onclick="cancelPayEdit()">Отмена</button>
+  <div class="rowbtn">
+   <button class="btn primary half" id="addSessBtn" onclick="addSession()">+1 проведённая</button>
+   <button class="btn gray half" onclick="repeatLast()">Повторить оплату</button>
   </div>
-  <h3>История оплат</h3>
+ </div>
+ <div class="card">
+  <h3>Записать оплату</h3>
+  <div class="frow">
+   <div class="field"><input type="number" id="payCount" placeholder="0" oninput="autoPay()"><span>занятий</span></div>
+   <div class="field"><input type="number" id="payAmount" placeholder="0"><span>сумма ₽</span></div>
+   <div class="field"><input type="number" id="subPrice" onchange="savePrice()"><span>разовая ₽</span></div>
+  </div>
+  <div class="rowbtn">
+   <button class="btn primary half" id="payBtn" onclick="recordPayment()">Записать оплату</button>
+   <button class="btn gray half" id="payCancel" style="display:none" onclick="cancelPayEdit()">Отмена</button>
+  </div>
+  <h3 style="margin-top:14px">История оплат</h3>
   <div id="payHist"></div>
  </div>
  <div class="card">
   <h3>📋 У кого сколько осталось</h3>
-  <button class="b-s" id="sortBtn" onclick="toggleSort()">Сортировка: по остатку</button>
+  <div class="seg"><button id="sortRem" class="on" onclick="setSort('rem')">по остатку</button><button id="sortName" onclick="setSort('name')">по имени</button></div>
   <div id="remList"></div>
  </div>
  <div class="card">
-  <button class="b-s" onclick="toggleIncome()">💰 Показать доход</button>
+  <button class="btn gray" onclick="toggleIncome()">💰 Показать доход</button>
   <div id="incomeBox" style="display:none">
-   <div id="allIncome" class="item"></div>
+   <div id="allIncome" class="mini" style="font-size:14px;margin:10px 0"></div>
    <canvas id="chartIncome"></canvas>
   </div>
  </div>
-</div>
+</section>
 
-<div id="tab-d" style="display:none">
+<section class="screen" id="s-d">
+ <div class="title">Ещё</div>
+ <p class="sub">Данные и настройки</p>
  <div class="card">
-  <p class="muted">Все данные на этом телефоне. Раз в неделю: «Скачать копию» → в Избранное.</p>
-  <button class="b-g big" onclick="exportData()">Скачать копию (бэкап)</button>
-  <br><br>
-  <label>Восстановить из копии</label>
-  <input type="file" id="imp" onchange="importData(event)">
-  <br><br>
-  <button class="b-d" onclick="if(confirm('Удалить ВСЕ данные?')){localStorage.removeItem('myTrainerV1');location.reload()}">Удалить всё</button>
+  <h3>Резервная копия</h3>
+  <p class="mini">Все данные хранятся на этом телефоне. Раз в неделю скачивай копию и кидай себе в Избранное.</p>
+  <button class="btn primary" onclick="exportData()">Скачать копию (бэкап)</button>
+  <label style="display:block;margin-top:10px">Восстановить из копии</label>
+  <input type="file" id="imp" onchange="importData(event)" style="width:100%;margin-top:6px">
  </div>
+ <div class="card">
+  <h3>Опасная зона</h3>
+  <button class="btn danger" onclick="if(confirm('Удалить ВСЕ данные?')){localStorage.removeItem('myTrainerV1');location.reload()}">Удалить все данные</button>
+ </div>
+ <p style="text-align:center;font-size:11px;color:var(--muted)">Дневник тренера · v2.0</p>
+</section>
+
+<button class="fab" id="fab" onclick="newClientForm()"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+<nav class="tabbar">
+ <button class="on" data-t="c" onclick="showTab('c')"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.8 19c.4-3 2.6-5 5.2-5s4.8 2 5.2 5"/><circle cx="16.8" cy="9" r="2.6" opacity=".5"/><path d="M15.8 14.4c2.2.4 3.9 2.2 4.3 4.6" opacity=".5"/></svg>Клиенты</button>
+ <button data-t="w" onclick="showTab('w')"><svg viewBox="0 0 24 24"><path d="M7 8v8M17 8v8M4 10v4M20 10v4M7 12h10"/></svg>Зал</button>
+ <button data-t="m" onclick="showTab('m')"><svg viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.6"/></svg>Деньги</button>
+ <button data-t="d" onclick="showTab('d')"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.7" fill="currentColor" stroke="none"/></svg>Ещё</button>
+</nav>
 </div>
 
 <script>
 const $=id=>document.getElementById(id);
 const KEY='myTrainerV1';
 const BANDS={base:{k:1,t:'обычные'},neg:{k:0.8,t:'негативные'},red:{k:0.85,t:'красная'},green:{k:0.7,t:'зелёная'},purple:{k:0.6,t:'фиолетовая'}};
-const BASE_EX={"Подтягивания":{p:"Спина",s:["Бицепс"],bw:1,bands:true},"Тяга блока сверху":{p:"Спина",s:["Бицепс"]},"Тяга горизонтального блока":{p:"Спина",s:["Бицепс"]},"Тяга штанги в наклоне":{p:"Спина",s:["Ноги"]},"Жим лёжа":{p:"Грудь",s:["Трицепс"]},"Жим гантелей лёжа":{p:"Грудь",s:["Трицепс"]},"Жим в тренажёре на грудь":{p:"Грудь",s:["Трицепс"]},"Отжимания на брусьях":{p:"Грудь",s:["Трицепс"],bw:1},"Отжимания от пола":{p:"Грудь",s:["Трицепс"],bw:0.65},"Приседания со штангой":{p:"Ноги",s:["Ягодицы"]},"Жим ногами":{p:"Ноги",s:["Ягодицы"]},"Румынская тяга":{p:"Ноги",s:["Спина"]},"Болгарские приседания":{p:"Ноги",s:["Ягодицы"]},"Ягодичный мост":{p:"Ягодицы",s:["Ноги"]},"Жим стоя/сидя":{p:"Дельты",s:["Трицепс"]},"Махи гантелями в стороны":{p:"Дельты",s:[]},"Подъём на бицепс":{p:"Бицепс",s:[]},"Разгибания на трицепс":{p:"Трицепс",s:[]},"Пресс/скручивания":{p:"Кор",s:[],bw:0.3}};
+const BASE_EX={"Подтягивания":{p:"спина",s:["Бицепс"],bw:1,bands:true},"Тяга блока сверху":{p:"спина",s:["Бицепс"]},"Тяга горизонтального блока":{p:"спина",s:["Бицепс"]},"Тяга штанги в наклоне":{p:"спина",s:["Ноги"]},"Жим лёжа":{p:"грудь",s:["Трицепс"]},"Жим гантелей лёжа":{p:"грудь",s:["Трицепс"]},"Жим в тренажёре на грудь":{p:"грудь",s:["Трицепс"]},"Отжимания на брусьях":{p:"грудь",s:["Трицепс"],bw:1},"Отжимания от пола":{p:"грудь",s:["Трицепс"],bw:0.65},"Приседания со штангой":{p:"ноги",s:["Ягодицы"]},"Жим ногами":{p:"ноги",s:["Ягодицы"]},"Румынская тяга":{p:"ноги",s:["Спина"]},"Болгарские приседания":{p:"ноги",s:["Ягодицы"]},"Ягодичный мост":{p:"ягодицы",s:["Ноги"]},"Жим стоя/сидя":{p:"дельты",s:["Трицепс"]},"Махи гантелями в стороны":{p:"дельты",s:[]},"Подъём на бицепс":{p:"бицепс",s:[]},"Разгибания на трицепс":{p:"трицепс",s:[]},"Пресс/скручивания":{p:"кор",s:[],bw:0.3}};
 function today(){return new Date().toISOString().slice(0,10)}
 function round25(x){return Math.max(0,Math.round(x/2.5)*2.5)}
 function defDB(){return{clients:[],ex:{},templates:[],active:null}}
@@ -200,33 +270,36 @@ let cur=[],curFor=null,editingId=null,payEdit=null,sortMode='rem',q='',histN=2,c
 function bandK(e,d){return (d&&d.bands&&e.v)?BANDS[e.v].k:1}
 function tonnage(e){const d=allEX()[e.n];if(d&&d.bw)return e.w*d.bw*bandK(e,d)*e.s*e.r;return e.w*e.s*e.r}
 function fmtEx(e){const d=allEX()[e.n]||{};const vt=(d.bands&&e.v)?' ('+BANDS[e.v].t+')':'';return `${e.n}: ${e.s}×${e.r}×${e.w} кг${vt}`}
+function av(c){return 'a'+(c.id%4+1)}
+function initials(c){const w=c.name.split(' ');return (w[0][0]+(w[1]?w[1][0]:'')).toUpperCase()}
+function daysAgo(c){const l=c.w.length?c.w[c.w.length-1].date:null;if(!l)return null;return Math.floor((Date.now()-new Date(l))/86400000)}
 
 /* клиенты */
 function remSessions(c){return c.payments.reduce((a,p)=>a+p.count,0)-c.sessions.length}
-function lastWorkoutDate(c){return c.w.length?c.w[c.w.length-1].date:null}
 function renderTiles(){
- $('clientTiles').innerHTML=DB.clients.filter(c=>c.name.toLowerCase().includes(q)).map(c=>{
-  const rem=remSessions(c);const last=lastWorkoutDate(c);let badge='';
-  if(last){const days=Math.floor((Date.now()-new Date(last))/86400000);if(days>=7)badge=` <span style="color:#c0392b">· не был(а) ${days} дн</span>`}
-  else badge=' <span class="muted">· ещё без тренировок</span>';
-  return `<button class="tile" onclick="pickClient(${c.id})">${c.name}<br><span class="muted">осталось ${rem} зан</span>${badge}</button>`;
+ $('subDate').innerHTML=new Date().toLocaleDateString('ru',{weekday:'long',day:'numeric',month:'long'})+' · '+DB.clients.length+' чел';
+ $('clientList').innerHTML=DB.clients.filter(c=>c.name.toLowerCase().includes(q)).map(c=>{
+  const rem=remSessions(c);const d=daysAgo(c);
+  const badge=rem<=0?'<span class="badge bad">пауза</span>':rem<=2?'<span class="badge warn">оплата</span>':'<span class="badge ok">в работе</span>';
+  const meta=`осталось ${rem} занятий · ${d===null?'ещё без тренировок':d===0?'была сегодня':'была '+d+' дн назад'}`;
+  return `<button class="client" onclick="pickClient(${c.id})"><span class="avatar ${av(c)}">${initials(c)}</span><span class="info"><b>${c.name}</b><div class="meta">${meta}</div></span>${badge}<svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>`;
  }).join('');
 }
 function renderRecents(){
- $('recRow').innerHTML=DB.clients.filter(c=>c.lastUsed).sort((a,b)=>b.lastUsed-a.lastUsed).slice(0,5).map(c=>{
+ $('recRow').innerHTML=DB.clients.filter(c=>c.lastUsed).sort((a,b)=>b.lastUsed-a.lastUsed).slice(0,6).map(c=>{
   const act=activeClient()&&c.id===activeClient().id;
-  return `<button class="chip" style="border-color:${act?'#27ae60':'transparent'}" onclick="pickClient(${c.id})">${c.name} · ${remSessions(c)}</button>`;
+  return `<button class="chip ${act?'on':''}" onclick="pickClient(${c.id})"><span class="avatar ${av(c)}">${initials(c)}</span>${c.name} · ${remSessions(c)}</button>`;
  }).join('');
 }
 function renderAlerts(){
  const rows=[];
  DB.clients.forEach(c=>{
-  const rem=remSessions(c);const last=lastWorkoutDate(c);
-  if(rem<=2)rows.push({c,t:`осталось ${rem} — предложить оплату`});
-  if(last){const d=Math.floor((Date.now()-new Date(last))/86400000);if(d>=7)rows.push({c,t:`не была ${d} дн — стоит написать`})}
+  const rem=remSessions(c);const d=daysAgo(c);
+  if(rem<=2)rows.push({c,t:`осталось ${rem} — предложить оплату`,col:'var(--warn-t)'});
+  if(d!==null&&d>=7)rows.push({c,t:`не была ${d} дн — стоит написать`,col:'var(--bad-t)'});
  });
  $('alertCard').style.display=rows.length?'':'none';
- $('alertBox').innerHTML='<h3>✍️ Кому написать</h3>'+rows.map(r=>`<div class="item" onclick="pickClient(${r.c.id})"><b>${r.c.name}</b> — ${r.t}</div>`).join('');
+ $('alertBox').innerHTML=rows.map(r=>`<button class="row" onclick="pickClient(${r.c.id})"><span class="dot" style="background:${r.col}"></span><span><b>${r.c.name}</b> — ${r.t}</span></button>`).join('');
 }
 function pickClient(id){
  DB.active=id;const c=activeClient();if(c)c.lastUsed=Date.now();
@@ -237,7 +310,7 @@ function fillForm(c){
  $('cName').value=c.name;$('cSex').value=c.sex;$('cAge').value=c.age;$('cH').value=c.height;$('cW').value=c.weight;$('cGoal').value=c.goal;$('cMeals').value=c.meals;$('cNotes').value=c.notes||'';$('cBreak').value=c.breakNote||'';
 }
 function toggleForm(){$('formBox').style.display=$('formBox').style.display==='none'?'':'none'}
-function newClientForm(){editingId=null;fillForm(null);$('formBox').style.display=''}
+function newClientForm(){editingId=null;fillForm(null);$('formBox').style.display='';showTab('c');$('formBox').scrollIntoView({behavior:'smooth'})}
 function saveClient(){
  const name=$('cName').value.trim();if(!name){alert('Впиши имя');return}
  const data={name,sex:$('cSex').value,age:+$('cAge').value||25,height:+$('cH').value||170,weight:+$('cW').value||60,goal:$('cGoal').value,meals:+$('cMeals').value||4,notes:$('cNotes').value,breakNote:$('cBreak').value};
@@ -256,18 +329,20 @@ function delClient(){
 function refresh(){renderTiles();renderRecents();renderAlerts();renderNow();renderMoneyTab();renderHistory()}
 function renderNow(){
  const c=activeClient();
- if(!c){$('nowBar').innerHTML='👤 Клиент не выбран';$('saveWBtn').innerHTML='Сохранить тренировку';return}
- $('nowBar').innerHTML=`👤 Сейчас: <b>${c.name}</b> · осталось ${remSessions(c)} зан`;
+ if(!c){$('nowName').innerHTML='Клиент не выбран';$('nowMeta').innerHTML='';$('nowAv').innerHTML='—';$('saveWBtn').innerHTML='Сохранить тренировку';return}
+ $('nowAv').innerHTML=initials(c);$('nowAv').className='avatar '+av(c);
+ $('nowName').innerHTML='Сейчас: '+c.name;
+ $('nowMeta').innerHTML=`осталось ${remSessions(c)} занятий · цель — ${{cut:'похудение',maintain:'поддержание',gain:'набор'}[c.goal]}`;
  $('saveWBtn').innerHTML='Сохранить тренировку · '+c.name;
- $('addSessBtn').innerHTML='+1 проведённая · '+c.name;
- if(payEdit==null)$('payBtn').innerHTML='Записать оплату · '+c.name;
+ $('addSessBtn').innerHTML='+1 · '+c.name;
+ if(payEdit==null)$('payBtn').innerHTML='Записать · '+c.name;
 }
-/* история тренировок */
+/* история */
 function renderHistory(){
  const c=activeClient();
- if(!c){$('histBox').innerHTML='<span class="muted">Выбери клиента</span>';return}
+ if(!c){$('histBox').innerHTML='<span class="mini">Выбери клиента</span>';return}
  const ws=c.w.slice().reverse().slice(0,histN);
- $('histBox').innerHTML=ws.length?ws.map(w=>`<div class="item"><b>${w.date.slice(8,10)}.${w.date.slice(5,7)}</b><br>`+w.ex.map(e=>fmtEx(e)).join('<br>')+`</div>`).join(''):'<span class="muted">Пока нет тренировок</span>';
+ $('histBox').innerHTML=ws.length?ws.map(w=>`<div class="mini" style="background:var(--bg);border-radius:12px;padding:10px;margin:6px 0"><b>${w.date.slice(8,10)}.${w.date.slice(5,7)}</b><br>`+w.ex.map(e=>fmtEx(e)).join('<br>')+`</div>`).join(''):'<span class="mini">Пока нет тренировок</span>';
  $('histMore').style.display=c.w.length>2?'':'none';
  $('histMore').innerHTML=histN===2?'Показать ещё':'Скрыть';
 }
@@ -297,20 +372,19 @@ function addSession(){
 }
 function delPayment(i){const c=activeClient();if(!c)return;if(!confirm('Удалить оплату?'))return;c.payments.splice(i,1);saveDB();refresh()}
 function monthFrom(){const m=new Date();m.setDate(1);m.setHours(0,0,0,0);return m}
-function toggleSort(){sortMode=sortMode==='rem'?'name':'rem';$('sortBtn').innerHTML='Сортировка: '+(sortMode==='rem'?'по остатку':'по имени');renderRemList()}
+function setSort(m){sortMode=m;$('sortRem').className=m==='rem'?'on':'';$('sortName').className=m==='name'?'on':'';renderRemList()}
 function renderRemList(){
  const cs=DB.clients.slice();
  if(sortMode==='rem')cs.sort((a,b)=>remSessions(a)-remSessions(b)||a.name.localeCompare(b.name,'ru'));
  else cs.sort((a,b)=>a.name.localeCompare(b.name,'ru'));
  $('remList').innerHTML=cs.map(c=>{
-  const rem=remSessions(c);const col=rem<=0?'#c0392b':rem<=2?'#e67e22':'#27ae60';
-  return `<div class="item" style="display:flex;justify-content:space-between" onclick="pickClient(${c.id})"><span>${c.name}</span><span><span class="muted">${c.breakNote||''}</span> <b style="color:${col}">${rem}</b></span></div>`;
+  const rem=remSessions(c);const col=rem<=0?'var(--bad-t)':rem<=2?'var(--warn-t)':'var(--ok-t)';
+  return `<div class="pay" style="cursor:pointer" onclick="pickClient(${c.id})"><span>${c.name} <span style="color:var(--muted);font-size:12px">${c.breakNote||''}</span></span><b style="color:${col}">${rem}</b></div>`;
  }).join('');
 }
 function toggleIncome(){
- const box=$('incomeBox');
- box.style.display=box.style.display==='none'?'':'none';
- if(box.style.display!=='none')renderIncomeChart();
+ const b=$('incomeBox');b.style.display=b.style.display==='none'?'':'none';
+ if(b.style.display!=='none')renderIncomeChart();
 }
 function renderIncomeChart(){
  const now=new Date();const months=[];
@@ -318,19 +392,22 @@ function renderIncomeChart(){
  const labels=months.map(d=>d.toLocaleString('ru',{month:'short'}));
  const data=months.map(d=>{const to=new Date(d.getFullYear(),d.getMonth()+1,1);let s=0;DB.clients.forEach(c=>c.payments.forEach(p=>{const pd=new Date(p.d);if(pd>=d&&pd<to)s+=p.amount}));return s});
  if(ch6)ch6.destroy();
- ch6=new Chart($('chartIncome'),{type:'bar',data:{labels,datasets:[{label:'Доход, ₽',data}]}});
+ ch6=new Chart($('chartIncome'),{type:'bar',data:{labels,datasets:[{data,backgroundColor:'#0d3b3b',borderRadius:8}]},options:{plugins:{legend:{display:false}}}});
 }
 function renderMoneyTab(){
- const mFrom=monthFrom();
- let all=0;DB.clients.forEach(cl=>{all+=cl.payments.filter(p=>new Date(p.d)>=mFrom).reduce((a,p)=>a+p.amount,0)});
+ const mFrom=monthFrom();let all=0;
+ DB.clients.forEach(cl=>{all+=cl.payments.filter(p=>new Date(p.d)>=mFrom).reduce((a,p)=>a+p.amount,0)});
  $('allIncome').innerHTML=`💰 Доход за месяц (все клиенты): <b>${all.toLocaleString('ru')} ₽</b>`;
  const c=activeClient();
- if(!c){$('subInfo').innerHTML='';$('payHist').innerHTML='';return}
- $('subPrice').value=c.price;
+ if(!c){$('subHead').innerHTML='Абонемент';$('payHist').innerHTML='';return}
+ $('subHead').innerHTML='Абонемент · '+c.name;
  const rem=remSessions(c);
+ $('tileRem').innerHTML=`<b style="color:${rem<=2?'var(--bad-t)':'var(--ok-t)'}">${rem}</b><span>осталось</span>`;
+ $('tileRem').style.background=rem<=2?'var(--bad-bg)':'var(--ok-bg)';
+ $('tileDone').innerHTML=c.sessions.length;
+ $('subPrice').value=c.price;$('tilePrice').innerHTML=c.price;
  const inc=c.payments.filter(p=>new Date(p.d)>=mFrom).reduce((a,p)=>a+p.amount,0);
- $('subInfo').innerHTML=`${c.name}: проведено <b>${c.sessions.length}</b> · осталось <b style="color:${rem<=2?'#c0392b':'#27ae60'}">${rem}</b> · доход месяца <b>${inc.toLocaleString('ru')} ₽</b>`;
- $('payHist').innerHTML=c.payments.map((p,i)=>({p,i})).slice().reverse().map(h=>`<div class="item">${h.p.d.slice(8,10)}.${h.p.d.slice(5,7)} · ${h.p.count} зан · ${h.p.amount.toLocaleString('ru')} ₽ <button class="b-s" onclick="editPayment(${h.i})">✎</button> <button class="b-d" onclick="delPayment(${h.i})">✕</button></div>`).join('');
+ $('payHist').innerHTML=c.payments.map((p,i)=>({p,i})).slice().reverse().map(h=>`<div class="pay"><span>${h.p.d.slice(8,10)}.${h.p.d.slice(5,7)} · ${h.p.count} зан</span><span><b>${h.p.amount.toLocaleString('ru')} ₽</b> <button class="ibtn" onclick="editPayment(${h.i})">✎</button><button class="ibtn" onclick="delPayment(${h.i})">✕</button></span></div>`).join('')||'<span class="mini">Оплат пока нет</span>';
 }
 /* отчёт */
 function bandProgress(c){
@@ -359,19 +436,21 @@ function makeReport(){
 function copyReport(){const t=$('reportBox').innerText;if(navigator.clipboard){navigator.clipboard.writeText(t).then(()=>alert('Скопировано ✅')).catch(()=>prompt('Скопируй:',t))}else prompt('Скопируй:',t)}
 /* вкладки */
 function showTab(t){
- ['c','w','m','d'].forEach(x=>$('tab-'+x).style.display=x===t?'':'none');
- document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('active',['c','w','m','d'][i]===t));
+ ['c','w','m','d'].forEach(x=>$('s-'+x).classList.toggle('active',x===t));
+ document.querySelectorAll('.tabbar button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+ $('fab').style.display=t==='c'?'grid':'none';
  if(t==='m')renderMoneyTab();
  if(t==='w'){lastHint();renderHistory()}
+ scrollTo({top:0});
 }
 /* зал */
 function lastHint(){
  const c=activeClient();const n=$('exSel').value;
  if(!c||!n){$('lastHint').innerHTML='';return}
  const ws=c.w.filter(w=>w.ex.some(e=>e.n===n));
- if(!ws.length){$('lastHint').innerHTML='<span class="muted">Раньше не делали</span>';return}
+ if(!ws.length){$('lastHint').innerHTML='Раньше не делали';return}
  const e=ws[ws.length-1].ex.find(x=>x.n===n);
- $('lastHint').innerHTML=`<span class="muted">Прошлый раз: <b>${e.s}×${e.r}×${e.w} кг</b></span>`;
+ $('lastHint').innerHTML=`Прошлый раз: <b>${e.s}×${e.r}×${e.w} кг</b>`;
 }
 function addEx(){
  const n=$('exSel').value;const d=allEX()[n]||{};
@@ -383,25 +462,24 @@ function addEx(){
  $('wKg').value='';$('wReps').value='';renderExList();
 }
 function clearList(){cur=[];curFor=null;renderExList()}
+function setBand(i,k){cur[i].v=k;renderExList()}
 function renderExList(){
  $('exList').innerHTML=cur.map((e,i)=>{
   const d=allEX()[e.n]||{};
-  const vs=d.bands?`<select onchange="cur[${i}].v=this.value;updT(${i})">`+Object.keys(BANDS).map(k=>`<option value="${k}"${(e.v||'base')===k?' selected':''}>${BANDS[k].t}</option>`).join('')+`</select>`:'';
-  return `<div class="item"><b>${e.n}</b>${vs}
-  <div class="row">
-   <input type="number" value="${e.s}" oninput="cur[${i}].s=+this.value||0;updT(${i})">
-   <input type="number" value="${e.r}" oninput="cur[${i}].r=+this.value||0;updT(${i})">
-   <input type="number" value="${e.w}" oninput="cur[${i}].w=+this.value||0;updT(${i})">
+  const chips=d.bands?`<div class="bchips">`+Object.keys(BANDS).map(k=>`<button class="bchip ${(e.v||'base')===k?'on':''}" onclick="setBand(${i},'${k}')">${BANDS[k].t}</button>`).join('')+`</div>`:'';
+  return `<div class="card"><h3 style="display:inline">${e.n}</h3><span class="tag">${d.p||''}</span>${chips}
+  <div class="frow">
+   <div class="field"><input type="number" value="${e.s}" oninput="cur[${i}].s=+this.value||0;updT(${i})"><span>подходы</span></div>
+   <div class="field"><input type="number" value="${e.r}" oninput="cur[${i}].r=+this.value||0;updT(${i})"><span>повторы</span></div>
+   <div class="field"><input type="number" value="${e.w}" oninput="cur[${i}].w=+this.value||0;updT(${i})"><span>кг</span></div>
   </div>
-  <div style="display:flex;justify-content:space-between;align-items:center">
-   <span id="t${i}" class="muted">${Math.round(tonnage(e))} кг</span>
-   <button class="b-d" onclick="cur.splice(${i},1);renderExList()">✕</button>
-  </div></div>`;
+  <div class="ton"><span id="t${i}">Тоннаж: ${Math.round(tonnage(e))} кг${d.bands?' (петля ×'+bandK(e,d)+')':''}</span><button class="x" onclick="cur.splice(${i},1);renderExList()">✕</button></div></div>`;
  }).join('');
  const cf=DB.clients.find(x=>x.id==curFor);
- $('curForNote').innerHTML=cur.length&&cf?`Собирается для: <b>${cf.name}</b>`:'';
+ $('curForNote').innerHTML=cur.length&&cf?'Собирается для: <b>'+cf.name+'</b>':'';
+ $('clearBtn').style.display=cur.length?'':'none';
 }
-function updT(i){$('t'+i).innerHTML=Math.round(tonnage(cur[i]))+' кг'}
+function updT(i){const d=allEX()[cur[i].n]||{};$('t'+i).innerHTML=`Тоннаж: ${Math.round(tonnage(cur[i]))} кг${d.bands?' (петля ×'+bandK(cur[i],d)+')':''}`}
 function saveWorkout(){
  const c=DB.clients.find(x=>x.id==curFor)||activeClient();
  if(!c){alert('Сначала клиента');return}
@@ -412,8 +490,8 @@ function addCustomEx(){
  const n=$('exName').value.trim(),p=$('exP').value.trim();
  if(!n||!p){alert('Название и мышца');return}
  const o={p,s:$('exS').value.split(',').map(x=>x.trim()).filter(x=>x)};
- if($('exBw').checked)o.bw=+$('exBwK').value;
- DB.ex[n]=o;saveDB();fillSelects();$('exName').value='';$('exP').value='';$('exS').value='';$('exBw').checked=false;alert('Добавлено ✅');
+ if($('exBwK').value)o.bw=+$('exBwK').value;
+ DB.ex[n]=o;saveDB();fillSelects();$('exName').value='';$('exP').value='';$('exS').value='';alert('Добавлено ✅');
 }
 /* шаблоны */
 function fillTplSelect(){$('tplSel').innerHTML='';(DB.templates||[]).forEach(t=>$('tplSel').add(new Option(t.name,String(t.id))))}
@@ -442,9 +520,10 @@ function delTemplate(){if(!confirm('Удалить шаблон?'))return;const 
 function exportData(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([localStorage.getItem(KEY)||'{}'],{type:'application/json'}));a.download='trainer-backup.json';a.click()}
 function importData(ev){const f=ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{JSON.parse(r.result);localStorage.setItem(KEY,r.result);alert('Готово ✅');location.reload()}catch(e){alert('Не тот файл')}};r.readAsText(f)}
 function fillSelects(){const A=allEX();$('exSel').innerHTML='';for(const k in A)$('exSel').add(new Option(k,k))}
+$('wDate').innerHTML='Тренировка · '+new Date().toLocaleDateString('ru',{day:'numeric',month:'long'});
 fillSelects();fillTplSelect();
 const c0=activeClient();if(c0){editingId=c0.id;fillForm(c0)}
-refresh();lastHint();
+refresh();lastHint();showTab('c');
 </script>
 </body>
 </html>
