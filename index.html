@@ -261,9 +261,9 @@ label{font-size:12px;color:var(--muted)}
  </div>
  <div class="card">
   <h3>Опасная зона</h3>
-  <button class="btn danger" onclick="if(confirm('Удалить ВСЕ данные?')){localStorage.removeItem('myTrainerV1');location.reload()}">Удалить все данные</button>
+  <button class="btn danger" onclick="if(confirm('Удалить ВСЕ данные?')&&confirm('Точно удалить? Это нельзя отменить.')){localStorage.removeItem('myTrainerV1');location.reload()}">Удалить все данные</button>
  </div>
- <p style="text-align:center;font-size:11px;color:var(--muted)">Дневник тренера · v2.4</p>
+ <p style="text-align:center;font-size:11px;color:var(--muted)">Дневник тренера · v2.5</p>
 </section>
 
 <button class="fab" id="fab" onclick="newClientForm()"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
@@ -281,7 +281,8 @@ const $=id=>document.getElementById(id);
 const KEY='myTrainerV1';
 const BANDS={base:{k:1,t:'обычные'},neg:{k:0.8,t:'негативные'},red:{k:0.85,t:'красная'},green:{k:0.7,t:'зелёная'},purple:{k:0.6,t:'фиолетовая'}};
 const BASE_EX={"Подтягивания":{p:"спина",s:["Бицепс"],bw:1,bands:true},"Тяга блока сверху":{p:"спина",s:["Бицепс"]},"Тяга горизонтального блока":{p:"спина",s:["Бицепс"]},"Тяга штанги в наклоне":{p:"спина",s:["Ноги"]},"Жим лёжа":{p:"грудь",s:["Трицепс"]},"Жим гантелей лёжа":{p:"грудь",s:["Трицепс"]},"Жим в тренажёре на грудь":{p:"грудь",s:["Трицепс"]},"Отжимания на брусьях":{p:"грудь",s:["Трицепс"],bw:1},"Отжимания от пола":{p:"грудь",s:["Трицепс"],bw:0.65},"Приседания со штангой":{p:"ноги",s:["Ягодицы"]},"Жим ногами":{p:"ноги",s:["Ягодицы"]},"Румынская тяга":{p:"ноги",s:["Спина"]},"Болгарские приседания":{p:"ноги",s:["Ягодицы"]},"Ягодичный мост":{p:"ягодицы",s:["Ноги"]},"Жим стоя/сидя":{p:"дельты",s:["Трицепс"]},"Махи гантелями в стороны":{p:"дельты",s:[]},"Подъём на бицепс":{p:"бицепс",s:[]},"Разгибания на трицепс":{p:"трицепс",s:[]},"Пресс/скручивания":{p:"кор",s:[],bw:0.3}};
-function today(){return new Date().toISOString().slice(0,10)}
+function today(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function dLocal(s){return new Date(s+'T00:00:00')}
 function round25(x){return Math.max(0,Math.round(x/2.5)*2.5)}
 function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 let toastT=null;
@@ -299,7 +300,7 @@ function tonnage(e){const d=allEX()[e.n];if(d&&d.bw)return e.w*d.bw*bandK(e,d)*e
 function fmtEx(e){const d=allEX()[e.n]||{};const vt=(d.bands&&e.v)?' ('+BANDS[e.v].t+')':'';return `${esc(e.n)}: ${e.s}×${e.r}×${e.w} кг${vt}`}
 function av(c){return 'a'+(c.id%4+1)}
 function initials(c){const w=String(c.name||'').trim().split(/\s+/);const a=w[0]?w[0][0]:'•';const b=w[1]?w[1][0]:'';return (a+b).toUpperCase()}
-function daysAgo(c){const l=c.w.length?c.w[c.w.length-1].date:null;if(!l)return null;return Math.floor((Date.now()-new Date(l))/86400000)}
+function daysAgo(c){const l=c.w.length?c.w[c.w.length-1].date:null;if(!l)return null;return Math.floor((Date.now()-dLocal(l))/86400000)}
 function avgPrice(c){const tot=c.payments.reduce((a,p)=>a+p.amount,0);const cnt=c.payments.reduce((a,p)=>a+p.count,0);return cnt>0?tot/cnt:(c.price||0)}
 
 /* клиенты */
@@ -451,9 +452,9 @@ function renderMoneyStats(){
  const mFrom=monthFrom();
  let sold=0,earn=0,subs=0;
  DB.clients.forEach(c=>{
-  sold+=c.payments.filter(p=>new Date(p.d)>=mFrom).reduce((a,p)=>a+p.amount,0);
+  sold+=c.payments.filter(p=>dLocal(p.d)>=mFrom).reduce((a,p)=>a+p.amount,0);
   const ap=avgPrice(c);
-  earn+=c.sessions.filter(d=>new Date(d)>=mFrom).length*ap;
+  earn+=c.sessions.filter(d=>dLocal(d)>=mFrom).length*ap;
   subs+=Math.max(0,remSessions(c))*ap;
  });
  $('stSold').innerHTML=Math.round(sold).toLocaleString('ru');
@@ -462,8 +463,8 @@ function renderMoneyStats(){
  const now=new Date();const months=[];
  for(let i=5;i>=0;i--)months.push(new Date(now.getFullYear(),now.getMonth()-i,1));
  const labels=months.map(d=>d.toLocaleString('ru',{month:'short'}));
- const soldM=months.map(d=>{const to=new Date(d.getFullYear(),d.getMonth()+1,1);let s=0;DB.clients.forEach(c=>c.payments.forEach(p=>{const pd=new Date(p.d);if(pd>=d&&pd<to)s+=p.amount}));return s});
- const earnM=months.map(d=>{const to=new Date(d.getFullYear(),d.getMonth()+1,1);let s=0;DB.clients.forEach(c=>{s+=c.sessions.filter(x=>{const sd=new Date(x);return sd>=d&&sd<to}).length*avgPrice(c)});return Math.round(s)});
+ const soldM=months.map(d=>{const to=new Date(d.getFullYear(),d.getMonth()+1,1);let s=0;DB.clients.forEach(c=>c.payments.forEach(p=>{const pd=dLocal(p.d);if(pd>=d&&pd<to)s+=p.amount}));return s});
+ const earnM=months.map(d=>{const to=new Date(d.getFullYear(),d.getMonth()+1,1);let s=0;DB.clients.forEach(c=>{s+=c.sessions.filter(x=>{const sd=dLocal(x);return sd>=d&&sd<to}).length*avgPrice(c)});return Math.round(s)});
  if(ch6)ch6.destroy();
  ch6=new Chart($('chartIncome'),{type:'bar',data:{labels,datasets:[{label:'Продано',data:soldM,backgroundColor:'#0d3b3b',borderRadius:8},{label:'Заработано',data:earnM,backgroundColor:'#27ae60',borderRadius:8}]},options:{plugins:{legend:{labels:{boxWidth:12,font:{size:10}}}}}});
 }
@@ -492,7 +493,7 @@ function bandProgress(c){
 function makeReport(){
  const c=activeClient();if(!c){toast('Сначала клиента',1);return}
  const days=+$('repPeriod').value;const from=Date.now()-days*86400000;
- const ws=c.w.filter(w=>new Date(w.date)>=from).slice().sort((a,b)=>a.date<b.date?-1:1);
+ const ws=c.w.filter(w=>dLocal(w.date)>=from).slice().sort((a,b)=>a.date<b.date?-1:1);
  const per={};
  ws.forEach(w=>w.ex.forEach(e=>{per[e.n]=per[e.n]||{f:null,l:0};if(per[e.n].f===null)per[e.n].f=e.w;per[e.n].l=Math.max(per[e.n].l,e.w)}));
  const lines=Object.keys(per).slice(0,8).map(n=>{const x=per[n];return `• ${n}: ${x.f}→${x.l} кг${x.l>x.f?` (+${x.l-x.f})`:''}`});
@@ -589,7 +590,19 @@ function loadTemplate(){
 function delTemplate(){if(!confirm('Удалить шаблон?'))return;const i=DB.templates.findIndex(x=>x.id==+$('tplSel').value);if(i<0)return;DB.templates.splice(i,1);saveDB();fillTplSelect();toast('Шаблон удалён')}
 /* данные */
 function exportData(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([localStorage.getItem(KEY)||'{}'],{type:'application/json'}));a.download='trainer-backup.json';a.click();toast('Копия скачана ✅')}
-function importData(ev){const f=ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{JSON.parse(r.result);localStorage.setItem(KEY,r.result);toast('Готово ✅');setTimeout(()=>location.reload(),800)}catch(e){toast('Не тот файл',1)}};r.readAsText(f)}
+function importData(ev){
+ const f=ev.target.files[0];if(!f)return;
+ const r=new FileReader();
+ r.onload=()=>{
+  try{
+   const d=JSON.parse(r.result);
+   if(!d||typeof d!=='object'||!Array.isArray(d.clients)){toast('Не тот файл',1);return}
+   if(DB.clients.length>0&&d.clients.length===0&&!confirm('В файле нет клиентов — заменить текущие данные пустыми?'))return;
+   localStorage.setItem(KEY,r.result);toast('Готово ✅');setTimeout(()=>location.reload(),800);
+  }catch(e){toast('Не тот файл',1)}
+ };
+ r.readAsText(f);
+}
 function fillSelects(){const A=allEX();$('exSel').innerHTML='';for(const k in A)$('exSel').add(new Option(k,k))}
 $('wDate').innerHTML='Тренировка · '+new Date().toLocaleDateString('ru',{day:'numeric',month:'long'});
 fillSelects();fillTplSelect();
