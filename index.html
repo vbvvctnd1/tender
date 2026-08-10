@@ -113,9 +113,8 @@ label{font-size:12px;color:var(--muted)}
   <textarea id="cNotes" placeholder="Заметки (травмы, ограничения)"></textarea>
   <div class="rowbtn" style="margin-top:4px">
    <button class="btn primary half" onclick="saveClient()">Сохранить</button>
-   <button class="btn danger half" onclick="delClient()">Удалить</button>
+   <button class="btn gray half" onclick="toggleForm()">Скрыть</button>
   </div>
-  <button class="btn gray" style="margin-top:8px" onclick="toggleForm()">Скрыть</button>
  </div>
  <div class="card" style="margin-top:12px">
   <h3>📤 Отчёт клиенту</h3>
@@ -124,6 +123,7 @@ label{font-size:12px;color:var(--muted)}
   <pre id="reportBox" style="display:none;margin-top:10px"></pre>
   <button class="btn gray" id="copyBtn" style="display:none;margin-top:8px" onclick="copyReport()">Скопировать для Телеграма</button>
  </div>
+ <button class="btn" style="background:none;color:var(--bad-t)" onclick="delClient()">Удалить клиента</button>
 </section>
 
 <section class="screen" id="s-w">
@@ -240,7 +240,7 @@ label{font-size:12px;color:var(--muted)}
   <h3>Опасная зона</h3>
   <button class="btn danger" onclick="if(confirm('Удалить ВСЕ данные?')){localStorage.removeItem('myTrainerV1');location.reload()}">Удалить все данные</button>
  </div>
- <p style="text-align:center;font-size:11px;color:var(--muted)">Дневник тренера · v2.0</p>
+ <p style="text-align:center;font-size:11px;color:var(--muted)">Дневник тренера · v2.1</p>
 </section>
 
 <button class="fab" id="fab" onclick="newClientForm()"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
