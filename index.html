@@ -10,7 +10,7 @@
 :root{
  --bg:#f5f5f7;--card:#fff;--text:#1d1d1f;--muted:#86868b;
  --brand:#0d3b3b;--ok-bg:#e8f5ee;--ok-t:#1e8e3e;--warn-bg:#fff4e5;--warn-t:#e67e22;
- --bad-bg:#fdecea;--bad-t:#ff3b30;--gray:#e9e9eb;--r:20px;
+ --bad-bg:#fdecea;--bad-t:#ff3b30;--gray:#e9e9eb;--line:#e3e3e8;--r:20px;
  --shadow:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.06);
 }
 body{margin:0;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;color:var(--text)}
@@ -37,12 +37,19 @@ h3{font-size:16px;font-weight:700;margin:0 0 10px}
 .chev{width:18px;height:18px;stroke:#c7c7cc;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
 .badge{font-size:12px;font-weight:700;padding:5px 9px;border-radius:9px;white-space:nowrap}
 .ok{background:var(--ok-bg);color:var(--ok-t)}.warn{background:var(--warn-bg);color:var(--warn-t)}.bad{background:var(--bad-bg);color:var(--bad-t)}
-.alert .row{display:flex;align-items:center;gap:10px;padding:9px 0;font-size:14px;border-bottom:1px solid #f2f2f4;border:none;background:none;width:100%;text-align:left;font-family:inherit}
+.alert .row{display:flex;align-items:center;gap:10px;padding:9px 0;font-size:14px;border:none;background:none;width:100%;text-align:left;font-family:inherit}
 .dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
-.frow{display:flex;gap:8px}
+.frow{display:flex;gap:10px;margin-bottom:2px}
+.frow>*{flex:1}
 .field{flex:1;background:var(--bg);border-radius:12px;padding:9px 4px;text-align:center}
 .field input{border:none;background:none;text-align:center;font-size:16px;font-weight:700;width:100%;padding:0;outline:none;color:var(--text);font-family:inherit}
 .field span{display:block;font-size:10px;color:var(--muted);margin-top:2px}
+.inp{width:100%;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;font-size:16px;font-family:inherit;color:var(--text);margin:0 0 12px;outline:none}
+.inp:focus{border-color:var(--brand)}
+select.inp{background:#fff;border:1px solid var(--line);width:100%}
+textarea.inp{min-height:64px;resize:vertical}
+.flab{display:block;font-size:11px;font-weight:600;color:var(--muted);margin:0 0 4px 2px;letter-spacing:.4px;text-transform:uppercase}
+.sect{font-size:13px;font-weight:700;color:var(--text);margin:14px 0 10px;padding-top:14px;border-top:1px solid #f2f2f4}
 .ton{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:12px;color:var(--muted)}
 .x{width:26px;height:26px;border-radius:50%;background:var(--bg);color:var(--muted);display:grid;place-items:center;font-size:13px;border:none}
 .tag{font-size:11px;color:var(--muted);font-weight:500;margin-left:6px}
@@ -78,10 +85,13 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;heigh
 .tabbar button.on{color:var(--brand)}
 .tabbar svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .mini{font-size:12px;color:var(--muted);margin:6px 0}
-select{width:100%;padding:12px;border:none;border-radius:12px;background:var(--bg);font-size:15px;font-family:inherit;color:var(--text);margin:4px 0 8px}
-textarea{width:100%;border:none;border-radius:12px;background:var(--bg);padding:12px;font-size:15px;font-family:inherit;min-height:56px;margin:4px 0 8px}
+select{width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff;font-size:15px;font-family:inherit;color:var(--text);margin:0 0 12px;outline:none}
+textarea{width:100%;border:1px solid var(--line);background:#fff;border-radius:12px;padding:12px;font-size:15px;font-family:inherit;min-height:64px;margin:0 0 12px}
 pre{white-space:pre-wrap;background:var(--bg);border-radius:12px;padding:12px;font-size:14px;font-family:inherit}
 label{font-size:12px;color:var(--muted)}
+.toast{position:fixed;left:50%;transform:translateX(-50%) translateY(16px);bottom:calc(92px + env(safe-area-inset-bottom));background:rgba(29,29,31,.92);color:#fff;padding:12px 20px;border-radius:14px;font-size:14px;font-weight:600;opacity:0;transition:.3s;z-index:9;pointer-events:none;max-width:82%;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.err{background:rgba(255,59,48,.95)}
 </style>
 </head>
 <body>
@@ -96,21 +106,27 @@ label{font-size:12px;color:var(--muted)}
  <div id="clientList"></div>
  <button class="btn gray" onclick="toggleForm()">✎ Анкета клиента</button>
  <div class="card" id="formBox" style="display:none;margin-top:12px">
-  <input id="cName" placeholder="Имя клиента" style="width:100%;border:none;border-radius:12px;background:var(--bg);padding:12px;font-size:16px;font-family:inherit;margin-bottom:8px">
+  <h3>Анкета клиента</h3>
+  <label class="flab">Имя</label>
+  <input id="cName" class="inp" placeholder="Имя клиента">
+  <div class="sect">Тело и цель</div>
   <div class="frow">
-   <div class="field"><select id="cSex" style="margin:0"><option value="m">М</option><option value="f">Ж</option></select></div>
-   <div class="field"><input type="number" id="cAge" placeholder="возраст"></div>
+   <div><label class="flab">Пол</label><select id="cSex" class="inp"><option value="m">М</option><option value="f">Ж</option></select></div>
+   <div><label class="flab">Возраст</label><input type="number" id="cAge" class="inp" placeholder="25"></div>
   </div>
   <div class="frow">
-   <div class="field"><input type="number" id="cH" placeholder="рост"></div>
-   <div class="field"><input type="number" id="cW" placeholder="вес"></div>
+   <div><label class="flab">Рост, см</label><input type="number" id="cH" class="inp" placeholder="170"></div>
+   <div><label class="flab">Вес, кг</label><input type="number" id="cW" class="inp" placeholder="60"></div>
   </div>
   <div class="frow">
-   <div class="field"><select id="cGoal" style="margin:0"><option value="cut">похудение</option><option value="maintain">поддержание</option><option value="gain">набор</option></select></div>
-   <div class="field"><select id="cMeals" style="margin:0"><option>3</option><option>4</option><option>5</option></select></div>
+   <div><label class="flab">Цель</label><select id="cGoal" class="inp"><option value="cut">похудение</option><option value="maintain">поддержание</option><option value="gain">набор</option></select></div>
+   <div><label class="flab">Приёмов пищи</label><select id="cMeals" class="inp"><option>3</option><option>4</option><option>5</option></select></div>
   </div>
-  <input id="cBreak" placeholder="Отметка в списке (даты)" style="width:100%;border:none;border-radius:12px;background:var(--bg);padding:12px;font-size:14px;font-family:inherit;margin-bottom:8px">
-  <textarea id="cNotes" placeholder="Заметки (травмы, ограничения)"></textarea>
+  <div class="sect">Заметки</div>
+  <label class="flab">Отметка в списке (даты)</label>
+  <input id="cBreak" class="inp" placeholder="напр. отпуск 6–16 августа">
+  <label class="flab">Травмы, ограничения, привычки</label>
+  <textarea id="cNotes" class="inp" placeholder="Напр.: болит колено — убрать осевую"></textarea>
   <div class="rowbtn" style="margin-top:4px">
    <button class="btn primary half" onclick="saveClient()">Сохранить</button>
    <button class="btn gray half" onclick="toggleForm()">Скрыть</button>
@@ -118,7 +134,7 @@ label{font-size:12px;color:var(--muted)}
  </div>
  <div class="card" style="margin-top:12px">
   <h3>📤 Отчёт клиенту</h3>
-  <select id="repPeriod"><option value="30">За 30 дней</option><option value="90">За 90 дней</option></select>
+  <select id="repPeriod" class="inp"><option value="30">За 30 дней</option><option value="90">За 90 дней</option></select>
   <button class="btn gray" onclick="makeReport()">Собрать отчёт</button>
   <pre id="reportBox" style="display:none;margin-top:10px"></pre>
   <button class="btn gray" id="copyBtn" style="display:none;margin-top:8px" onclick="copyReport()">Скопировать для Телеграма</button>
@@ -141,17 +157,17 @@ label{font-size:12px;color:var(--muted)}
  </div>
  <div class="card">
   <h3>📋 Шаблоны программ</h3>
-  <select id="tplSel"></select>
+  <select id="tplSel" class="inp"></select>
   <div class="rowbtn" style="margin-top:0">
    <button class="btn gray half" onclick="loadTemplate()">Загрузить</button>
    <button class="btn danger half" onclick="delTemplate()">Удалить</button>
   </div>
-  <input id="tplName" placeholder="Имя шаблона (напр. Настя день А)" style="width:100%;border:none;border-radius:12px;background:var(--bg);padding:12px;font-size:14px;font-family:inherit;margin:8px 0">
+  <input id="tplName" class="inp" placeholder="Имя шаблона (напр. Настя день А)" style="margin-top:10px">
   <button class="btn gray" onclick="saveTemplate()">Сохранить текущий список как шаблон</button>
  </div>
  <div class="card">
   <h3>Добавить упражнение</h3>
-  <select id="exSel" onchange="lastHint()"></select>
+  <select id="exSel" class="inp" onchange="lastHint()"></select>
   <div id="lastHint" class="mini"></div>
   <div class="frow">
    <div class="field"><input type="number" id="wSets" value="3"><span>подходы</span></div>
@@ -162,7 +178,9 @@ label{font-size:12px;color:var(--muted)}
  </div>
  <div id="exList"></div>
  <div id="curForNote" class="mini"></div>
+ <div id="editNote" class="mini" style="display:none;color:var(--warn-t);font-weight:700"></div>
  <button class="btn gray" id="clearBtn" style="display:none;margin-bottom:12px" onclick="clearList()">Очистить список</button>
+ <button class="btn gray" id="editCancelBtn" style="display:none;margin-bottom:12px" onclick="cancelEdit()">Отменить редактирование</button>
  <div class="card">
   <h3>Тяжесть занятия · <span id="rpeVal">7</span></h3>
   <input type="range" id="rpe" min="1" max="10" value="7" oninput="$('rpeVal').innerHTML=this.value">
@@ -171,13 +189,13 @@ label{font-size:12px;color:var(--muted)}
  <button class="btn primary" id="saveWBtn" onclick="saveWorkout()">Сохранить тренировку</button>
  <div class="card" style="margin-top:12px">
   <h3>➕ Своё упражнение</h3>
-  <input id="exName" placeholder="Название" style="width:100%;border:none;border-radius:12px;background:var(--bg);padding:12px;font-size:15px;font-family:inherit;margin-bottom:8px">
+  <input id="exName" class="inp" placeholder="Название">
   <div class="frow">
    <div class="field"><input id="exP" placeholder="мышца"></div>
    <div class="field"><input id="exS" placeholder="помощники"></div>
   </div>
   <div class="frow">
-   <div class="field"><select id="exBwK" style="margin:0"><option value="">обычное</option><option value="0.3">свой вес 0.3</option><option value="0.65">свой вес 0.65</option><option value="1">свой вес 1</option></select></div>
+   <div class="field"><select id="exBwK" style="margin:0;border:none;background:var(--bg)"><option value="">обычное</option><option value="0.3">свой вес 0.3</option><option value="0.65">свой вес 0.65</option><option value="1">свой вес 1</option></select></div>
   </div>
   <button class="btn gray" onclick="addCustomEx()">Добавить</button>
  </div>
@@ -218,9 +236,14 @@ label{font-size:12px;color:var(--muted)}
   <div id="remList"></div>
  </div>
  <div class="card">
-  <button class="btn gray" onclick="toggleIncome()">💰 Показать доход</button>
+  <button class="btn gray" onclick="toggleIncome()">📊 Доход и выработка</button>
   <div id="incomeBox" style="display:none">
-   <div id="allIncome" class="mini" style="font-size:14px;margin:10px 0"></div>
+   <div class="tiles">
+    <div class="tile"><b id="stSold" style="font-size:16px">0</b><span>продано / мес</span></div>
+    <div class="tile"><b id="stEarn" style="font-size:16px">0</b><span>заработано / мес</span></div>
+    <div class="tile"><b id="stSub" style="font-size:16px">0</b><span>в абонементах</span></div>
+   </div>
+   <p class="mini">Заработано = списанные занятия × средняя цена блока. В абонементах = остатки × цена.</p>
    <canvas id="chartIncome"></canvas>
   </div>
  </div>
@@ -240,7 +263,7 @@ label{font-size:12px;color:var(--muted)}
   <h3>Опасная зона</h3>
   <button class="btn danger" onclick="if(confirm('Удалить ВСЕ данные?')){localStorage.removeItem('myTrainerV1');location.reload()}">Удалить все данные</button>
  </div>
- <p style="text-align:center;font-size:11px;color:var(--muted)">Дневник тренера · v2.1</p>
+ <p style="text-align:center;font-size:11px;color:var(--muted)">Дневник тренера · v2.4</p>
 </section>
 
 <button class="fab" id="fab" onclick="newClientForm()"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
@@ -251,6 +274,7 @@ label{font-size:12px;color:var(--muted)}
  <button data-t="d" onclick="showTab('d')"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.7" fill="currentColor" stroke="none"/></svg>Ещё</button>
 </nav>
 </div>
+<div class="toast" id="toast"></div>
 
 <script>
 const $=id=>document.getElementById(id);
@@ -259,6 +283,9 @@ const BANDS={base:{k:1,t:'обычные'},neg:{k:0.8,t:'негативные'},
 const BASE_EX={"Подтягивания":{p:"спина",s:["Бицепс"],bw:1,bands:true},"Тяга блока сверху":{p:"спина",s:["Бицепс"]},"Тяга горизонтального блока":{p:"спина",s:["Бицепс"]},"Тяга штанги в наклоне":{p:"спина",s:["Ноги"]},"Жим лёжа":{p:"грудь",s:["Трицепс"]},"Жим гантелей лёжа":{p:"грудь",s:["Трицепс"]},"Жим в тренажёре на грудь":{p:"грудь",s:["Трицепс"]},"Отжимания на брусьях":{p:"грудь",s:["Трицепс"],bw:1},"Отжимания от пола":{p:"грудь",s:["Трицепс"],bw:0.65},"Приседания со штангой":{p:"ноги",s:["Ягодицы"]},"Жим ногами":{p:"ноги",s:["Ягодицы"]},"Румынская тяга":{p:"ноги",s:["Спина"]},"Болгарские приседания":{p:"ноги",s:["Ягодицы"]},"Ягодичный мост":{p:"ягодицы",s:["Ноги"]},"Жим стоя/сидя":{p:"дельты",s:["Трицепс"]},"Махи гантелями в стороны":{p:"дельты",s:[]},"Подъём на бицепс":{p:"бицепс",s:[]},"Разгибания на трицепс":{p:"трицепс",s:[]},"Пресс/скручивания":{p:"кор",s:[],bw:0.3}};
 function today(){return new Date().toISOString().slice(0,10)}
 function round25(x){return Math.max(0,Math.round(x/2.5)*2.5)}
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+let toastT=null;
+function toast(msg,err){const t=$('toast');t.innerHTML=esc(msg);t.className='toast show'+(err?' err':'');clearTimeout(toastT);toastT=setTimeout(()=>{t.className='toast'},2200)}
 function defDB(){return{clients:[],ex:{},templates:[],active:null}}
 function newClientObj(o){return Object.assign({id:Date.now(),name:"Клиент",sex:"f",age:25,height:170,weight:60,goal:"cut",meals:4,notes:"",breakNote:"",w:[],weights:[],price:1500,payments:[],sessions:[],lastUsed:0},o)}
 function loadDB(){try{const d=JSON.parse(localStorage.getItem(KEY));if(d){const b=defDB();b.clients=(d.clients||[]).map(c=>newClientObj(c));b.ex=d.ex||{};b.templates=d.templates||[];b.active=d.active;return b}}catch(e){}return defDB()}
@@ -266,13 +293,14 @@ let DB=loadDB();
 function saveDB(){localStorage.setItem(KEY,JSON.stringify(DB))}
 function allEX(){return Object.assign({},BASE_EX,DB.ex)}
 function activeClient(){return DB.clients.find(c=>String(c.id)===String(DB.active))||DB.clients[0]}
-let cur=[],curFor=null,editingId=null,payEdit=null,sortMode='rem',q='',histN=2,ch6=null;
+let cur=[],curFor=null,editingId=null,payEdit=null,editWork=null,sortMode='rem',q='',histN=2,ch6=null;
 function bandK(e,d){return (d&&d.bands&&e.v)?BANDS[e.v].k:1}
 function tonnage(e){const d=allEX()[e.n];if(d&&d.bw)return e.w*d.bw*bandK(e,d)*e.s*e.r;return e.w*e.s*e.r}
-function fmtEx(e){const d=allEX()[e.n]||{};const vt=(d.bands&&e.v)?' ('+BANDS[e.v].t+')':'';return `${e.n}: ${e.s}×${e.r}×${e.w} кг${vt}`}
+function fmtEx(e){const d=allEX()[e.n]||{};const vt=(d.bands&&e.v)?' ('+BANDS[e.v].t+')':'';return `${esc(e.n)}: ${e.s}×${e.r}×${e.w} кг${vt}`}
 function av(c){return 'a'+(c.id%4+1)}
-function initials(c){const w=c.name.split(' ');return (w[0][0]+(w[1]?w[1][0]:'')).toUpperCase()}
+function initials(c){const w=String(c.name||'').trim().split(/\s+/);const a=w[0]?w[0][0]:'•';const b=w[1]?w[1][0]:'';return (a+b).toUpperCase()}
 function daysAgo(c){const l=c.w.length?c.w[c.w.length-1].date:null;if(!l)return null;return Math.floor((Date.now()-new Date(l))/86400000)}
+function avgPrice(c){const tot=c.payments.reduce((a,p)=>a+p.amount,0);const cnt=c.payments.reduce((a,p)=>a+p.count,0);return cnt>0?tot/cnt:(c.price||0)}
 
 /* клиенты */
 function remSessions(c){return c.payments.reduce((a,p)=>a+p.count,0)-c.sessions.length}
@@ -282,13 +310,13 @@ function renderTiles(){
   const rem=remSessions(c);const d=daysAgo(c);
   const badge=rem<=0?'<span class="badge bad">пауза</span>':rem<=2?'<span class="badge warn">оплата</span>':'<span class="badge ok">в работе</span>';
   const meta=`осталось ${rem} занятий · ${d===null?'ещё без тренировок':d===0?'была сегодня':'была '+d+' дн назад'}`;
-  return `<button class="client" onclick="pickClient(${c.id})"><span class="avatar ${av(c)}">${initials(c)}</span><span class="info"><b>${c.name}</b><div class="meta">${meta}</div></span>${badge}<svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>`;
+  return `<button class="client" onclick="pickClient(${c.id})"><span class="avatar ${av(c)}">${initials(c)}</span><span class="info"><b>${esc(c.name)}</b><div class="meta">${meta}</div></span>${badge}<svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>`;
  }).join('');
 }
 function renderRecents(){
  $('recRow').innerHTML=DB.clients.filter(c=>c.lastUsed).sort((a,b)=>b.lastUsed-a.lastUsed).slice(0,6).map(c=>{
   const act=activeClient()&&c.id===activeClient().id;
-  return `<button class="chip ${act?'on':''}" onclick="pickClient(${c.id})"><span class="avatar ${av(c)}">${initials(c)}</span>${c.name} · ${remSessions(c)}</button>`;
+  return `<button class="chip ${act?'on':''}" onclick="pickClient(${c.id})"><span class="avatar ${av(c)}">${initials(c)}</span>${esc(c.name)} · ${remSessions(c)}</button>`;
  }).join('');
 }
 function renderAlerts(){
@@ -299,7 +327,7 @@ function renderAlerts(){
   if(d!==null&&d>=7)rows.push({c,t:`не была ${d} дн — стоит написать`,col:'var(--bad-t)'});
  });
  $('alertCard').style.display=rows.length?'':'none';
- $('alertBox').innerHTML=rows.map(r=>`<button class="row" onclick="pickClient(${r.c.id})"><span class="dot" style="background:${r.col}"></span><span><b>${r.c.name}</b> — ${r.t}</span></button>`).join('');
+ $('alertBox').innerHTML=rows.map(r=>`<button class="row" onclick="pickClient(${r.c.id})"><span class="dot" style="background:${r.col}"></span><span><b>${esc(r.c.name)}</b> — ${r.t}</span></button>`).join('');
 }
 function pickClient(id){
  DB.active=id;const c=activeClient();if(c)c.lastUsed=Date.now();
@@ -312,63 +340,96 @@ function fillForm(c){
 function toggleForm(){$('formBox').style.display=$('formBox').style.display==='none'?'':'none'}
 function newClientForm(){editingId=null;fillForm(null);$('formBox').style.display='';showTab('c');$('formBox').scrollIntoView({behavior:'smooth'})}
 function saveClient(){
- const name=$('cName').value.trim();if(!name){alert('Впиши имя');return}
+ const name=$('cName').value.trim();if(!name){toast('Впиши имя',1);return}
  const data={name,sex:$('cSex').value,age:+$('cAge').value||25,height:+$('cH').value||170,weight:+$('cW').value||60,goal:$('cGoal').value,meals:+$('cMeals').value||4,notes:$('cNotes').value,breakNote:$('cBreak').value};
  let id;
  if(editingId){const c=DB.clients.find(x=>x.id==editingId);if(c)Object.assign(c,data);id=editingId}
  else{const c=newClientObj(data);DB.clients.push(c);id=c.id}
- saveDB();$('formBox').style.display='none';pickClient(id);alert('Сохранено ✅');
+ saveDB();$('formBox').style.display='none';pickClient(id);toast('Сохранено ✅');
 }
 function delClient(){
- if(!editingId){alert('Нет клиента');return}
+ if(!editingId){toast('Нет клиента',1);return}
  if(!confirm('Удалить клиента и все записи?'))return;
- DB.clients=DB.clients.filter(c=>c.id!=editingId);editingId=null;
+ DB.clients=DB.clients.filter(c=>c.id!=editingId);editingId=null;editWork=null;
  DB.active=DB.clients.length?DB.clients[0].id:null;saveDB();
- const c=activeClient();editingId=c?c.id:null;fillForm(c);refresh();
+ const c=activeClient();editingId=c?c.id:null;fillForm(c);refresh();updateEditUI();toast('Клиент удалён');
 }
 function refresh(){renderTiles();renderRecents();renderAlerts();renderNow();renderMoneyTab();renderHistory()}
 function renderNow(){
  const c=activeClient();
  if(!c){$('nowName').innerHTML='Клиент не выбран';$('nowMeta').innerHTML='';$('nowAv').innerHTML='—';$('saveWBtn').innerHTML='Сохранить тренировку';return}
  $('nowAv').innerHTML=initials(c);$('nowAv').className='avatar '+av(c);
- $('nowName').innerHTML='Сейчас: '+c.name;
+ $('nowName').innerHTML='Сейчас: '+esc(c.name);
  $('nowMeta').innerHTML=`осталось ${remSessions(c)} занятий · цель — ${{cut:'похудение',maintain:'поддержание',gain:'набор'}[c.goal]}`;
- $('saveWBtn').innerHTML='Сохранить тренировку · '+c.name;
- $('addSessBtn').innerHTML='+1 · '+c.name;
- if(payEdit==null)$('payBtn').innerHTML='Записать · '+c.name;
+ $('saveWBtn').innerHTML='Сохранить тренировку · '+esc(c.name);
+ $('addSessBtn').innerHTML='+1 · '+esc(c.name);
+ if(payEdit==null)$('payBtn').innerHTML='Записать · '+esc(c.name);
+ if(editWork)$('saveWBtn').innerHTML='Сохранить изменения · '+esc(c.name);
 }
-/* история */
+/* история + редактирование тренировок */
 function renderHistory(){
  const c=activeClient();
  if(!c){$('histBox').innerHTML='<span class="mini">Выбери клиента</span>';return}
- const ws=c.w.slice().reverse().slice(0,histN);
- $('histBox').innerHTML=ws.length?ws.map(w=>`<div class="mini" style="background:var(--bg);border-radius:12px;padding:10px;margin:6px 0"><b>${w.date.slice(8,10)}.${w.date.slice(5,7)}</b><br>`+w.ex.map(e=>fmtEx(e)).join('<br>')+`</div>`).join(''):'<span class="mini">Пока нет тренировок</span>';
+ const ws=c.w.map((w,idx)=>({w,idx})).reverse().slice(0,histN);
+ $('histBox').innerHTML=ws.length?ws.map(o=>`<div class="mini" style="background:var(--bg);border-radius:12px;padding:10px;margin:6px 0">
+  <div style="display:flex;justify-content:space-between;align-items:center"><b>${o.w.date.slice(8,10)}.${o.w.date.slice(5,7)}</b><span><button class="ibtn" onclick="editWorkout(${o.idx})">✎</button><button class="ibtn" onclick="delWorkout(${o.idx})">✕</button></span></div>`+o.w.ex.map(e=>fmtEx(e)).join('<br>')+`</div>`).join(''):'<span class="mini">Пока нет тренировок</span>';
  $('histMore').style.display=c.w.length>2?'':'none';
  $('histMore').innerHTML=histN===2?'Показать ещё':'Скрыть';
 }
 function moreHist(){histN=histN===2?5:2;renderHistory()}
+function editWorkout(idx){
+ const c=activeClient();if(!c)return;
+ const w=c.w[idx];if(!w)return;
+ cur=w.ex.map(e=>Object.assign({},e));curFor=c.id;editWork={idx};
+ $('rpe').value=w.rpe||7;$('rpeVal').innerHTML=w.rpe||7;
+ renderExList();updateEditUI();
+ $('exList').scrollIntoView({behavior:'smooth'});
+}
+function updateEditUI(){
+ const c=activeClient();
+ if(editWork&&c){
+  const d=c.w[editWork.idx];
+  $('editNote').style.display='';
+  $('editNote').innerHTML='✎ Редактируем занятие от '+(d?d.date.slice(8,10)+'.'+d.date.slice(5,7):'');
+  $('saveWBtn').innerHTML='Сохранить изменения · '+esc(c.name);
+  $('editCancelBtn').style.display='';
+ }else{
+  $('editNote').style.display='none';$('editCancelBtn').style.display='none';renderNow();
+ }
+}
+function cancelEdit(){cur=[];editWork=null;curFor=activeClient()?activeClient().id:null;renderExList();updateEditUI()}
+function delWorkout(idx){
+ const c=activeClient();if(!c)return;
+ const w=c.w[idx];if(!w)return;
+ if(!confirm('Удалить занятие от '+w.date.slice(8,10)+'.'+w.date.slice(5,7)+'?'))return;
+ c.w.splice(idx,1);
+ if(editWork&&editWork.idx===idx){editWork=null;cur=[]}
+ saveDB();refresh();updateEditUI();toast('Занятие удалено');
+}
 /* деньги */
 function savePrice(){const c=activeClient();if(!c)return;c.price=+$('subPrice').value||0;saveDB();renderMoneyTab()}
 function autoPay(){const c=activeClient();if(!c)return;$('payAmount').value=(+$('payCount').value||0)*c.price}
 function recordPayment(){
- const c=activeClient();if(!c){alert('Сначала клиента');return}
+ const c=activeClient();if(!c){toast('Сначала клиента',1);return}
  const cnt=+$('payCount').value,amt=+$('payAmount').value;
- if(!cnt||!amt){alert('Укажи число занятий и сумму');return}
+ if(!cnt||!amt){toast('Укажи число занятий и сумму',1);return}
  if(payEdit!=null){const p=c.payments[payEdit];if(p){p.count=cnt;p.amount=amt}payEdit=null;$('payCancel').style.display='none'}
  else c.payments.push({d:today(),count:cnt,amount:amt});
- saveDB();$('payCount').value='';$('payAmount').value='';refresh();alert('Оплата записана: '+c.name+' ✅');
+ c.price=Math.round(amt/cnt);
+ saveDB();$('payCount').value='';$('payAmount').value='';refresh();toast('Оплата записана: '+c.name+' ✅');
 }
 function editPayment(i){const c=activeClient();if(!c)return;const p=c.payments[i];payEdit=i;$('payCount').value=p.count;$('payAmount').value=p.amount;$('payBtn').innerHTML='Сохранить изменение';$('payCancel').style.display=''}
 function cancelPayEdit(){payEdit=null;$('payCancel').style.display='none';$('payCount').value='';$('payAmount').value='';renderNow()}
 function repeatLast(){
- const c=activeClient();if(!c||!c.payments.length){alert('Нет оплат для повтора');return}
+ const c=activeClient();if(!c||!c.payments.length){toast('Нет оплат для повтора',1);return}
  const l=c.payments[c.payments.length-1];c.payments.push({d:today(),count:l.count,amount:l.amount});
- saveDB();refresh();alert('Повтор записан: '+c.name+' ✅');
+ c.price=Math.round(l.amount/l.count);
+ saveDB();refresh();toast('Повтор записан: '+c.name+' ✅');
 }
 function addSession(){
- const c=activeClient();if(!c){alert('Сначала клиента');return}
+ const c=activeClient();if(!c){toast('Сначала клиента',1);return}
  if(!confirm('Списать занятие у '+c.name+'?'))return;
- c.sessions.push(today());saveDB();refresh();
+ c.sessions.push(today());saveDB();refresh();toast('Занятие списано: '+c.name);
 }
 function delPayment(i){const c=activeClient();if(!c)return;if(!confirm('Удалить оплату?'))return;c.payments.splice(i,1);saveDB();refresh()}
 function monthFrom(){const m=new Date();m.setDate(1);m.setHours(0,0,0,0);return m}
@@ -379,34 +440,42 @@ function renderRemList(){
  else cs.sort((a,b)=>a.name.localeCompare(b.name,'ru'));
  $('remList').innerHTML=cs.map(c=>{
   const rem=remSessions(c);const col=rem<=0?'var(--bad-t)':rem<=2?'var(--warn-t)':'var(--ok-t)';
-  return `<div class="pay" style="cursor:pointer" onclick="pickClient(${c.id})"><span>${c.name} <span style="color:var(--muted);font-size:12px">${c.breakNote||''}</span></span><b style="color:${col}">${rem}</b></div>`;
+  return `<div class="pay" style="cursor:pointer" onclick="pickClient(${c.id})"><span>${esc(c.name)} <span style="color:var(--muted);font-size:12px">${esc(c.breakNote||'')}</span></span><b style="color:${col}">${rem}</b></div>`;
  }).join('');
 }
 function toggleIncome(){
  const b=$('incomeBox');b.style.display=b.style.display==='none'?'':'none';
- if(b.style.display!=='none')renderIncomeChart();
+ if(b.style.display!=='none')renderMoneyStats();
 }
-function renderIncomeChart(){
+function renderMoneyStats(){
+ const mFrom=monthFrom();
+ let sold=0,earn=0,subs=0;
+ DB.clients.forEach(c=>{
+  sold+=c.payments.filter(p=>new Date(p.d)>=mFrom).reduce((a,p)=>a+p.amount,0);
+  const ap=avgPrice(c);
+  earn+=c.sessions.filter(d=>new Date(d)>=mFrom).length*ap;
+  subs+=Math.max(0,remSessions(c))*ap;
+ });
+ $('stSold').innerHTML=Math.round(sold).toLocaleString('ru');
+ $('stEarn').innerHTML=Math.round(earn).toLocaleString('ru');
+ $('stSub').innerHTML=Math.round(subs).toLocaleString('ru');
  const now=new Date();const months=[];
  for(let i=5;i>=0;i--)months.push(new Date(now.getFullYear(),now.getMonth()-i,1));
  const labels=months.map(d=>d.toLocaleString('ru',{month:'short'}));
- const data=months.map(d=>{const to=new Date(d.getFullYear(),d.getMonth()+1,1);let s=0;DB.clients.forEach(c=>c.payments.forEach(p=>{const pd=new Date(p.d);if(pd>=d&&pd<to)s+=p.amount}));return s});
+ const soldM=months.map(d=>{const to=new Date(d.getFullYear(),d.getMonth()+1,1);let s=0;DB.clients.forEach(c=>c.payments.forEach(p=>{const pd=new Date(p.d);if(pd>=d&&pd<to)s+=p.amount}));return s});
+ const earnM=months.map(d=>{const to=new Date(d.getFullYear(),d.getMonth()+1,1);let s=0;DB.clients.forEach(c=>{s+=c.sessions.filter(x=>{const sd=new Date(x);return sd>=d&&sd<to}).length*avgPrice(c)});return Math.round(s)});
  if(ch6)ch6.destroy();
- ch6=new Chart($('chartIncome'),{type:'bar',data:{labels,datasets:[{data,backgroundColor:'#0d3b3b',borderRadius:8}]},options:{plugins:{legend:{display:false}}}});
+ ch6=new Chart($('chartIncome'),{type:'bar',data:{labels,datasets:[{label:'Продано',data:soldM,backgroundColor:'#0d3b3b',borderRadius:8},{label:'Заработано',data:earnM,backgroundColor:'#27ae60',borderRadius:8}]},options:{plugins:{legend:{labels:{boxWidth:12,font:{size:10}}}}}});
 }
 function renderMoneyTab(){
- const mFrom=monthFrom();let all=0;
- DB.clients.forEach(cl=>{all+=cl.payments.filter(p=>new Date(p.d)>=mFrom).reduce((a,p)=>a+p.amount,0)});
- $('allIncome').innerHTML=`💰 Доход за месяц (все клиенты): <b>${all.toLocaleString('ru')} ₽</b>`;
  const c=activeClient();
  if(!c){$('subHead').innerHTML='Абонемент';$('payHist').innerHTML='';return}
- $('subHead').innerHTML='Абонемент · '+c.name;
+ $('subHead').innerHTML='Абонемент · '+esc(c.name);
  const rem=remSessions(c);
  $('tileRem').innerHTML=`<b style="color:${rem<=2?'var(--bad-t)':'var(--ok-t)'}">${rem}</b><span>осталось</span>`;
  $('tileRem').style.background=rem<=2?'var(--bad-bg)':'var(--ok-bg)';
  $('tileDone').innerHTML=c.sessions.length;
  $('subPrice').value=c.price;$('tilePrice').innerHTML=c.price;
- const inc=c.payments.filter(p=>new Date(p.d)>=mFrom).reduce((a,p)=>a+p.amount,0);
  $('payHist').innerHTML=c.payments.map((p,i)=>({p,i})).slice().reverse().map(h=>`<div class="pay"><span>${h.p.d.slice(8,10)}.${h.p.d.slice(5,7)} · ${h.p.count} зан</span><span><b>${h.p.amount.toLocaleString('ru')} ₽</b> <button class="ibtn" onclick="editPayment(${h.i})">✎</button><button class="ibtn" onclick="delPayment(${h.i})">✕</button></span></div>`).join('')||'<span class="mini">Оплат пока нет</span>';
 }
 /* отчёт */
@@ -421,7 +490,7 @@ function bandProgress(c){
  return out;
 }
 function makeReport(){
- const c=activeClient();if(!c){alert('Сначала клиента');return}
+ const c=activeClient();if(!c){toast('Сначала клиента',1);return}
  const days=+$('repPeriod').value;const from=Date.now()-days*86400000;
  const ws=c.w.filter(w=>new Date(w.date)>=from).slice().sort((a,b)=>a.date<b.date?-1:1);
  const per={};
@@ -433,7 +502,7 @@ function makeReport(){
  txt+=`\n• Абонемент: осталось ${remSessions(c)} зан\nПродолжаем! 🔥`;
  $('reportBox').innerText=txt;$('reportBox').style.display='';$('copyBtn').style.display='';
 }
-function copyReport(){const t=$('reportBox').innerText;if(navigator.clipboard){navigator.clipboard.writeText(t).then(()=>alert('Скопировано ✅')).catch(()=>prompt('Скопируй:',t))}else prompt('Скопируй:',t)}
+function copyReport(){const t=$('reportBox').innerText;if(navigator.clipboard){navigator.clipboard.writeText(t).then(()=>toast('Скопировано ✅')).catch(()=>prompt('Скопируй:',t))}else prompt('Скопируй:',t)}
 /* вкладки */
 function showTab(t){
  ['c','w','m','d'].forEach(x=>$('s-'+x).classList.toggle('active',x===t));
@@ -456,7 +525,7 @@ function addEx(){
  const n=$('exSel').value;const d=allEX()[n]||{};
  const s=+$('wSets').value||1;let w=+$('wKg').value;const r=+$('wReps').value;
  if(!w&&d.bw&&activeClient())w=activeClient().weight;
- if(!w||!r){alert('Вес и повторы');return}
+ if(!w||!r){toast('Вес и повторы',1);return}
  if(!cur.length)curFor=activeClient()?activeClient().id:null;
  cur.push({n,s,w,r,v:d.bands?'base':undefined});
  $('wKg').value='';$('wReps').value='';renderExList();
@@ -467,7 +536,7 @@ function renderExList(){
  $('exList').innerHTML=cur.map((e,i)=>{
   const d=allEX()[e.n]||{};
   const chips=d.bands?`<div class="bchips">`+Object.keys(BANDS).map(k=>`<button class="bchip ${(e.v||'base')===k?'on':''}" onclick="setBand(${i},'${k}')">${BANDS[k].t}</button>`).join('')+`</div>`:'';
-  return `<div class="card"><h3 style="display:inline">${e.n}</h3><span class="tag">${d.p||''}</span>${chips}
+  return `<div class="card"><h3 style="display:inline">${esc(e.n)}</h3><span class="tag">${esc(d.p||'')}</span>${chips}
   <div class="frow">
    <div class="field"><input type="number" value="${e.s}" oninput="cur[${i}].s=+this.value||0;updT(${i})"><span>подходы</span></div>
    <div class="field"><input type="number" value="${e.r}" oninput="cur[${i}].r=+this.value||0;updT(${i})"><span>повторы</span></div>
@@ -476,33 +545,35 @@ function renderExList(){
   <div class="ton"><span id="t${i}">Тоннаж: ${Math.round(tonnage(e))} кг${d.bands?' (петля ×'+bandK(e,d)+')':''}</span><button class="x" onclick="cur.splice(${i},1);renderExList()">✕</button></div></div>`;
  }).join('');
  const cf=DB.clients.find(x=>x.id==curFor);
- $('curForNote').innerHTML=cur.length&&cf?'Собирается для: <b>'+cf.name+'</b>':'';
+ $('curForNote').innerHTML=cur.length&&cf?'Собирается для: <b>'+esc(cf.name)+'</b>':'';
  $('clearBtn').style.display=cur.length?'':'none';
 }
 function updT(i){const d=allEX()[cur[i].n]||{};$('t'+i).innerHTML=`Тоннаж: ${Math.round(tonnage(cur[i]))} кг${d.bands?' (петля ×'+bandK(cur[i],d)+')':''}`}
 function saveWorkout(){
  const c=DB.clients.find(x=>x.id==curFor)||activeClient();
- if(!c){alert('Сначала клиента');return}
- if(!cur.length){alert('Добавь упражнения');return}
- c.w.push({date:today(),rpe:+$('rpe').value,ex:cur});cur=[];curFor=null;renderExList();saveDB();refresh();alert('Сохранено: '+c.name+' ✅');
+ if(!c){toast('Сначала клиента',1);return}
+ if(!cur.length){toast('Добавь упражнения',1);return}
+ if(editWork&&c.w[editWork.idx]){c.w[editWork.idx]={date:c.w[editWork.idx].date,rpe:+$('rpe').value,ex:cur};editWork=null}
+ else c.w.push({date:today(),rpe:+$('rpe').value,ex:cur});
+ cur=[];curFor=null;renderExList();saveDB();refresh();updateEditUI();toast('Сохранено: '+c.name+' ✅');
 }
 function addCustomEx(){
  const n=$('exName').value.trim(),p=$('exP').value.trim();
- if(!n||!p){alert('Название и мышца');return}
+ if(!n||!p){toast('Название и мышца',1);return}
  const o={p,s:$('exS').value.split(',').map(x=>x.trim()).filter(x=>x)};
  if($('exBwK').value)o.bw=+$('exBwK').value;
- DB.ex[n]=o;saveDB();fillSelects();$('exName').value='';$('exP').value='';$('exS').value='';alert('Добавлено ✅');
+ DB.ex[n]=o;saveDB();fillSelects();$('exName').value='';$('exP').value='';$('exS').value='';toast('Упражнение добавлено ✅');
 }
 /* шаблоны */
 function fillTplSelect(){$('tplSel').innerHTML='';(DB.templates||[]).forEach(t=>$('tplSel').add(new Option(t.name,String(t.id))))}
 function saveTemplate(){
- const name=$('tplName').value.trim();if(!name){alert('Имя шаблона');return}if(!cur.length){alert('Сначала собери список упражнений');return}
+ const name=$('tplName').value.trim();if(!name){toast('Имя шаблона',1);return}if(!cur.length){toast('Сначала собери список упражнений',1);return}
  const c=DB.clients.find(x=>x.id==curFor)||activeClient();
  DB.templates.push({id:Date.now(),name,srcW:c?c.weight:0,items:cur.map(e=>({n:e.n,s:e.s,r:e.r,w:e.w,v:e.v}))});
- saveDB();fillTplSelect();$('tplName').value='';alert('Шаблон сохранён ✅');
+ saveDB();fillTplSelect();$('tplName').value='';toast('Шаблон сохранён ✅');
 }
 function loadTemplate(){
- const t=DB.templates.find(x=>x.id==+$('tplSel').value);if(!t){alert('Выбери шаблон');return}
+ const t=DB.templates.find(x=>x.id==+$('tplSel').value);if(!t){toast('Выбери шаблон',1);return}
  const c=activeClient();if(c)curFor=c.id;
  const ratio=(c&&t.srcW&&c.weight)?c.weight/t.srcW:1;
  cur=t.items.map(it=>{
@@ -513,12 +584,12 @@ function loadTemplate(){
   return{n:it.n,s:it.s,w,r,v};
  });
  renderExList();$('exList').scrollIntoView({behavior:'smooth'});
- alert('Шаблон загружен — веса подставлены, проверь их');
+ toast('Шаблон загружен — проверь веса');
 }
-function delTemplate(){if(!confirm('Удалить шаблон?'))return;const i=DB.templates.findIndex(x=>x.id==+$('tplSel').value);if(i<0)return;DB.templates.splice(i,1);saveDB();fillTplSelect()}
+function delTemplate(){if(!confirm('Удалить шаблон?'))return;const i=DB.templates.findIndex(x=>x.id==+$('tplSel').value);if(i<0)return;DB.templates.splice(i,1);saveDB();fillTplSelect();toast('Шаблон удалён')}
 /* данные */
-function exportData(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([localStorage.getItem(KEY)||'{}'],{type:'application/json'}));a.download='trainer-backup.json';a.click()}
-function importData(ev){const f=ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{JSON.parse(r.result);localStorage.setItem(KEY,r.result);alert('Готово ✅');location.reload()}catch(e){alert('Не тот файл')}};r.readAsText(f)}
+function exportData(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([localStorage.getItem(KEY)||'{}'],{type:'application/json'}));a.download='trainer-backup.json';a.click();toast('Копия скачана ✅')}
+function importData(ev){const f=ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{JSON.parse(r.result);localStorage.setItem(KEY,r.result);toast('Готово ✅');setTimeout(()=>location.reload(),800)}catch(e){toast('Не тот файл',1)}};r.readAsText(f)}
 function fillSelects(){const A=allEX();$('exSel').innerHTML='';for(const k in A)$('exSel').add(new Option(k,k))}
 $('wDate').innerHTML='Тренировка · '+new Date().toLocaleDateString('ru',{day:'numeric',month:'long'});
 fillSelects();fillTplSelect();
