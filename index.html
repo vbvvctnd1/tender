@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Дневник тренера</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+body{font-family:-apple-system,Arial,sans-serif;background:#f4f7f7;margin:0;padding:10px;color:#0d2b2b}
+h1{font-size:20px;text-align:center;margin:6px 0}
+.tabs{display:flex;gap:6px;margin:10px 0}
+.tab{flex:1;padding:10px 4px;border:none;border-radius:12px;background:#e3ecec;font-size:13px;font-weight:600}
+.tab.active{background:#0d3b3b;color:#fff}
+.card{background:#fff;border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+h3{margin:4px 0 10px;font-size:16px}
+label{font-size:13px;color:#556}
+input,select,textarea{width:100%;padding:9px;border:1px solid #ccc;border-radius:10px;font-size:16px;margin:4px 0 8px;box-sizing:border-box}
+textarea{min-height:60px;resize:vertical}
+button.act{width:100%;padding:13px;border:none;border-radius:12px;background:#0d3b3b;color:#fff;font-size:16px;font-weight:600}
+button.small{padding:8px 12px;border:none;border-radius:10px;background:#0d3b3b;color:#fff;font-size:14px}
+button.del{background:#c0392b}
+.row{display:flex;gap:6px}.row>*{flex:1}
+.item{background:#eef4f4;border-radius:10px;padding:8px;margin:6px 0;font-size:14px}
+.stat{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #eee;font-size:15px}
+.muted{color:#789;font-size:13px}
+pre{white-space:pre-wrap;background:#eef4f4;border-radius:10px;padding:10px;font-size:14px;font-family:inherit}
+</style>
+</head>
+<body>
+<h1>🏋️ Дневник тренера</h1>
+<div class="card"><label>Клиент</label><select id="clientSel" onchange="selectClient()"></select></div>
+<div class="tabs">
+<button class="tab active" onclick="showTab('c')">Клиент</button>
+<button class="tab" onclick="showTab('w')">Тренировка</button>
+<button class="tab" onclick="showTab('a')">Аналитика</button>
+<button class="tab" onclick="showTab('d')">Данные</button>
+</div>
+
+<div id="tab-c">
+ <div class="card">
+  <h3>👤 Карточка клиента</h3>
+  <input id="cName" placeholder="Имя клиента">
+  <div class="row">
+   <div><label>Пол</label><select id="cSex"><option value="m">М</option><option value="f">Ж</option></select></div>
+   <div><label>Возраст</label><input type="number" id="cAge"></div>
+  </div>
+  <div class="row">
+   <div><label>Рост, см</label><input type="number" id="cH"></div>
+   <div><label>Вес, кг</label><input type="number" id="cW"></div>
+  </div>
+  <div class="row">
+   <div><label>Цель</label><select id="cGoal"><option value="cut">Похудение</option><option value="maintain">Поддержание</option><option value="gain">Набор массы</option></select></div>
+   <div><label>Приёмов пищи</label><select id="cMeals"><option>3</option><option>4</option><option>5</option></select></div>
+  </div>
+  <label>Заметки (травмы, ограничения, привычки)</label>
+  <textarea id="cNotes" placeholder="Напр.: болит колено — убрать осевую; не ест творог"></textarea>
+  <div class="row">
+   <button class="small" onclick="saveClient()">Сохранить</button>
+   <button class="small" onclick="newClientForm()">+ Новый</button>
+   <button class="small del" onclick="delClient()">Удалить</button>
+  </div>
+ </div>
+ <div class="card">
+  <h3>⚖️ Вес клиента</h3>
+  <div class="row">
+   <input type="number" id="wIn" placeholder="Вес сегодня, кг">
+   <button class="small" onclick="logWeight()">Отметить</button>
+  </div>
+  <div id="wDelta" class="muted"></div>
+  <canvas id="chartWeight"></canvas>
+ </div>
+ <div class="card">
+  <h3>💳 Абонемент и оплаты</h3>
+  <div class="row">
+   <div><label>Цена тренировки, ₽</label><input type="number" id="subPrice" onchange="saveSub()"></div>
+   <div><label>Куплено тренировок</label><input type="number" id="subPaid" onchange="saveSub()"></div>
+  </div>
+  <div id="subInfo" class="item"></div>
+  <div class="row">
+   <button class="small" onclick="addSession()">+1 проведённая</button>
+   <button class="small del" onclick="newSub()">Новый абонемент</button>
+  </div>
+ </div>
+ <div class="card">
+  <h3>🎯 Нормы и ориентиры по еде</h3>
+  <div id="norms" class="item"></div>
+ </div>
+ <div class="card">
+  <h3>📤 Отчёт клиенту</h3>
+  <button class="small" onclick="makeReport()">Собрать отчёт за 30 дней</button>
+  <pre id="reportBox" style="display:none"></pre>
+  <button class="small" id="copyBtn" style="display:none" onclick="copyReport()">Скопировать для Телеграма</button>
+ </div>
+</div>
+
+<div id="tab-w" style="display:none">
+ <div class="card">
+  <label>Самочувствие до (1 плохо – 10 отлично)</label>
+  <input type="number" id="well" min="1" max="10" value="7">
+ </div>
+ <div class="card">
+  <h3>Упражнения</h3>
+  <select id="exSel" onchange="lastHint()"></select>
+  <div id="lastHint" class="muted"></div>
+  <div class="row">
+   <input type="number" id="wKg" placeholder="Вес, кг">
+   <input type="number" id="wReps" placeholder="Повторы">
+   <input type="number" id="wSets" placeholder="Подходы" value="3">
+  </div>
+  <button class="small" onclick="addEx()">+ Добавить</button>
+  <div id="exList"></div>
+ </div>
+ <div class="card">
+  <label>Тяжесть занятия (1 легко – 10 на пределе)</label>
+  <input type="number" id="rpe" min="1" max="10" value="7">
+  <button class="act" onclick="saveWorkout()">Сохранить тренировку</button>
+ </div>
+ <div class="card">
+  <h3>➕ Своё упражнение</h3>
+  <input id="exName" placeholder="Название упражнения">
+  <div class="row">
+   <input id="exP" placeholder="Целевая мышца">
+   <input id="exS" placeholder="Помощники через запятую">
+  </div>
+  <button class="small" onclick="addCustomEx()">Добавить упражнение</button>
+ </div>
+</div>
+
+<div id="tab-a" style="display:none">
+ <div class="card">
+  <div class="row">
+   <button class="small" onclick="setPeriod(7)">Неделя</button>
+   <button class="small" onclick="setPeriod(30)">Месяц</button>
+   <button class="small" onclick="setPeriod(3650)">Всё время</button>
+  </div>
+  <div id="stats"></div>
+  <p class="muted">Расчёты примерные: 3 сек под нагрузкой на повтор, отдых 2 мин на подход, расход ≈ тоннаж × 0.025 ккал (с поправкой на вес).</p>
+ </div>
+ <div class="card"><canvas id="chartMuscles"></canvas></div>
+ <div class="card"><canvas id="chartTonnage"></canvas></div>
+ <div class="card">
+  <h3>📈 Прогрессия рабочего веса</h3>
+  <select id="progSel" onchange="renderProg()"></select>
+  <div id="progBest" class="muted"></div>
+  <canvas id="chartProg"></canvas>
+ </div>
+</div>
+
+<div id="tab-d" style="display:none">
+ <div class="card">
+  <p class="muted">Все клиенты и записи хранятся на этом телефоне. Раз в неделю жми «Скачать копию» и кидай себе в Избранное.</p>
+  <button class="act" onclick="exportData()">Скачать копию (бэкап)</button>
+  <br><br>
+  <label>Восстановить из копии</label>
+  <input type="file" id="imp" onchange="importData(event)">
+  <br><br>
+  <button class="small del" onclick="if(confirm('Удалить ВСЕ данные тренера?')){localStorage.removeItem('myTrainerV1');location.reload()}">Удалить всё</button>
+ </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const KEY='myTrainerV1';
+const BASE_EX={
+"Подтягивания":{p:"Спина",s:["Бицепс","Предплечья"]},
+"Тяга блока сверху":{p:"Спина",s:["Бицепс","Предплечья"]},
+"Тяга горизонтального блока":{p:"Спина",s:["Бицепс","Предплечья"]},
+"Тяга гантели одной рукой":{p:"Спина",s:["Бицепс","Предплечья"]},
+"Тяга штанги в наклоне":{p:"Спина",s:["Бицепс","Предплечья","Задняя дельта"]},
+"Становая тяга":{p:"Спина",s:["Ноги","Предплечья"]},
+"Жим лёжа":{p:"Грудь",s:["Трицепс","Передняя дельта"]},
+"Жим гантелей лёжа":{p:"Грудь",s:["Трицепс","Передняя дельта"]},
+"Жим в тренажёре на грудь":{p:"Грудь",s:["Трицепс","Передняя дельта"]},
+"Отжимания на брусьях":{p:"Грудь",s:["Трицепс","Передняя дельта"]},
+"Отжимания от пола":{p:"Грудь",s:["Трицепс","Передняя дельта"]},
+"Приседания со штангой":{p:"Ноги",s:["Ягодицы","Кор"]},
+"Жим ногами":{p:"Ноги",s:["Ягодицы"]},
+"Румынская тяга":{p:"Ноги",s:["Спина"]},
+"Болгарские приседания":{p:"Ноги",s:["Ягодицы","Кор"]},
+"Ягодичный мост":{p:"Ягодицы",s:["Ноги","Кор"]},
+"Отведение ног (машина/кроссовер)":{p:"Ягодицы",s:[]},
+"Сведение ног (машина)":{p:"Ноги",s:[]},
+"Разгибание ног (тренажёр)":{p:"Ноги",s:[]},
+"Сгибание ног (тренажёр)":{p:"Ноги",s:[]},
+"Жим стоя/сидя (плечи)":{p:"Дельты",s:["Трицепс"]},
+"Махи гантелями в стороны":{p:"Дельты",s:[]},
+"Подъём на бицепс":{p:"Бицепс",s:["Предплечья"]},
+"Разгибания на трицепс":{p:"Трицепс",s:[]},
+"Пресс/скручивания":{p:"Кор",s:[]}
+};
+function today(){return new Date().toISOString().slice(0,10)}
+function defDB(){return{clients:[],ex:{},active:null}}
+function newClientObj(o){return Object.assign({id:Date.now(),name:"Клиент",sex:"m",age:25,height:180,weight:80,goal:"cut",meals:4,notes:"",w:[],weights:[],paid:0,price:1500,sessions:[]},o)}
+function loadDB(){try{const d=JSON.parse(localStorage.getItem(KEY));if(d){const b=defDB();b.clients=(d.clients||[]).map(c=>newClientObj(c));b.ex=d.ex||{};b.active=d.active;return b}}catch(e){}return defDB()}
+let DB=loadDB();
+function saveDB(){localStorage.setItem(KEY,JSON.stringify(DB))}
+function allEX(){return Object.assign({},BASE_EX,DB.ex)}
+function activeClient(){return DB.clients.find(c=>String(c.id)===String(DB.active))||DB.clients[0]}
+let cur=[],period=7,ch1=null,ch2=null,ch3=null,ch4=null,editingId=null;
+
+function refreshClients(){
+ const s=$('clientSel');s.innerHTML='';
+ if(!DB.clients.length){s.add(new Option('— нет клиентов —',''));return}
+ DB.clients.forEach(c=>s.add(new Option(c.name,String(c.id))));
+ const a=activeClient();if(a)s.value=String(a.id);
+}
+function fillForm(c){
+ if(!c){['cName','cAge','cH','cW','cNotes'].forEach(i=>$(i).value='');$('cSex').value='m';$('cGoal').value='cut';$('cMeals').value='4';return}
+ $('cName').value=c.name;$('cSex').value=c.sex;$('cAge').value=c.age;$('cH').value=c.height;$('cW').value=c.weight;$('cGoal').value=c.goal;$('cMeals').value=c.meals;$('cNotes').value=c.notes||'';
+}
+function selectClient(){
+ const v=$('clientSel').value;DB.active=v?+v:null;saveDB();
+ const c=activeClient();editingId=c?c.id:null;fillForm(c);renderClientCards();lastHint();
+}
+function saveClient(){
+ const name=$('cName').value.trim();if(!name){alert('Впиши имя клиента');return}
+ const data={name,sex:$('cSex').value,age:+$('cAge').value||25,height:+$('cH').value||180,weight:+$('cW').value||80,goal:$('cGoal').value,meals:+$('cMeals').value||4,notes:$('cNotes').value};
+ if(editingId){const c=DB.clients.find(x=>x.id==editingId);if(c)Object.assign(c,data)}
+ else{const c=newClientObj(data);DB.clients.push(c);editingId=c.id;DB.active=c.id}
+ saveDB();refreshClients();fillForm(DB.clients.find(x=>x.id==editingId));renderClientCards();alert('Клиент сохранён ✅');
+}
+function newClientForm(){editingId=null;fillForm(null)}
+function delClient(){
+ if(!editingId){alert('Нет выбранного клиента');return}
+ if(!confirm('Удалить клиента и все его записи?'))return;
+ DB.clients=DB.clients.filter(c=>c.id!=editingId);editingId=null;
+ DB.active=DB.clients.length?DB.clients[0].id:null;
+ saveDB();refreshClients();const c=activeClient();editingId=c?c.id:null;fillForm(c);renderClientCards();
+}
+function renderClientCards(){renderNorms();renderSub();renderWeight()}
+/* --- вес --- */
+function logWeight(){
+ const c=activeClient();if(!c){alert('Сначала создай клиента');return}
+ const v=+$('wIn').value;if(!v){alert('Впиши вес');return}
+ c.weight=v;c.weights.push({d:today(),w:v});$('wIn').value='';
+ saveDB();fillForm(c);renderWeight();renderNorms();alert('Вес отмечен ✅');
+}
+function renderWeight(){
+ const c=activeClient();
+ if(!c||!c.weights.length){$('wDelta').innerHTML='Пока нет замеров.';if(ch4){ch4.destroy();ch4=null}return}
+ const ws=c.weights;const d=ws[ws.length-1].w-ws[0].w;
+ $('wDelta').innerHTML=`Сейчас <b>${ws[ws.length-1].w} кг</b> · изменение с первого замера: <b>${d>0?'+':''}${d.toFixed(1)} кг</b>`;
+ if(ch4)ch4.destroy();
+ ch4=new Chart($('chartWeight'),{type:'line',data:{labels:ws.map(x=>x.d.slice(5)),datasets:[{label:'Вес, кг',data:ws.map(x=>x.w)}]}});
+}
+/* --- абонемент --- */
+function saveSub(){const c=activeClient();if(!c)return;c.price=+$('subPrice').value||0;c.paid=+$('subPaid').value||0;saveDB();renderSub()}
+function addSession(){const c=activeClient();if(!c){alert('Сначала создай клиента');return}c.sessions.push(today());saveDB();renderSub()}
+function newSub(){const c=activeClient();if(!c)return;if(!confirm('Обнулить проведённые и начать новый абонемент?'))return;c.sessions=[];saveDB();renderSub()}
+function renderSub(){
+ const c=activeClient();
+ if(!c){$('subInfo').innerHTML='';return}
+ $('subPrice').value=c.price;$('subPaid').value=c.paid;
+ const rem=c.paid-c.sessions.length;
+ const mFrom=new Date();mFrom.setDate(1);mFrom.setHours(0,0,0,0);
+ const mc=c.sessions.filter(d=>new Date(d)>=mFrom).length;
+ $('subInfo').innerHTML=`Проведено: <b>${c.sessions.length}</b> из ${c.paid} · Осталось: <b style="color:${rem<=1?'#c0392b':'#27ae60'}">${rem}</b><br>В этом месяце: ${mc} трен. ≈ <b>${(mc*c.price).toLocaleString('ru')} ₽</b>`;
+}
+/* --- нормы --- */
+function workoutsPerWeek(c){const from=Date.now()-28*86400000;return c.w.filter(w=>new Date(w.date)>=from).length/4}
+function renderNorms(){
+ const c=activeClient();
+ if(!c){$('norms').innerHTML='Создай клиента, чтобы увидеть расчёты.';return}
+ const bmr=c.sex==='m'?10*c.weight+6.25*c.height-5*c.age+5:10*c.weight+6.25*c.height-5*c.age-161;
+ const wpw=workoutsPerWeek(c);
+ const act=wpw<=0?1.2:wpw<2?1.375:wpw<4?1.45:wpw<6?1.55:1.725;
+ const tdee=bmr*act;
+ const kcal=c.goal==='gain'?tdee*1.1:c.goal==='cut'?tdee*0.85:tdee;
+ const prot=Math.round(c.weight*(c.goal==='cut'?2.2:2));
+ const fat=Math.round(c.weight*1);
+ const carb=Math.max(0,Math.round((kcal-prot*4-fat*9)/4));
+ const gn={maintain:'поддержание',gain:'набор',cut:'похудение'}[c.goal];
+ const m=c.meals;
+ $('norms').innerHTML=`<b>${c.name}</b> · цель «${gn}»<br>
+ Обмен: <b>${Math.round(bmr)}</b> · с активностью (${wpw.toFixed(1)} трен/нед): <b>${Math.round(tdee)}</b> ккал<br>
+ Норма: ≈ <b>${Math.round(kcal)}</b> ккал · Б ${prot} / Ж ${fat} / У ${carb}<br>
+ При ${m} приёмах, за один: ≈ <b>${Math.round(kcal/m)}</b> ккал · Б ${Math.round(prot/m)} / Ж ${Math.round(fat/m)} / У ${Math.round(carb/m)}<br><br>
+ <span class="muted">Ориентиры: белок — ладонь в каждый приём; овощи — половина тарелки; гарнир — кулак (на похудении урезать вечером); жиры — большой палец; вода ≈ 30 мл × кг; шаги 8–10 тыс.</span>`;
+}
+/* --- отчёт --- */
+function makeReport(){
+ const c=activeClient();if(!c){alert('Сначала создай клиента');return}
+ const from=Date.now()-30*86400000;
+ const ws=c.w.filter(w=>new Date(w.date)>=from);
+ let tot=0;ws.forEach(w=>w.ex.forEach(e=>tot+=tonnage(e)));
+ const wts=c.weights;
+ const wd=wts.length>=2?wts[wts.length-1].w-wts[0].w:0;
+ const txt=`${c.name}, твои результаты за 30 дней 💪\n• Тренировок: ${ws.length}\n• Тоннаж работы: ${Math.round(tot).toLocaleString('ru')} кг\n• Вес тела: ${wd>0?'+':''}${wd.toFixed(1)} кг\nПродолжаем в том же духе! 🔥`;
+ $('reportBox').innerText=txt;$('reportBox').style.display='';$('copyBtn').style.display='';
+}
+function copyReport(){
+ const t=$('reportBox').innerText;
+ if(navigator.clipboard){navigator.clipboard.writeText(t).then(()=>alert('Скопировано ✅')).catch(()=>prompt('Скопируй вручную:',t))}
+ else prompt('Скопируй вручную:',t);
+}
+function showTab(t){
+ ['c','w','a','d'].forEach(x=>$('tab-'+x).style.display=x===t?'':'none');
+ document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('active',['c','w','a','d'][i]===t));
+ if(t==='a')renderAnalytics();
+ if(t==='c')renderClientCards();
+ if(t==='w')lastHint();
+}
+/* --- зал --- */
+function lastHint(){
+ const c=activeClient();const n=$('exSel').value;
+ if(!c||!n){$('lastHint').innerHTML='';return}
+ const ws=c.w.filter(w=>w.ex.some(e=>e.n===n));
+ if(!ws.length){$('lastHint').innerHTML='<span class="muted">Раньше не делали это упражнение</span>';return}
+ const w=ws[ws.length-1];const e=w.ex.find(x=>x.n===n);
+ $('lastHint').innerHTML=`<span class="muted">Прошлый раз (${w.date.slice(8,10)}.${w.date.slice(5,7)}): <b>${e.w} кг × ${e.r} × ${e.s}</b> — ставь прогрессию отсюда</span>`;
+}
+function addEx(){const w=+$('wKg').value,r=+$('wReps').value,s=+$('wSets').value||1;if(!w||!r){alert('Укажи вес и повторы');return}cur.push({n:$('exSel').value,w,r,s});renderExList()}
+function renderExList(){$('exList').innerHTML=cur.map((e,i)=>`<div class="item">${e.n}: ${e.s}×${e.w} кг×${e.r} = <b>${e.s*e.w*e.r} кг</b> <button class="small del" onclick="cur.splice(${i},1);renderExList()">✕</button></div>`).join('')}
+function saveWorkout(){
+ const c=activeClient();if(!c){alert('Сначала создай клиента');return}
+ if(!cur.length){alert('Добавь упражнения');return}
+ c.w.push({date:today(),well:+$('well').value,rpe:+$('rpe').value,ex:cur});cur=[];renderExList();saveDB();alert('Тренировка сохранена ✅');
+}
+function addCustomEx(){
+ const n=$('exName').value.trim(),p=$('exP').value.trim();
+ if(!n||!p){alert('Нужны название и целевая мышца');return}
+ const s=$('exS').value.split(',').map(x=>x.trim()).filter(x=>x);
+ DB.ex[n]={p,s};saveDB();fillSelects();$('exName').value='';$('exP').value='';$('exS').value='';alert('Упражнение добавлено ✅');
+}
+function tonnage(e){return e.s*e.w*e.r}
+function workoutMetrics(w,weight){
+ let tons=0,sets=0,reps=0;
+ w.ex.forEach(e=>{tons+=tonnage(e);sets+=e.s;reps+=e.s*e.r});
+ return{tons,sets,reps,tut:reps*3,est:reps*3+sets*120,kcal:Math.round(tons*0.025*((weight||80)/75))};
+}
+function muscleTonnage(w){const m={};const A=allEX();w.ex.forEach(e=>{const d=A[e.n]||{p:"Другое",s:[]},t=tonnage(e),sh=d.s.length?0.3:0;m[d.p]=(m[d.p]||0)+t*(1-sh);d.s.forEach(sec=>{m[sec]=(m[sec]||0)+t*0.3/d.s.length})});return m}
+/* --- аналитика --- */
+function setPeriod(p){period=p;renderAnalytics()}
+function renderAnalytics(){
+ const c=activeClient();
+ const ws=c?c.w.filter(w=>new Date(w.date)>=Date.now()-period*86400000):[];
+ let tot=0,rpeSum=0,wellSum=0,tut=0,est=0,kcalB=0;const muscles={};
+ ws.forEach(w=>{const m=workoutMetrics(w,c?c.weight:80);tot+=m.tons;tut+=m.tut;est+=m.est;kcalB+=m.kcal;rpeSum+=w.rpe;wellSum+=w.well;const mt=muscleTonnage(w);for(const k in mt)muscles[k]=(muscles[k]||0)+mt[k]});
+ const loadIdx=Math.round(ws.reduce((a,w)=>a+(workoutMetrics(w,c?c.weight:80).tons/100)*(w.rpe/10),0));
+ $('stats').innerHTML=`<div class="stat"><span>Клиент</span><b>${c?c.name:'—'}</b></div>
+ <div class="stat"><span>Тренировок</span><b>${ws.length}</b></div>
+ <div class="stat"><span>Тренировок в неделю (среднее)</span><b>${c?workoutsPerWeek(c).toFixed(1):'—'}</b></div>
+ <div class="stat"><span>Общий тоннаж</span><b>${Math.round(tot).toLocaleString('ru')} кг</b></div>
+ <div class="stat"><span>Время под нагрузкой</span><b>${Math.round(tut/60)} мин</b></div>
+ <div class="stat"><span>Примерное время занятий</span><b>${Math.round(est/60)} мин</b></div>
+ <div class="stat"><span>Примерный расход</span><b>${kcalB} ккал</b></div>
+ <div class="stat"><span>Индекс нагрузки (ЦНС)</span><b>${loadIdx}</b></div>
+ <div class="stat"><span>Средняя тяжесть</span><b>${ws.length?(rpeSum/ws.length).toFixed(1):'—'}</b></div>
+ <div class="stat"><span>Среднее самочувствие</span><b>${ws.length?(wellSum/ws.length).toFixed(1):'—'}</b></div>`;
+ const labels=Object.keys(muscles).sort((a,b)=>muscles[b]-muscles[a]);
+ if(ch1)ch1.destroy();if(ch2)ch2.destroy();
+ ch1=new Chart($('chartMuscles'),{type:'bar',data:{labels,datasets:[{label:'Тоннаж по группам, кг',data:labels.map(l=>Math.round(muscles[l]))}]},options:{indexAxis:'y',plugins:{legend:{display:false}}}});
+ const sorted=ws.slice().sort((a,b)=>a.date<b.date?-1:1);
+ ch2=new Chart($('chartTonnage'),{type:'line',data:{labels:sorted.map(w=>w.date.slice(5)),datasets:[{label:'Тоннаж за тренировку, кг',data:sorted.map(w=>workoutMetrics(w,c?c.weight:80).tons)}]}});
+ renderProg();
+}
+function renderProg(){
+ const c=activeClient();const n=$('progSel').value;
+ const pts=c?c.w.filter(w=>w.ex.some(e=>e.n===n)).map(w=>({d:w.date,mx:Math.max(...w.ex.filter(e=>e.n===n).map(e=>e.w))})).sort((a,b)=>a.d<b.d?-1:1):[];
+ $('progBest').innerHTML=pts.length?`Лучший рабочий вес: <b>${Math.max(...pts.map(p=>p.mx))} кг</b>`:'Пока нет данных по этому упражнению';
+ if(ch3)ch3.destroy();
+ ch3=new Chart($('chartProg'),{type:'line',data:{labels:pts.map(p=>p.d.slice(5)),datasets:[{label:'Макс. вес, кг',data:pts.map(p=>p.mx)}]}});
+}
+/* --- данные --- */
+function exportData(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([localStorage.getItem(KEY)||'{}'],{type:'application/json'}));a.download='trainer-backup.json';a.click()}
+function importData(ev){const f=ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{JSON.parse(r.result);localStorage.setItem(KEY,r.result);alert('Готово ✅');location.reload()}catch(e){alert('Не тот файл')}};r.readAsText(f)}
+function fillSelects(){
+ const A=allEX();
+ $('exSel').innerHTML='';for(const k in A)$('exSel').add(new Option(k,k));
+ $('progSel').innerHTML='';for(const k in A)$('progSel').add(new Option(k,k));
+}
+fillSelects();refreshClients();
+const c0=activeClient();if(c0){editingId=c0.id;fillForm(c0)}
+renderClientCards();lastHint();
+</script>
+</body>
+</html>
