@@ -105,14 +105,14 @@ pre{white-space:pre-wrap;background:#eef4f4;border-radius:10px;padding:10px;font
   <h3>Упражнения</h3>
   <select id="exSel" onchange="lastHint()"></select>
   <div id="lastHint" class="muted"></div>
-  <div class="row"><label>Подходы</label><label>Кг</label><label>Повторы</label></div>
+  <div class="row"><label>Подходы</label><label>Повторы</label><label>Кг</label></div>
   <div class="row">
    <input type="number" id="wSets" value="3">
-   <input type="number" id="wKg" placeholder="авто">
    <input type="number" id="wReps" placeholder="8">
+   <input type="number" id="wKg" placeholder="авто">
   </div>
   <button class="b-g" onclick="addEx()">+ Добавить</button>
-  <p class="muted">В строках ниже: подходы × кг × повторы — всё можно менять прямо в списке.</p>
+  <p class="muted">В строках ниже: подходы × повторы × кг — всё можно менять прямо в списке.</p>
   <div id="exList"></div>
   <div id="curForNote" class="muted"></div>
   <button class="b-s" onclick="clearList()">Очистить список</button>
@@ -138,13 +138,6 @@ pre{white-space:pre-wrap;background:#eef4f4;border-radius:10px;padding:10px;font
 </div>
 
 <div id="tab-m" style="display:none">
- <div class="card"><div id="allIncome" class="item"></div></div>
- <div class="card"><h3>💰 Доход по месяцам</h3><canvas id="chartIncome"></canvas></div>
- <div class="card">
-  <h3>📋 У кого сколько осталось</h3>
-  <button class="b-s" id="sortBtn" onclick="toggleSort()">Сортировка: по остатку</button>
-  <div id="remList"></div>
- </div>
  <div class="card">
   <h3>💳 Абонемент клиента</h3>
   <div id="subInfo" class="item"></div>
@@ -162,6 +155,18 @@ pre{white-space:pre-wrap;background:#eef4f4;border-radius:10px;padding:10px;font
   </div>
   <h3>История оплат</h3>
   <div id="payHist"></div>
+ </div>
+ <div class="card">
+  <h3>📋 У кого сколько осталось</h3>
+  <button class="b-s" id="sortBtn" onclick="toggleSort()">Сортировка: по остатку</button>
+  <div id="remList"></div>
+ </div>
+ <div class="card">
+  <button class="b-s" onclick="toggleIncome()">💰 Показать доход</button>
+  <div id="incomeBox" style="display:none">
+   <div id="allIncome" class="item"></div>
+   <canvas id="chartIncome"></canvas>
+  </div>
  </div>
 </div>
 
@@ -181,7 +186,7 @@ pre{white-space:pre-wrap;background:#eef4f4;border-radius:10px;padding:10px;font
 const $=id=>document.getElementById(id);
 const KEY='myTrainerV1';
 const BANDS={base:{k:1,t:'обычные'},neg:{k:0.8,t:'негативные'},red:{k:0.85,t:'красная'},green:{k:0.7,t:'зелёная'},purple:{k:0.6,t:'фиолетовая'}};
-const BASE_EX={"Подтягивания":{p:"Спина",s:["Бицепс"],bw:1,bands:true},"Тяга блока сверху":{p:"Спина",s:["Бицепс"]},"Тяга горизонтального блока":{p:"Спина",s:["Бицепс"]},"Тяга штанги в наклоне":{p:"Спина",s:["Бицепс"]},"Становая тяга":{p:"Спина",s:["Ноги"]},"Жим лёжа":{p:"Грудь",s:["Трицепс"]},"Жим гантелей лёжа":{p:"Грудь",s:["Трицепс"]},"Жим в тренажёре на грудь":{p:"Грудь",s:["Трицепс"]},"Отжимания на брусьях":{p:"Грудь",s:["Трицепс"],bw:1},"Отжимания от пола":{p:"Грудь",s:["Трицепс"],bw:0.65},"Приседания со штангой":{p:"Ноги",s:["Ягодицы"]},"Жим ногами":{p:"Ноги",s:["Ягодицы"]},"Румынская тяга":{p:"Ноги",s:["Спина"]},"Болгарские приседания":{p:"Ноги",s:["Ягодицы"]},"Ягодичный мост":{p:"Ягодицы",s:["Ноги"]},"Жим стоя/сидя":{p:"Дельты",s:["Трицепс"]},"Махи гантелями в стороны":{p:"Дельты",s:[]},"Подъём на бицепс":{p:"Бицепс",s:[]},"Разгибания на трицепс":{p:"Трицепс",s:[]},"Пресс/скручивания":{p:"Кор",s:[],bw:0.3}};
+const BASE_EX={"Подтягивания":{p:"Спина",s:["Бицепс"],bw:1,bands:true},"Тяга блока сверху":{p:"Спина",s:["Бицепс"]},"Тяга горизонтального блока":{p:"Спина",s:["Бицепс"]},"Тяга штанги в наклоне":{p:"Спина",s:["Ноги"]},"Жим лёжа":{p:"Грудь",s:["Трицепс"]},"Жим гантелей лёжа":{p:"Грудь",s:["Трицепс"]},"Жим в тренажёре на грудь":{p:"Грудь",s:["Трицепс"]},"Отжимания на брусьях":{p:"Грудь",s:["Трицепс"],bw:1},"Отжимания от пола":{p:"Грудь",s:["Трицепс"],bw:0.65},"Приседания со штангой":{p:"Ноги",s:["Ягодицы"]},"Жим ногами":{p:"Ноги",s:["Ягодицы"]},"Румынская тяга":{p:"Ноги",s:["Спина"]},"Болгарские приседания":{p:"Ноги",s:["Ягодицы"]},"Ягодичный мост":{p:"Ягодицы",s:["Ноги"]},"Жим стоя/сидя":{p:"Дельты",s:["Трицепс"]},"Махи гантелями в стороны":{p:"Дельты",s:[]},"Подъём на бицепс":{p:"Бицепс",s:[]},"Разгибания на трицепс":{p:"Трицепс",s:[]},"Пресс/скручивания":{p:"Кор",s:[],bw:0.3}};
 function today(){return new Date().toISOString().slice(0,10)}
 function round25(x){return Math.max(0,Math.round(x/2.5)*2.5)}
 function defDB(){return{clients:[],ex:{},templates:[],active:null}}
@@ -194,6 +199,7 @@ function activeClient(){return DB.clients.find(c=>String(c.id)===String(DB.activ
 let cur=[],curFor=null,editingId=null,payEdit=null,sortMode='rem',q='',histN=2,ch6=null;
 function bandK(e,d){return (d&&d.bands&&e.v)?BANDS[e.v].k:1}
 function tonnage(e){const d=allEX()[e.n];if(d&&d.bw)return e.w*d.bw*bandK(e,d)*e.s*e.r;return e.w*e.s*e.r}
+function fmtEx(e){const d=allEX()[e.n]||{};const vt=(d.bands&&e.v)?' ('+BANDS[e.v].t+')':'';return `${e.n}: ${e.s}×${e.r}×${e.w} кг${vt}`}
 
 /* клиенты */
 function remSessions(c){return c.payments.reduce((a,p)=>a+p.count,0)-c.sessions.length}
@@ -261,7 +267,7 @@ function renderHistory(){
  const c=activeClient();
  if(!c){$('histBox').innerHTML='<span class="muted">Выбери клиента</span>';return}
  const ws=c.w.slice().reverse().slice(0,histN);
- $('histBox').innerHTML=ws.length?ws.map(w=>`<div class="item"><b>${w.date.slice(8,10)}.${w.date.slice(5,7)}</b><br>`+w.ex.map(e=>{const d=allEX()[e.n]||{};const vt=(d.bands&&e.v)?' ('+BANDS[e.v].t+')':'';return `${e.n}: ${e.s}×${e.w}×${e.r}${vt}`}).join('<br>')+`</div>`).join(''):'<span class="muted">Пока нет тренировок</span>';
+ $('histBox').innerHTML=ws.length?ws.map(w=>`<div class="item"><b>${w.date.slice(8,10)}.${w.date.slice(5,7)}</b><br>`+w.ex.map(e=>fmtEx(e)).join('<br>')+`</div>`).join(''):'<span class="muted">Пока нет тренировок</span>';
  $('histMore').style.display=c.w.length>2?'':'none';
  $('histMore').innerHTML=histN===2?'Показать ещё':'Скрыть';
 }
@@ -301,6 +307,11 @@ function renderRemList(){
   return `<div class="item" style="display:flex;justify-content:space-between" onclick="pickClient(${c.id})"><span>${c.name}</span><span><span class="muted">${c.breakNote||''}</span> <b style="color:${col}">${rem}</b></span></div>`;
  }).join('');
 }
+function toggleIncome(){
+ const box=$('incomeBox');
+ box.style.display=box.style.display==='none'?'':'none';
+ if(box.style.display!=='none')renderIncomeChart();
+}
 function renderIncomeChart(){
  const now=new Date();const months=[];
  for(let i=5;i>=0;i--)months.push(new Date(now.getFullYear(),now.getMonth()-i,1));
@@ -313,7 +324,6 @@ function renderMoneyTab(){
  const mFrom=monthFrom();
  let all=0;DB.clients.forEach(cl=>{all+=cl.payments.filter(p=>new Date(p.d)>=mFrom).reduce((a,p)=>a+p.amount,0)});
  $('allIncome').innerHTML=`💰 Доход за месяц (все клиенты): <b>${all.toLocaleString('ru')} ₽</b>`;
- renderIncomeChart();renderRemList();
  const c=activeClient();
  if(!c){$('subInfo').innerHTML='';$('payHist').innerHTML='';return}
  $('subPrice').value=c.price;
@@ -356,13 +366,12 @@ function showTab(t){
 }
 /* зал */
 function lastHint(){
- const c=activeClient();const n=$('exSel').value;const d=allEX()[n];
+ const c=activeClient();const n=$('exSel').value;
  if(!c||!n){$('lastHint').innerHTML='';return}
  const ws=c.w.filter(w=>w.ex.some(e=>e.n===n));
  if(!ws.length){$('lastHint').innerHTML='<span class="muted">Раньше не делали</span>';return}
- const w=ws[ws.length-1];const e=w.ex.find(x=>x.n===n);
- const vt=(d&&d.bands&&e.v)?BANDS[e.v].t+', ':'';
- $('lastHint').innerHTML=`<span class="muted">Прошлый раз: <b>${vt}${e.w} кг × ${e.r} × ${e.s}</b></span>`;
+ const e=ws[ws.length-1].ex.find(x=>x.n===n);
+ $('lastHint').innerHTML=`<span class="muted">Прошлый раз: <b>${e.s}×${e.r}×${e.w} кг</b></span>`;
 }
 function addEx(){
  const n=$('exSel').value;const d=allEX()[n]||{};
@@ -381,8 +390,8 @@ function renderExList(){
   return `<div class="item"><b>${e.n}</b>${vs}
   <div class="row">
    <input type="number" value="${e.s}" oninput="cur[${i}].s=+this.value||0;updT(${i})">
-   <input type="number" value="${e.w}" oninput="cur[${i}].w=+this.value||0;updT(${i})">
    <input type="number" value="${e.r}" oninput="cur[${i}].r=+this.value||0;updT(${i})">
+   <input type="number" value="${e.w}" oninput="cur[${i}].w=+this.value||0;updT(${i})">
   </div>
   <div style="display:flex;justify-content:space-between;align-items:center">
    <span id="t${i}" class="muted">${Math.round(tonnage(e))} кг</span>
