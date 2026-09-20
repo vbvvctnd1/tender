@@ -5292,8 +5292,8 @@ body.pad-open { padding-bottom: 62vh; }
          Тап по месяцу открывает календарь на месяц — так же, как повторный
          тап по уже выбранному дню в полосе недели. -->
     <div class="premium-header sched-header">
-        <button class="trainer-av" id="cal-trainer" onclick="showScreen('screen-settings')"
-                aria-label="Настройки"></button>
+        <button class="trainer-av" id="cal-trainer" onclick="showScreen('screen-profile', 'screen-schedule')"
+                aria-label="Профиль"></button>
         <h1 id="cal-month" onclick="openWeeksSheet()">—</h1>
         <button class="sched-add" onclick="openAddModal(null)" aria-label="Записать клиента">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round">
@@ -5429,6 +5429,9 @@ body.pad-open { padding-bottom: 62vh; }
         </div>
     </div>
 
+    <!-- Привязка клиента к Telegram: видна на всех вкладках карточки -->
+    <div id="cl-tg"></div>
+
     <div class="seg-control">
         <button class="seg-btn active" id="cl-tab-history" onclick="setClientTab('history')">История</button>
         <button class="seg-btn" id="cl-tab-analytics" onclick="setClientTab('analytics')">Аналитика</button>
@@ -5461,15 +5464,27 @@ body.pad-open { padding-bottom: 62vh; }
             <div id="cl-keyex"></div>
         </div>
 
-        <div class="panel">
-            <div class="panel-title"><span class="ttl"><span class="only-neo">📈 </span><svg class="mi only-min" aria-hidden="true"><use href="#i-trend-up"/></svg>Прогрессия в упражнении</span></div>
-            <select class="fld" id="cl-prog-select" onchange="renderProgression()"></select>
-            <div id="cl-prog-detail" style="margin-top: 10px;"></div>
+        <!-- Разделы свёрнуты: на экране и так много цифр, а эти два смотрят
+             не каждый раз. Открываются тапом по заголовку. -->
+        <div class="panel fold" id="fold-prog">
+            <div class="fold-head" onclick="toggleAnFold('prog')">
+                <span class="fold-title"><span class="ttl"><span class="only-neo">📈 </span><svg class="mi only-min" aria-hidden="true"><use href="#i-trend-up"/></svg>Прогрессия в упражнении</span></span>
+                <span class="fold-arrow arr"></span>
+            </div>
+            <div class="fold-body" id="fold-prog-body" style="display: none;">
+                <select class="fld" id="cl-prog-select" onchange="renderProgression()"></select>
+                <div id="cl-prog-detail" style="margin-top: 10px;"></div>
+            </div>
         </div>
 
-        <div class="panel">
-            <div class="panel-title"><span class="ttl"><span class="only-neo">💪 </span><svg class="mi only-min" aria-hidden="true"><use href="#i-activity"/></svg>Проработка мышц</span></div>
-            <div id="cl-muscles"></div>
+        <div class="panel fold" id="fold-mus">
+            <div class="fold-head" onclick="toggleAnFold('mus')">
+                <span class="fold-title"><span class="ttl"><span class="only-neo">💪 </span><svg class="mi only-min" aria-hidden="true"><use href="#i-activity"/></svg>Проработка мышц</span></span>
+                <span class="fold-arrow arr"></span>
+            </div>
+            <div class="fold-body" id="fold-mus-body" style="display: none;">
+                <div id="cl-muscles"></div>
+            </div>
         </div>
 
         <div class="panel">
@@ -5551,12 +5566,18 @@ body.pad-open { padding-bottom: 62vh; }
 
 
 <!-- ==========================================================================
-     ЭКРАН — НАСТРОЙКИ
+     ЭКРАН — ПРОФИЛЬ
+     Кто вы, как идут дела с сервером и кого вы пригласили. Открывается
+     тапом по аватару в шапке ежедневника: настройки оформления — отдельно.
      ========================================================================== -->
-<div id="screen-settings" class="screen">
+<div id="screen-profile" class="screen">
 
-    <div class="premium-header">
-        <h1 data-text="Настройки">Настройки</h1>
+    <div class="screen-head">
+        <div class="back-chip" onclick="goBack()"><span class="only-neo">❮</span><svg class="mi only-min" aria-hidden="true"><use href="#i-chev-left"/></svg></div>
+        <div class="head-titles">
+            <h2 data-text="Профиль">Профиль</h2>
+            <span class="head-sub">Вы, синхронизация и приглашения</span>
+        </div>
     </div>
 
     <div class="panel">
@@ -5568,6 +5589,17 @@ body.pad-open { padding-bottom: 62vh; }
     <div class="panel" id="panel-invite" style="display: none;">
         <div class="panel-title">Приглашайте тренеров</div>
         <div id="set-invite"></div>
+    </div>
+</div>
+
+
+<!-- ==========================================================================
+     ЭКРАН — НАСТРОЙКИ
+     ========================================================================== -->
+<div id="screen-settings" class="screen">
+
+    <div class="premium-header">
+        <h1 data-text="Настройки">Настройки</h1>
     </div>
 
     <div class="panel">
@@ -5596,11 +5628,6 @@ body.pad-open { padding-bottom: 62vh; }
         </div>
     </div>
 
-    <!-- Клиент-пример: посмотреть на заполненном приложении -->
-    <div class="panel">
-        <div class="panel-title">Пример</div>
-        <div id="set-start"></div>
-    </div>
 </div>
 
 
@@ -6034,6 +6061,21 @@ body.pad-open { padding-bottom: 62vh; }
                 <span class="ttl up"><span class="only-neo">🗑️ </span><svg class="mi only-min" aria-hidden="true"><use href="#i-trash"/></svg>Удалить шаблон</span>
             </button>
         </div>
+    </div>
+</div>
+
+<!-- Приглашение клиента: ссылка и QR -->
+<div id="sheet-tg-link" class="glass-sheet-overlay" onclick="closeSheet('sheet-tg-link')">
+    <div class="glass-sheet-content" onclick="event.stopPropagation()">
+        <div class="sheet-notch"></div>
+        <div class="sheet-header">
+            <div>
+                <h2 id="tl-title">Привязать Telegram</h2>
+                <span id="tl-sub" style="font-size: 13px; color: var(--text-muted);"></span>
+            </div>
+            <span class="sheet-close-txt" onclick="closeSheet('sheet-tg-link')">Закрыть</span>
+        </div>
+        <div id="tl-body"></div>
     </div>
 </div>
 
@@ -6981,7 +7023,7 @@ function showScreen(id, from) {
 
     if (id === 'screen-clients') renderClientsScreen();
     if (id === 'screen-exercises') renderExercisesScreen();
-    if (id === 'screen-settings') { renderProfileLine(); renderStartPanel(); }
+    if (id === 'screen-profile') { renderProfileLine(); renderCloudLine(); renderInvitePanel(); }
     if (id === 'screen-schedule') { renderCalendarStrip(); renderDayFeed(); }
 
     syncBackButton();
@@ -7566,8 +7608,8 @@ function normalizeDB(raw) {
             tgId: c.tgId || null,
             // подставится, когда клиент привяжется к Telegram: там лежит photo_url
             photoUrl: typeof c.photoUrl === 'string' ? c.photoUrl : null,
-            // клиент-пример из «Посмотреть на примере»: удаляется одной кнопкой
-            // и не считается пройденным шагом начала работы
+            // метка клиента-пример из прежних версий: сам пример убран,
+            // но у кого-то он мог остаться в данных
             demo: c.demo === true
         };
     }).filter(Boolean);
@@ -8807,16 +8849,11 @@ function renderDayFeed() {
             '<div class="empty-note">' +
                 '<div class="empty-ic" style="font-size:34px; margin-bottom:8px;">' + emo('👥') + ico('users') + '</div>' +
                 '<b style="color:var(--text-main); font-size:15px;">Клиентов пока нет</b><br>' +
-                'Добавьте первого — и его можно будет записывать на тренировки.<br>' +
-                'Или посмотрите на примере: клиент с готовой историей, чтобы ' +
-                'потрогать всё сразу и потом удалить.' +
+                'Добавьте первого — и его можно будет записывать на тренировки.' +
             '</div>' +
-            '<div style="padding: 0 16px; display: grid; gap: 8px;">' +
+            '<div style="padding: 0 16px;">' +
                 '<button class="btn-soft filled" style="width:100%;" onclick="openClientEdit(null)">' +
                     '＋ Добавить первого клиента' +
-                '</button>' +
-                '<button class="btn-soft" style="width:100%;" onclick="createDemoClient()">' +
-                    'Посмотреть на примере' +
                 '</button>' +
             '</div>';
         return;
@@ -9720,166 +9757,6 @@ function openRound(index) {
     openExFromWorkout(pick);
 }
 
-/* --- Демо-клиент и первые шаги ---
-   Пригласить живого клиента можно не всегда: человек занят или спит, а тренер
-   сидит в приложении сейчас. Поэтому есть клиент-пример с готовой историей —
-   открыть, потрогать всё и удалить одной кнопкой. */
-
-const DEMO_TPL_ID = 'tpl_demo';
-
-function demoClient() {
-    for (let i = 0; i < DB.clients.length; i++) if (DB.clients[i].demo) return DB.clients[i];
-    return null;
-}
-
-function ownClients() {
-    return DB.clients.filter(function (c) { return !c.demo; });
-}
-
-/* Подход примера: всё уже отмечено, метрики посчитает normalizeDB */
-function demoSet(weight, reps, warmup) {
-    return { w: weight, r: reps, isWarmup: !!warmup, completed: true };
-}
-
-/* Круговая на три круга: одни и те же три упражнения по одному подходу.
-   Нужна, чтобы в примере было видно, как записываются круги. */
-function demoCircuitEx() {
-    const plan = [
-        { n: 'Отжимания от пола', w: 0, r: 12 },
-        { n: 'Выпады', w: 16, r: 10 },
-        { n: 'Тяга гантели одной рукой', w: 22, r: 10 }
-    ];
-    const ex = [];
-    for (let round = 1; round <= 3; round++) {
-        plan.forEach(function (e) {
-            ex.push({ n: e.n, circuit: 'demo', round: round, sets: [demoSet(e.w, e.r)] });
-        });
-    }
-    return ex;
-}
-
-/* Время записи на сегодня: следующий целый час, но в пределах дня */
-function demoSlotTime() {
-    const hour = Math.min(START_HOUR + SLOT_COUNT - 1,
-                          Math.max(START_HOUR, new Date().getHours() + 1));
-    return pad2(hour) + ':00';
-}
-
-function createDemoClient() {
-    if (demoClient()) { showToast('Пример уже добавлен'); return; }
-
-    const id = 'cl_demo';
-    const today = todayISO();
-
-    // Две обычные тренировки с прогрессом в жиме и одна круговая: так история,
-    // аналитика и прогресс показывают живые числа, а не «данных нет».
-    const done = [
-        { id: 'se_demo1', date: addDays(today, -18), well: 8, bodyWeight: 78, ex: [
-            { n: 'Жим лёжа', sets: [demoSet(40, 10, true), demoSet(50, 8), demoSet(50, 8), demoSet(52.5, 7)] },
-            { n: 'Тяга блока сверху', sets: [demoSet(45, 10), demoSet(45, 10), demoSet(50, 9)] },
-            { n: 'Жим ногами', sets: [demoSet(100, 12), demoSet(110, 10)] }
-        ] },
-        { id: 'se_demo2', date: addDays(today, -11), well: 7, bodyWeight: 78.5, ex: [
-            { n: 'Жим лёжа', sets: [demoSet(40, 10, true), demoSet(55, 8), demoSet(55, 8), demoSet(55, 7)] },
-            { n: 'Тяга штанги в наклоне', sets: [demoSet(50, 10), demoSet(50, 10), demoSet(55, 8)] },
-            { n: 'Румынская тяга', sets: [demoSet(70, 10), demoSet(70, 10)] }
-        ] },
-        { id: 'se_demo3', date: addDays(today, -4), well: 9, bodyWeight: 79, ex: demoCircuitEx() }
-    ];
-
-    DB.clients.push({
-        id: id, name: 'Иван (пример)', goal: 'Набор массы', bodyWeight: 79,
-        passLeft: 7, passBase: 0, totalDebt: 0, lessonPrice: 1500,
-        tgId: null, photoUrl: null, demo: true
-    });
-
-    done.forEach(function (w, i) {
-        DB.sessions.push({
-            id: w.id, clientId: id, date: w.date, time: '10:00', status: 'done',
-            well: w.well, bodyWeight: w.bodyWeight, passSpent: true, savedAt: i + 1, ex: w.ex
-        });
-    });
-
-    // Запись на сегодня: её можно открыть и нажать «Начать тренировку»
-    DB.sessions.push({
-        id: 'se_demo4', clientId: id, date: today, time: demoSlotTime(), status: 'planned'
-    });
-
-    // Журнал абонемента: пополнение и списания за проведённые тренировки.
-    // Остаток (7) recalcPass выведет сам — из базы 0 плюс эти строки.
-    const ops = passOpsOf(DB);
-    ops.push({ id: 'op_demo0', clientId: id, date: addDays(today, -20), ts: 1,
-               kind: 'topup', delta: 10, amount: 15000 });
-    done.forEach(function (w, i) {
-        ops.push({ id: 'op_demo' + (i + 1), clientId: id, date: w.date, ts: i + 2,
-                   kind: 'session', delta: -1, sessionId: w.id, reason: 'done' });
-    });
-
-    // Шаблон: чтобы «Из шаблона» в тренировке не оказалось пустым
-    DB.templates.push({
-        id: DEMO_TPL_ID, name: 'Верх тела (пример)', fromSession: 'se_demo2',
-        fromClient: 'Иван (пример)', fromDate: addDays(today, -11), createdAt: 1,
-        ex: [
-            { n: 'Жим лёжа', sets: [{ r: 8, w: 55 }, { r: 8, w: 55 }, { r: 7, w: 55 }] },
-            { n: 'Тяга штанги в наклоне', sets: [{ r: 10, w: 50 }, { r: 10, w: 50 }, { r: 8, w: 55 }] }
-        ]
-    });
-
-    // Через нормализацию: она же посчитает метрики тренировок и остаток по журналу
-    DB = normalizeDB(DB);
-    customExercises = DB.exercises || [];
-    if (!saveDB()) return;
-
-    haptic('success');
-    renderClientsScreen();
-    renderCalendarStrip();
-    renderDayFeed();
-    renderMatrixRows();
-    showToast('Добавлен «Иван (пример)» — можно открыть и всё потрогать');
-}
-
-async function removeDemoClient() {
-    const c = demoClient();
-    if (!c) { showToast('Примера нет'); return; }
-
-    const ok = await showConfirm('Удалить «' + c.name + '»?\n' +
-        'Уйдут его тренировки, запись в расписании, абонемент и шаблон-пример. ' +
-        'Ваши клиенты останутся на месте.', { ok: 'Удалить', danger: true });
-    if (!ok || demoClient() !== c) return;
-
-    DB.sessions = DB.sessions.filter(function (x) { return x.clientId !== c.id; });
-    dropClientOps(DB, c.id);
-    DB.templates = DB.templates.filter(function (t) { return t.id !== DEMO_TPL_ID; });
-    DB.clients = DB.clients.filter(function (x) { return x.id !== c.id; });
-    if (clClientId === c.id) clClientId = null;
-    saveDB();
-
-    haptic('success');
-    if (currentScreen === 'screen-client') showScreen('screen-clients');
-    renderClientsScreen();
-    renderCalendarStrip();
-    renderDayFeed();
-    renderMatrixRows();
-    renderStartPanel();
-    showToast('Пример удалён');
-}
-
-/* Настройки: добавить или убрать клиента-пример. Кнопка зависит от того,
-   есть ли он сейчас, поэтому панель перерисовывается, а не живёт в разметке. */
-function renderStartPanel() {
-    const box = $('set-start');
-    if (!box) return;
-    const rows = [];
-    rows.push(demoClient()
-        ? '<button class="btn-soft" style="width: 100%; margin-top: 4px;" ' +
-              'onclick="removeDemoClient()">Удалить клиента-пример</button>'
-        : '<button class="btn-soft" style="width: 100%; margin-top: 4px;" ' +
-              'onclick="createDemoClient()">Добавить клиента-пример</button>');
-
-    box.innerHTML = rows.join('');
-}
-
-
 document.addEventListener('click', function (e) {
     const picker = document.querySelector('.ex-picker');
     const dropdown = $('wk-ex-dropdown');
@@ -10475,7 +10352,7 @@ function openClient(clientId, tab, from) {
     // в новую карточку всегда входим с последнего месяца и свёрнутыми записями
     if (clClientId !== clientId) {
         histMonthsShown = 0;
-        passMonthsShown = 0;
+        passShown = PASS_PAGE;
         histOpen = {};
     }
     clClientId = clientId;
@@ -10501,6 +10378,7 @@ function renderClientSub() {
     $('cl-sub').innerText = (c.goal || 'цель не задана') + ' · ' + c.bodyWeight + ' кг · ' +
         left + ' ' + plural(left, 'занятие', 'занятия', 'занятий') +
         (debt > 0 ? ' · долг ' + debt.toLocaleString('ru') + ' ₽' : '');
+    if (typeof renderClientTg === 'function') renderClientTg();
 }
 
 function setClientTab(tab) {
@@ -10737,6 +10615,26 @@ async function deleteHistorySession(sessionId) {
 
 /* --- Аналитика --- */
 
+/* Свёрнутые разделы аналитики. Закрыты по умолчанию: вердикт и ключевые
+   упражнения отвечают на главный вопрос, остальное — по запросу. */
+const anFolds = { prog: false, mus: false };
+
+function toggleAnFold(key) {
+    anFolds[key] = !anFolds[key];
+    haptic('light');
+    applyAnFolds();
+}
+
+function applyAnFolds() {
+    [['prog', 'fold-prog'], ['mus', 'fold-mus']].forEach(function (pair) {
+        const fold = $(pair[1]);
+        const body = $(pair[1] + '-body');
+        if (!fold || !body) return;
+        fold.classList.toggle('open', anFolds[pair[0]]);
+        body.style.display = anFolds[pair[0]] ? '' : 'none';
+    });
+}
+
 function setPeriod(p) {
     period = p;
     [7, 30, 90, 3650].forEach(function (x) {
@@ -10782,6 +10680,7 @@ function renderAnalytics() {
 
     fillProgressionSelect(all);
     renderProgression();
+    applyAnFolds();
 }
 
 /* Лучший рабочий подход тренировки: сначала по весу, при равном весе — по
@@ -11243,13 +11142,10 @@ function renderPassLog(c) {
     // Списания копятся быстрее тренировок: показываем последние месяцы,
     // остальное — по кнопке. Месяц всегда уходит целиком, чтобы итог в его
     // шапке не расходился со строками под ней.
-    const groups = groupByMonth(list, function (o) { return o.date; });
-    const shownMonths = monthsToShow(groups, passMonthsShown, PASS_MIN_ENTRIES);
-    passShownNow = shownMonths;
-    const visible = [];
-    groups.slice(0, shownMonths).forEach(function (g) {
-        g.items.forEach(function (o) { visible.push(o); });
-    });
+    // Показываем последние операции, остальное — по кнопке. Месяцы остаются
+    // заголовками внутри списка, но границей страницы больше не работают:
+    // у активного тренера в одном месяце их бывает под полсотни.
+    const visible = list.slice(0, passShown);
     const restOps = list.length - visible.length;
 
     let shownMonth = null;
@@ -11329,13 +11225,12 @@ function renderPassLog(c) {
         : '');
 }
 
-/* Сколько месяцев журнала показано — как в истории, кнопкой по одному */
-let passMonthsShown = 0;
-let passShownNow = 0;
-const PASS_MIN_ENTRIES = 5;
+/* Сколько операций журнала показано: по десять за раз */
+const PASS_PAGE = 10;
+let passShown = PASS_PAGE;
 
 function morePassLog() {
-    passMonthsShown = passShownNow + 1;
+    passShown += PASS_PAGE;
     haptic('light');
     const c = passClient();
     if (c) renderPassLog(c);
@@ -12150,12 +12045,9 @@ function renderClientsScreen() {
                 'Заведите первого клиента — дальше его можно записывать на тренировки ' +
                 'и вести историю.' +
             '</div>' +
-            '<div style="padding: 0 16px; display: grid; gap: 8px;">' +
+            '<div style="padding: 0 16px;">' +
                 '<button class="btn-soft filled" style="width:100%;" onclick="openClientEdit(null)">' +
                     '＋ Добавить клиента' +
-                '</button>' +
-                '<button class="btn-soft" style="width:100%;" onclick="createDemoClient()">' +
-                    'Посмотреть на примере' +
                 '</button>' +
             '</div>';
         return;
@@ -12444,8 +12336,8 @@ async function deleteClientFromEdit() {
 
     DB.sessions = DB.sessions.filter(function (s) { return s.clientId !== c.id; });
     dropClientOps(DB, c.id);
-    // пример удаляют и отсюда — его шаблон не должен остаться сиротой
-    if (c.demo) DB.templates = DB.templates.filter(function (t) { return t.id !== DEMO_TPL_ID; });
+    // у клиента-примера из прежних версий был свой шаблон — уносим и его
+    if (c.demo) DB.templates = DB.templates.filter(function (t) { return t.id !== 'tpl_demo'; });
     DB.clients = DB.clients.filter(function (x) { return x.id !== c.id; });
     if (clClientId === c.id) clClientId = null;
     ceEditingId = null;
@@ -13500,6 +13392,12 @@ async function cloudStart() {
                     detectSessionInUrl: false, storageKey: CLOUD_AUTH },
             global: { fetch: cloudFetch }
         });
+        // Ссылка-приглашение клиента: ему тренерский вход не нужен
+        if (typeof handleClientInvite === 'function' && await handleClientInvite()) {
+            cloudSet('off', 'открыто по приглашению клиента');
+            return;
+        }
+
         cloudSet('wait');
         let session = (await sb.auth.getSession()).data.session;
         if (!session) session = await cloudLogin();
@@ -13920,7 +13818,14 @@ async function copyInvite() {
 /* QR во весь экран. Белый фон и запас по краям обязательны: камера ищет
    контраст, на тёмном стекле Нео код читается плохо. */
 function showInviteQr() {
-    if (!cloudRefCode || typeof qrcode !== 'function') return;
+    if (!cloudRefCode) return;
+    showQrFor(inviteLink());
+}
+
+/* Код во весь экран: тем же окном показываются и приглашение тренера,
+   и приглашение клиента */
+function showQrFor(link) {
+    if (!link || typeof qrcode !== 'function') return;
 
     let box = $('qr-overlay');
     if (!box) {
@@ -13937,10 +13842,10 @@ function showInviteQr() {
     }
 
     const qr = qrcode(0, 'M');
-    qr.addData(inviteLink());
+    qr.addData(link);
     qr.make();
     box.querySelector('.qr-img').innerHTML = qr.createSvgTag({ cellSize: 8, margin: 2, scalable: true });
-    box.querySelector('.qr-link').innerText = inviteLink();
+    box.querySelector('.qr-link').innerText = link;
     box.style.display = 'flex';
     haptic('light');
 }
@@ -13948,6 +13853,285 @@ function showInviteQr() {
 function hideInviteQr() {
     const box = $('qr-overlay');
     if (box) box.style.display = 'none';
+}
+</script>
+<style>
+/* --- Привязка клиента к Telegram --- */
+.tg-strip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 12px 16px 0;
+    padding: 12px 14px;
+    border-radius: 18px;
+    background: rgba(128, 128, 128, 0.10);
+    font-size: 13px;
+    line-height: 1.35;
+    cursor: pointer;
+}
+.tg-strip .tg-text { flex: 1; min-width: 0; }
+.tg-strip .tg-sub { display: block; margin-top: 2px; font-size: 12px; opacity: 0.6; }
+.tg-strip .tg-go { flex: 0 0 auto; font-weight: 700; opacity: 0.75; }
+.tg-strip.linked { cursor: default; }
+
+/* Сообщение клиенту, открывшему ссылку-приглашение */
+#link-plate {
+    position: fixed;
+    inset: 0;
+    z-index: 9500;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(0, 0, 0, 0.82);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+#link-plate .lp-card {
+    width: 100%;
+    max-width: 360px;
+    padding: 26px 22px;
+    border-radius: 24px;
+    text-align: center;
+    background: linear-gradient(180deg, rgba(38, 38, 50, 0.98), rgba(14, 14, 20, 0.99));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+#link-plate .lp-ic { font-size: 40px; line-height: 1; }
+#link-plate .lp-title { margin-top: 12px; font-size: 19px; font-weight: 800; letter-spacing: -0.3px; }
+#link-plate .lp-text { margin-top: 10px; font-size: 14px; line-height: 1.5; color: rgba(255, 255, 255, 0.7); }
+#link-plate .lp-btn {
+    width: 100%;
+    height: 48px;
+    margin-top: 20px;
+    border: none;
+    border-radius: 16px;
+    background: #fff;
+    color: #111;
+    font: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+}
+</style>
+<script>
+/* ==========================================================================
+   23. ПРИВЯЗКА КЛИЕНТА К TELEGRAM
+   Тренер отправляет клиенту ссылку (или показывает QR прямо в зале). Клиент
+   открывает — его Telegram цепляется к карточке: в приложении появляются
+   настоящее имя и фото, а дальше туда же лягут отчёты и его собственный
+   кабинет. Аккаунт тренера клиенту при этом не заводится: он видит короткое
+   сообщение и закрывает приложение.
+   ========================================================================== */
+
+let tgLinkClientId = null;      // чью карточку привязываем
+let tgLinkCode = null;          // код приглашения с сервера
+let tgLinkBusy = false;
+
+function clientInviteLink() {
+    return tgLinkCode ? 'https://t.me/' + BOT_NAME + '?startapp=inv_' + tgLinkCode : '';
+}
+
+/* Полоска в карточке клиента: привязан или нет */
+function renderClientTg() {
+    const box = $('cl-tg');
+    if (!box) return;
+    const c = getClient(clClientId);
+    if (!c) { box.innerHTML = ''; return; }
+
+    if (c.tgId) {
+        box.innerHTML =
+            '<div class="tg-strip linked">' +
+                '<span class="tg-text"><b>Telegram привязан</b>' +
+                    '<span class="tg-sub">Имя и фото подтягиваются из Telegram</span>' +
+                '</span>' +
+                '<button class="btn-ghost" onclick="unlinkClientTg()" title="Отвязать">✕</button>' +
+            '</div>';
+        return;
+    }
+
+    box.innerHTML =
+        '<div class="tg-strip" onclick="openClientLink()">' +
+            '<span class="tg-text"><b>Привязать Telegram</b>' +
+                '<span class="tg-sub">Чтобы отправлять клиенту отчёты, а позже открыть ему ' +
+                    'его тренировки и остаток занятий</span>' +
+            '</span>' +
+            '<span class="tg-go arr"></span>' +
+        '</div>';
+}
+
+async function unlinkClientTg() {
+    const c = getClient(clClientId);
+    if (!c) return;
+    const ok = await showConfirm('Отвязать Telegram клиента «' + c.name + '»?\n' +
+        'Карточка и история останутся, уйдёт только связь с его аккаунтом.',
+        { ok: 'Отвязать' });
+    if (!ok || getClient(clClientId) !== c) return;
+    c.tgId = null;
+    c.photoUrl = null;
+    saveDB();
+    haptic('success');
+    renderClientTg();
+    renderClientsScreen();
+    renderDayFeed();
+}
+
+/* Шторка с приглашением: код берём у сервера, ссылку и QR рисуем на месте */
+async function openClientLink() {
+    const c = getClient(clClientId);
+    if (!c) return;
+    tgLinkClientId = c.id;
+    tgLinkCode = null;
+
+    $('tl-title').innerText = 'Привязать Telegram';
+    $('tl-sub').innerText = c.name;
+    renderClientLinkBody('Получаем ссылку…');
+    haptic('light');
+    openSheet('sheet-tg-link');
+
+    if (!sb || !cloudUid) {
+        renderClientLinkBody('Нужен интернет: ссылку выдаёт сервер. ' +
+                             'Откройте приложение с сетью и попробуйте снова.');
+        return;
+    }
+    if (tgLinkBusy) return;
+    tgLinkBusy = true;
+    try {
+        // карточка могла ещё не уехать на сервер — сначала отправляем изменения
+        await cloudPush();
+        const res = await sb.rpc('client_invite', { p_client_id: c.id });
+        if (res.error) throw res.error;
+        if (tgLinkClientId !== c.id) return;          // шторку успели закрыть
+        tgLinkCode = res.data;
+        renderClientLinkBody('');
+    } catch (e) {
+        console.error('приглашение клиента:', e);
+        renderClientLinkBody('Сервер не дал ссылку: ' + ((e && e.message) || e));
+    } finally {
+        tgLinkBusy = false;
+    }
+}
+
+function renderClientLinkBody(note) {
+    const box = $('tl-body');
+    if (!box) return;
+
+    if (!tgLinkCode) {
+        box.innerHTML = '<p class="panel-note" style="margin: 0;">' + esc(note) + '</p>';
+        return;
+    }
+
+    box.innerHTML =
+        '<p class="panel-note" style="margin: 0 0 10px;">' +
+            'Отправьте клиенту ссылку или покажите QR прямо в зале. Он откроет — ' +
+            'и его Telegram привяжется к этой карточке. Ссылка одноразовая и ' +
+            'живёт две недели.' +
+        '</p>' +
+        '<div class="invite-link">' + esc(clientInviteLink()) + '</div>' +
+        '<button class="btn-soft filled" style="width: 100%; margin-top: 10px;" ' +
+            'onclick="shareClientLink()">Отправить в Telegram</button>' +
+        '<button class="btn-soft" style="width: 100%; margin-top: 8px;" ' +
+            'onclick="copyClientLink()">Скопировать ссылку</button>' +
+        '<button class="btn-soft" style="width: 100%; margin-top: 8px;" ' +
+            'onclick="showClientQr()">Показать QR-код</button>';
+}
+
+function shareClientLink() {
+    if (!tgLinkCode) return;
+    const c = getClient(tgLinkClientId);
+    const text = 'Привет' + (c ? ', ' + c.name : '') + '! Открой — и я смогу показывать ' +
+                 'тебе твои тренировки и остаток занятий';
+    const url = 'https://t.me/share/url?url=' + encodeURIComponent(clientInviteLink()) +
+                '&text=' + encodeURIComponent(text);
+    haptic('light');
+    if (tg && tg.openTelegramLink) tg.openTelegramLink(url);
+    else window.open(url, '_blank');
+}
+
+async function copyClientLink() {
+    const link = clientInviteLink();
+    if (!link) return;
+    try {
+        await navigator.clipboard.writeText(link);
+        haptic('success');
+        showToast('Ссылка скопирована');
+        return;
+    } catch (e) {}
+    try {
+        const box = document.createElement('textarea');
+        box.value = link;
+        box.style.cssText = 'position: fixed; opacity: 0;';
+        document.body.appendChild(box);
+        box.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(box);
+        showToast(ok ? 'Ссылка скопирована' : 'Скопируйте ссылку вручную');
+    } catch (e) {
+        showToast('Скопируйте ссылку вручную');
+    }
+}
+
+function showClientQr() {
+    if (!tgLinkCode) return;
+    showQrFor(clientInviteLink());
+}
+
+/* --- Сообщение клиенту, открывшему ссылку --- */
+
+function showLinkPlate(title, text) {
+    let box = $('link-plate');
+    if (!box) {
+        box = document.createElement('div');
+        box.id = 'link-plate';
+        box.innerHTML =
+            '<div class="lp-card">' +
+                '<div class="lp-ic">💪</div>' +
+                '<div class="lp-title"></div>' +
+                '<div class="lp-text"></div>' +
+                '<button class="lp-btn" onclick="hideLinkPlate()">Понятно</button>' +
+            '</div>';
+        document.body.appendChild(box);
+    }
+    box.querySelector('.lp-title').innerText = title;
+    box.querySelector('.lp-text').innerText = text;
+    box.style.display = 'flex';
+}
+
+function hideLinkPlate() {
+    const box = $('link-plate');
+    if (box) box.style.display = 'none';
+}
+
+/* Ссылку-приглашение отрабатываем до входа тренера: у клиента своего
+   аккаунта нет, ему нужно только сообщение. */
+async function handleClientInvite() {
+    const param = (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) || '';
+    if (!/^inv_/i.test(param)) return false;
+
+    try {
+        const r = await cloudFetch(CLOUD_URL + '/functions/v1/tg-auth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', apikey: CLOUD_KEY },
+            body: JSON.stringify({ initData: tg.initData, startParam: param })
+        });
+        const out = await r.json().catch(function () { return {}; });
+
+        if (out.linked) {
+            showLinkPlate(out.again ? 'Вы уже на связи' : 'Готово!',
+                'Тренер ' + (out.trainer_name || '') + ' теперь видит ваш Telegram. ' +
+                'Скоро здесь появятся ваши тренировки и остаток занятий — ' +
+                'приложение можно закрыть.');
+            return true;            // тренерский вход не нужен
+        }
+
+        showLinkPlate('Ссылка не сработала',
+            (out.reason || 'Не удалось привязать') + '. Попросите тренера прислать новую.');
+        return false;               // вдруг это сам тренер — пустим его в приложение
+    } catch (e) {
+        showLinkPlate('Нет связи с сервером',
+            'Не получилось открыть приглашение. Проверьте интернет и откройте ссылку снова.');
+        return false;
+    }
 }
 </script>
 </body>
