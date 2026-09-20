@@ -5585,10 +5585,51 @@ body.pad-open { padding-bottom: 62vh; }
         <div id="set-profile" class="panel-note" style="margin: 0;"></div>
     </div>
 
+    <!-- Если человек ещё и клиент другого тренера — отсюда открывается кабинет -->
+    <div id="role-switch"></div>
+
     <!-- Приглашение тренеров: ссылка, копия и QR для разговора вживую -->
     <div class="panel" id="panel-invite" style="display: none;">
         <div class="panel-title">Приглашайте тренеров</div>
         <div id="set-invite"></div>
+    </div>
+</div>
+
+
+<!-- ==========================================================================
+     ЭКРАН — КАБИНЕТ КЛИЕНТА
+     Открывается только тому, кого тренер привязал по ссылке. Ничего
+     не меняет: смотреть свои тренировки, прогресс и остаток занятий.
+     ========================================================================== -->
+<div id="screen-cabinet" class="screen">
+
+    <div class="premium-header">
+        <div class="head-titles">
+            <h1 id="cab-name" data-text="Мои тренировки">Мои тренировки</h1>
+            <span class="head-sub" id="cab-sub"></span>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="pass-balance" id="cab-balance"></div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-title">Прогресс</div>
+        <div id="cab-progress"></div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-title">Мои тренировки</div>
+        <div id="cab-history"></div>
+    </div>
+
+    <p class="cab-hint">Записи ведёт тренер — здесь их можно только смотреть.</p>
+
+    <!-- Видна только тому, у кого есть и своё приложение тренера -->
+    <div style="padding: 0 16px 20px;">
+        <button class="btn-soft" id="cab-back" style="width: 100%; display: none;"
+                onclick="leaveCabinet()">Вернуться в приложение тренера</button>
     </div>
 </div>
 
@@ -7023,7 +7064,9 @@ function showScreen(id, from) {
 
     if (id === 'screen-clients') renderClientsScreen();
     if (id === 'screen-exercises') renderExercisesScreen();
-    if (id === 'screen-profile') { renderProfileLine(); renderCloudLine(); renderInvitePanel(); }
+    if (id === 'screen-profile') {
+        renderProfileLine(); renderCloudLine(); renderInvitePanel(); renderRoleSwitch();
+    }
     if (id === 'screen-schedule') { renderCalendarStrip(); renderDayFeed(); }
 
     syncBackButton();
@@ -7364,9 +7407,17 @@ const BASE_EX_NAMES = Object.keys(BASE_EX);
    ещё не присвоена. */
 let customExercises = [];
 
+/* Базовые упражнения, которые этот тренер переименовал под себя: общий
+   справочник у всех один, поэтому старое название прячется только у него.
+   Список живёт отдельной переменной, а не читается из DB: справочник нужен
+   уже при разборе базы, когда DB ещё не присвоена. */
+let hiddenBaseNames = [];
+
+function hiddenBase() { return hiddenBaseNames; }
+
 function allExercises() {
     const all = {};
-    for (const n in BASE_EX) all[n] = BASE_EX[n];
+    for (const n in BASE_EX) if (hiddenBaseNames.indexOf(n) === -1) all[n] = BASE_EX[n];
     customExercises.forEach(function (e) { all[e.name] = e; });
     return all;
 }
@@ -7454,7 +7505,8 @@ function defaultDB() {
    neoVariant — Нео-Стекла: у каждого стиля свой выбор, и он не теряется
    при переключении между ними. */
 function defaultSettings() {
-    return { style: 'neo', theme: 'auto', neoVariant: 'auto', liveBg: true, navLabels: true };
+    return { style: 'neo', theme: 'auto', neoVariant: 'auto', liveBg: true,
+             navLabels: true, hiddenBase: [] };
 }
 
 /* Свои упражнения тренера. Мышцы принимаются только из общего списка —
@@ -7685,7 +7737,12 @@ function normalizeDB(raw) {
         if (NEO_VARIANTS.some(function (o) { return o.v === rs.neoVariant; })) settings.neoVariant = rs.neoVariant;
         settings.liveBg = normBool(rs.liveBg, true);
         settings.navLabels = normBool(rs.navLabels, true);
+        // спрятанные базовые: только настоящие названия из справочника
+        if (Array.isArray(rs.hiddenBase)) {
+            settings.hiddenBase = rs.hiddenBase.filter(function (n) { return !!BASE_EX[n]; });
+        }
     }
+    hiddenBaseNames = settings.hiddenBase;   // до пересчёта метрик: он смотрит в справочник
 
     const sessionIds = {};
     sessions.forEach(function (s) { sessionIds[s.id] = true; });
@@ -12795,6 +12852,13 @@ async function saveExercise() {
     if (oldName && isCustomEx(oldName)) {
         DB.exercises = DB.exercises.filter(function (e) { return e.name !== oldName; });
         customExercises = DB.exercises;
+    } else if (oldName && oldName !== name && BASE_EX[oldName]) {
+        // переименовали базовое: у себя прячем старое название, иначе в списке
+        // окажутся оба. У других тренеров общий справочник не меняется.
+        const hidden = hiddenBaseNames.slice();
+        if (hidden.indexOf(oldName) === -1) hidden.push(oldName);
+        ensureSettings().hiddenBase = hidden;
+        hiddenBaseNames = hidden;
     }
     DB.exercises.push(entry);
     customExercises = DB.exercises;
@@ -13392,16 +13456,18 @@ async function cloudStart() {
                     detectSessionInUrl: false, storageKey: CLOUD_AUTH },
             global: { fetch: cloudFetch }
         });
-        // Ссылка-приглашение клиента: ему тренерский вход не нужен
-        if (typeof handleClientInvite === 'function' && await handleClientInvite()) {
-            cloudSet('off', 'открыто по приглашению клиента');
-            return;
-        }
+        // Ссылка-приглашение клиента: вход и кабинет делает она сама
+        if (typeof handleClientInvite === 'function' && await handleClientInvite()) return;
 
         cloudSet('wait');
         let session = (await sb.auth.getSession()).data.session;
         if (!session) session = await cloudLogin();
         if (!session) return;                       // причина уже показана
+
+        // Клиент попадает в свой кабинет, тренер — в приложение. Роль
+        // запоминается при входе: сессия у них устроена одинаково.
+        if (cloudRole() === 'client') { await enterCabinet(); return; }
+
         cloudUid = session.user.id;
         await cloudPull();
         await cloudPush();
@@ -13428,6 +13494,15 @@ async function cloudLogin() {
     }
     const res = await sb.auth.verifyOtp({ token_hash: out.token_hash, type: 'magiclink' });
     if (res.error) { cloudSet('denied', res.error.message); return null; }
+    setCloudRole(out.role === 'client' ? 'client' : 'trainer');
+    setCloudRoles({
+        trainer: out.role === 'trainer' || !!out.has_trainer,
+        cabinet: out.role === 'client' || !!out.cabinet,
+        cabinetTrainer: (out.cabinet && out.cabinet.trainer_name) || out.trainer_name || ''
+    });
+    if (out.role === 'client') {
+        cabinetCard = { client_name: out.client_name, trainer_name: out.trainer_name };
+    }
     return res.data.session;
 }
 
@@ -13766,7 +13841,8 @@ function renderInvitePanel() {
     box.innerHTML =
         '<p class="panel-note" style="margin: 0 0 10px;">' +
             'Отправьте ссылку другому тренеру. Когда он начнёт вести клиентов, ' +
-            'это зачтётся вам.' +
+            'это зачтётся вам. Идёт тестирование: для тренеров приложение сейчас ' +
+            'бесплатное, а клиентам просмотр своих тренировок бесплатен всегда.' +
         '</p>' +
         '<div class="invite-link">' + esc(inviteLink()) + '</div>' +
         '<button class="btn-soft filled" style="width: 100%; margin-top: 10px;" ' +
@@ -13782,7 +13858,9 @@ function renderInvitePanel() {
 /* Системное окно Telegram «кому отправить» */
 function shareInvite() {
     if (!cloudRefCode) return;
-    const text = 'Веду тренировки клиентов в этом приложении. Попробуй, оно бесплатное';
+    const text = 'Веду тренировки клиентов в этом приложении. Сейчас идёт тестирование, ' +
+                 'и для тренеров оно бесплатное. Клиентам просмотр своих тренировок ' +
+                 'бесплатен всегда. Попробуй';
     const url = 'https://t.me/share/url?url=' + encodeURIComponent(inviteLink()) +
                 '&text=' + encodeURIComponent(text);
     haptic('light');
@@ -14117,11 +14195,25 @@ async function handleClientInvite() {
         const out = await r.json().catch(function () { return {}; });
 
         if (out.linked) {
+            // сессия клиента: с ней открывается его кабинет
+            if (out.token_hash) {
+                const res = await sb.auth.verifyOtp({ token_hash: out.token_hash, type: 'magiclink' });
+                if (!res.error) {
+                    setCloudRole('client');
+                    setCloudRoles({ trainer: !!out.has_trainer, cabinet: true,
+                                    cabinetTrainer: out.trainer_name || '' });
+                    cabinetCard = { client_name: out.client_name, trainer_name: out.trainer_name };
+                    showLinkPlate(out.again ? 'Вы уже на связи' : 'Готово!',
+                        'Тренер ' + (out.trainer_name || '') + ' открыл вам доступ. ' +
+                        'Здесь ваши тренировки, прогресс и остаток занятий.');
+                    await enterCabinet();
+                    return true;
+                }
+            }
             showLinkPlate(out.again ? 'Вы уже на связи' : 'Готово!',
                 'Тренер ' + (out.trainer_name || '') + ' теперь видит ваш Telegram. ' +
-                'Скоро здесь появятся ваши тренировки и остаток занятий — ' +
-                'приложение можно закрыть.');
-            return true;            // тренерский вход не нужен
+                'Ваши тренировки появятся здесь чуть позже.');
+            return true;
         }
 
         showLinkPlate('Ссылка не сработала',
@@ -14132,6 +14224,187 @@ async function handleClientInvite() {
             'Не получилось открыть приглашение. Проверьте интернет и откройте ссылку снова.');
         return false;
     }
+}
+</script>
+<style>
+/* --- Кабинет клиента: только чтение --- */
+:root body[data-screen="screen-cabinet"] .ios-navbar { display: none; }
+.cab-hint { margin: 0 16px 4px; font-size: 12.5px; line-height: 1.45; opacity: 0.6; }
+.cab-entry { padding: 12px 0; border-bottom: 0.5px solid rgba(128, 128, 128, 0.25); }
+.cab-entry:last-child { border-bottom: none; }
+.cab-when { font-size: 15px; font-weight: 800; }
+.cab-meta { display: block; margin-top: 2px; font-size: 12px; opacity: 0.6; }
+</style>
+<script>
+/* ==========================================================================
+   24. КАБИНЕТ КЛИЕНТА
+   Клиент видит свои тренировки, свой прогресс и сколько занятий осталось.
+   Ничего менять он не может, и денег здесь нет: цену занятия и долг тренер
+   обсуждает лично. Данные берутся прямо с сервера — своей базы у клиента
+   нет, и синхронизировать ему нечего.
+   ========================================================================== */
+
+const CLOUD_ROLE = 'silovoyAssistentV6:role';
+const CLOUD_ROLES = 'silovoyAssistentV6:roles';   // что доступно этому человеку
+
+let cabinetOn = false;
+let cabinetReady = false;       // данные с сервера пришли и нарисованы
+let cabinetCard = null;         // { client_name, trainer_name, pass_left }
+let cabinetSessions = [];
+
+function cloudRole() {
+    try { return localStorage.getItem(CLOUD_ROLE) || ''; } catch (e) { return ''; }
+}
+
+function setCloudRole(role) {
+    try { localStorage.setItem(CLOUD_ROLE, role || ''); } catch (e) {}
+}
+
+/* Один человек может быть и тренером, и клиентом другого тренера. Что ему
+   доступно, решает сервер при входе; здесь только запоминаем. */
+function cloudRoles() {
+    try { return JSON.parse(localStorage.getItem(CLOUD_ROLES) || '{}') || {}; }
+    catch (e) { return {}; }
+}
+
+function setCloudRoles(roles) {
+    try { localStorage.setItem(CLOUD_ROLES, JSON.stringify(roles || {})); } catch (e) {}
+    if (typeof renderRoleSwitch === 'function') renderRoleSwitch();
+}
+
+/* Строка в профиле: «Мои тренировки у Олега» — если человек ещё и клиент */
+function renderRoleSwitch() {
+    const box = $('role-switch');
+    if (!box) return;
+    const roles = cloudRoles();
+    if (!roles.cabinet) { box.innerHTML = ''; return; }
+
+    box.innerHTML =
+        '<div class="panel">' +
+            '<div class="panel-title">Вы ещё и клиент</div>' +
+            '<p class="panel-note" style="margin: 0 0 10px;">' +
+                'Ваш тренер' + (roles.cabinetTrainer ? ' — ' + esc(roles.cabinetTrainer) : '') +
+                '. Свои тренировки, прогресс и остаток занятий можно посмотреть, ' +
+                'не выходя из приложения.' +
+            '</p>' +
+            '<button class="btn-soft" style="width: 100%;" onclick="enterCabinet()">' +
+                'Открыть мои тренировки' +
+            '</button>' +
+        '</div>';
+}
+
+/* Из кабинета обратно в своё приложение: сессия одна, меняется только вид */
+async function leaveCabinet() {
+    cabinetOn = false;
+    setCloudRole('trainer');
+    showScreen('screen-schedule');
+
+    if (!cloudUid && sb) {
+        const session = (await sb.auth.getSession()).data.session;
+        if (session) {
+            cloudUid = session.user.id;
+            await cloudPull();
+            await cloudPush();
+            loadInviteInfo();
+        }
+    }
+    renderCalendarStrip();
+    renderDayFeed();
+    renderClientsScreen();
+}
+
+/* Вход в кабинет: приложение тренера клиенту не показываем вовсе */
+async function enterCabinet() {
+    cabinetOn = true;
+    setCloudRole('client');
+    cloudSet('ok');
+    hideLinkPlate();
+    showScreen('screen-cabinet');
+    await cabinetLoad();
+}
+
+async function cabinetLoad() {
+    if (!sb) return;
+    try {
+        const card = await sb.rpc('client_card');
+        if (!card.error && card.data) cabinetCard = card.data;
+
+        const res = await sb.from('sessions').select('*')
+            .eq('status', 'done').is('deleted_at', null)
+            .order('date', { ascending: false }).limit(60);
+        if (res.error) throw res.error;
+
+        cabinetSessions = (res.data || []).map(function (r) {
+            const s = CLOUD_TABLES.sessions.in(r, null);
+            s.metrics = computeMetrics(s);
+            return s;
+        }).filter(function (s) { return (s.ex || []).length; });
+    } catch (e) {
+        console.error('кабинет:', e);
+    }
+    renderCabinet();
+    cabinetReady = true;
+}
+
+function renderCabinet() {
+    const card = cabinetCard || {};
+    const left = Math.max(0, num(card.pass_left, 0));
+
+    $('cab-name').innerText = card.client_name || 'Мои тренировки';
+    $('cab-name').setAttribute('data-text', card.client_name || 'Мои тренировки');
+    $('cab-sub').innerText = card.trainer_name ? 'Тренер: ' + card.trainer_name : '';
+
+    const box = $('cab-balance');
+    box.className = 'pass-balance' + (left <= 0 ? ' empty' : '');
+    box.innerHTML =
+        '<div><span class="pb-num">' + left + '</span>' +
+        '<span class="pb-unit">' + plural(left, 'занятие', 'занятия', 'занятий') + '</span></div>' +
+        '<div class="pb-forecast">' +
+            (left > 0 ? 'осталось по абонементу' : 'занятия закончились — напишите тренеру') +
+        '</div>';
+
+    const back = $('cab-back');
+    if (back) back.style.display = cloudRoles().trainer ? '' : 'none';
+
+    $('cab-history').innerHTML = cabinetSessions.length
+        ? cabinetSessions.map(cabEntryHtml).join('')
+        : '<div class="empty-note">Проведённых тренировок пока нет.<br>' +
+          'Они появятся здесь после первого занятия.</div>';
+
+    renderCabinetProgress();
+}
+
+function cabEntryHtml(s) {
+    const m = s.metrics || { tonnage: 0, workingSets: 0 };
+    const bw = validBW(s.bodyWeight, 80);
+    const meta = m.workingSets + ' ' + plural(m.workingSets, 'подход', 'подхода', 'подходов') +
+                 (m.tonnage ? ' · ' + m.tonnage.toLocaleString('ru') + ' кг' : '');
+
+    return '<div class="cab-entry">' +
+               '<div class="cab-when">' + esc(humanDate(s.date)) +
+                   '<span class="cab-meta">' + esc(meta) + '</span>' +
+               '</div>' +
+               exListHtml(s.ex, bw) +
+           '</div>';
+}
+
+/* Прогресс: то же «было → стало», что видит тренер, но без вердиктов
+   про него самого — клиенту важно, растут ли его веса. */
+function renderCabinetProgress() {
+    const box = $('cab-progress');
+    if (!box) return;
+
+    const list = cabinetSessions.slice().sort(function (a, b) {
+        return (a.date + a.time).localeCompare(b.date + b.time);
+    });
+    if (list.length < 2) {
+        box.innerHTML = '<div class="empty-note">Прогресс появится после второй тренировки.</div>';
+        return;
+    }
+
+    const moves = exerciseMoves(list);
+    box.innerHTML = moves.length ? keyExercisesHtml(moves)
+        : '<div class="empty-note">Рабочих подходов пока нет.</div>';
 }
 </script>
 </body>
