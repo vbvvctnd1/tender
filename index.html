@@ -9570,10 +9570,26 @@ function leaveCurrentExercise() {
     if (wkEditingIndex === null) return;
     const e = wkSession.ex[wkEditingIndex];
     if (e) {
+        const before = JSON.parse(JSON.stringify(wkSession.ex));
         e.sets = JSON.parse(JSON.stringify(currentSetRows)).filter(function (s) {
             return s.completed || s.fromPlan || !rowUntouched(s);
         });
         if (!e.sets.length) wkSession.ex.splice(wkEditingIndex, 1);
+
+        // Проведённая тренировка без упражнений пропадает из истории — там
+        // показываются только тренировки с упражнениями, — а занятие остаётся
+        // списанным. Молча так исчезать она не должна.
+        if (!wkSession.ex.length && wkSession.status === 'done' && before.length) {
+            const session = wkSession;
+            offerUndo('Тренировка осталась без упражнений', function () {
+                session.ex = before;
+                if (session === wkSession) {
+                    wkEditingIndex = null;
+                    renderWorkoutExList();
+                }
+                saveDB();
+            }, { kind: 'set' });
+        }
     }
     wkEditingIndex = null;
 }
@@ -13307,12 +13323,18 @@ function padActiveClass(index, field) {
    изменилось с прошлого раза, и забираются чужие изменения (второй телефон).
    Ключ ниже публичный: он лишь называет проект, а пускают или нет правила
    на сервере, которые из этого файла не переписать.
+
+   Спор двух устройств решается по времени: чья запись свежее, та и верна.
+   Черновик ввода (pending) не синхронизируется вовсе — он личное дело
+   устройства, а раньше именно он делал строку «изменённой» при одном только
+   открытии тренировки и запрещал принять чужую правку.
    ========================================================================== */
 
 const CLOUD_URL  = 'https://loaktwpbrjzttbwzmevr.supabase.co';
 const CLOUD_KEY  = 'sb_publishable_WuY7LPSOxVgw1CnPvDt2yg_WySfyn3Q';
 const CLOUD_SNAP = 'silovoyAssistentV6:synced';   // что уже уехало на сервер
 const CLOUD_AUTH = 'silovoyAssistentV6:auth';     // пропуск Supabase
+const CLOUD_SNAP_V = 2;                           // формат снимка
 
 let sb = null;                 // клиент Supabase
 let cloudUid = null;           // id тренера на сервере
@@ -13349,12 +13371,14 @@ const CLOUD_TABLES = {
             return { id: s.id, trainer_id: cloudUid, client_id: s.clientId, date: s.date,
                      time: s.time, status: s.status, well: s.well, body_weight: s.bodyWeight,
                      pass_spent: !!s.passSpent, saved_at: s.savedAt || null,
-                     ex: s.ex || [], pending: s.pending || null };
+                     ex: s.ex || [] };
         },
-        in:   function (r) {
+        in:   function (r, local) {
             return { id: r.id, clientId: r.client_id, date: r.date, time: r.time,
                      status: r.status, well: num(r.well, 8), bodyWeight: num(r.body_weight, 80),
-                     ex: r.ex || [], passSpent: !!r.pass_spent, pending: r.pending || null,
+                     ex: r.ex || [], passSpent: !!r.pass_spent,
+                     // черновик ввода — личное дело устройства, чужой не берём
+                     pending: local ? (local.pending || null) : null,
                      savedAt: r.saved_at || null, metrics: null };
         }
     },
@@ -13409,12 +13433,24 @@ const CLOUD_TABLES = {
 
 const CLOUD_ORDER = ['clients', 'sessions', 'pass_ops', 'exercises', 'templates'];
 
+/* Снимок: что и когда уехало на сервер.
+   rows[таблица][ключ] = { j: строка, d: когда заметили расхождение } */
 function cloudSnap() {
-    try { return JSON.parse(localStorage.getItem(CLOUD_SNAP) || '{}'); } catch (e) { return {}; }
+    let s = null;
+    try { s = JSON.parse(localStorage.getItem(CLOUD_SNAP) || 'null'); } catch (e) {}
+    if (!s || s.v !== CLOUD_SNAP_V) s = { v: CLOUD_SNAP_V, at: null, rows: {}, settings: null };
+    if (!s.rows) s.rows = {};
+    CLOUD_ORDER.forEach(function (t) { if (!s.rows[t]) s.rows[t] = {}; });
+    return s;
 }
 
 function cloudSnapSave(snap) {
     try { localStorage.setItem(CLOUD_SNAP, JSON.stringify(snap)); } catch (e) {}
+}
+
+function cloudFind(list, meta, key) {
+    for (let i = 0; i < list.length; i++) if (String(meta.key(list[i])) === key) return i;
+    return -1;
 }
 
 function cloudSet(state, note) {
@@ -13498,24 +13534,39 @@ async function cloudPush() {
     cloudBusy = true;
     try {
         const snap = cloudSnap();
+        const now = new Date().toISOString();
+
         for (const t of CLOUD_ORDER) {
             const meta = CLOUD_TABLES[t];
-            const was = snap[t] || {};
-            const now = {};
+            const was = snap.rows[t];
+            const fresh = {};
             const send = [];
+
             meta.rows().forEach(function (item) {
                 const k = String(meta.key(item));
                 const row = meta.out(item);
                 const json = JSON.stringify(row);
-                now[k] = json;
-                if (was[k] !== json) send.push(row);
+                const prev = was[k];
+                fresh[k] = prev && prev.j === json ? prev : { j: json, d: (prev && prev.d) || now };
+                if (!prev || prev.j !== json) send.push(row);
             });
+
+            // Пометка «расходится с сервером» ставится до отправки: если связи
+            // нет, при следующей встрече будет видно, когда правка случилась.
+            snap.rows[t] = fresh;
+            cloudSnapSave(snap);
+
             if (send.length) {
                 const res = await sb.from(t).upsert(send);
                 if (res.error) throw res.error;
+                send.forEach(function (row) {
+                    const k = String(t === 'exercises' ? row.name : row.id);
+                    if (fresh[k]) delete fresh[k].d;      // уехало — расхождения нет
+                });
             }
+
             // Удалённое помечаем на сервере: иначе второй телефон вернёт его назад
-            const gone = Object.keys(was).filter(function (k) { return !(k in now); });
+            const gone = Object.keys(was).filter(function (k) { return !(k in fresh); });
             for (const k of gone) {
                 let q = sb.from(t).update({ deleted_at: new Date().toISOString() })
                           .eq('trainer_id', cloudUid);
@@ -13523,8 +13574,8 @@ async function cloudPush() {
                 const res = await q;
                 if (res.error) throw res.error;
             }
-            snap[t] = now;
         }
+
         const look = JSON.stringify(DB.settings || {});
         if (snap.settings !== look) {
             const res = await sb.from('trainers').update({ settings: DB.settings }).eq('id', cloudUid);
@@ -13545,7 +13596,11 @@ async function cloudPush() {
 
 async function cloudPull() {
     if (!sb || !cloudUid) return;
-    if (wkSession) return;                 // посреди тренировки экран не трогаем
+    // Посреди тренировки экран не трогаем. Важно именно «сейчас на экране
+    // тренировки»: wkSession остаётся заполненной и после ухода с неё, и по
+    // ней приём данных отключался навсегда — из-за этого устройство переставало
+    // видеть чужие правки.
+    if (wkSession && currentScreen === 'screen-workout') return;
     try {
         const snap = cloudSnap();
         const since = snap.at || '1970-01-01T00:00:00Z';
@@ -13556,29 +13611,49 @@ async function cloudPull() {
             const meta = CLOUD_TABLES[t];
             const res = await sb.from(t).select('*').gt('updated_at', since);
             if (res.error) throw res.error;
-            const was = snap[t] || (snap[t] = {});
+            const was = snap.rows[t];
+
+            // Строки, чья местная правка почему-то не уехала, спрашиваем
+            // отдельно: иначе спор с сервером не разрешится никогда — сервер
+            // их не присылает, пока сам не изменится.
+            if (!res.data) res.data = [];
+            const stuck = Object.keys(was).filter(function (k) { return was[k] && was[k].d; });
+            if (stuck.length) {
+                const key = (t === 'exercises') ? 'name' : 'id';
+                const extra = await sb.from(t).select('*').in(key, stuck.slice(0, 200));
+                if (extra.error) throw extra.error;
+                const seen = {};
+                (res.data || []).forEach(function (r) { seen[String(r[key])] = true; });
+                (extra.data || []).forEach(function (r) {
+                    if (!seen[String(r[key])]) res.data.push(r);
+                });
+            }
 
             (res.data || []).forEach(function (r) {
                 if (!newest || r.updated_at > newest) newest = r.updated_at;
                 const k = String(t === 'exercises' ? r.name : r.id);
                 const list = meta.rows();
-                let at = -1;
-                for (let i = 0; i < list.length; i++) {
-                    if (String(meta.key(list[i])) === k) { at = i; break; }
-                }
+                const at = cloudFind(list, meta, k);
+                const prev = was[k];
                 const mine = at >= 0 ? JSON.stringify(meta.out(list[at])) : null;
-                const known = (k in was) ? was[k] : null;
-                if (mine !== known) return;   // своё несохранённое изменение — оно уедет и победит
+
+                // Чья запись свежее. Своя правка держится, только пока она
+                // новее серверной; иначе побеждает сервер — так два устройства
+                // сходятся, а не спорят вечно. Если о строке в снимке ничего
+                // нет (первый запуск или сверка), общей правдой считается
+                // сервер: на этом и держится кнопка «Обновить с сервера».
+                if (prev && prev.j !== mine && (!prev.d || r.updated_at <= prev.d)) return;
 
                 if (r.deleted_at) {
                     if (at >= 0) { list.splice(at, 1); changed = true; }
                     delete was[k];
                     return;
                 }
-                const item = meta.in(r);
+                const item = meta.in(r, at >= 0 ? list[at] : null);
+                const json = JSON.stringify(meta.out(item));
+                if (json !== mine) changed = true;
                 if (at >= 0) list[at] = item; else list.push(item);
-                was[k] = JSON.stringify(meta.out(item));
-                changed = true;
+                was[k] = { j: json };
             });
         }
 
@@ -13593,6 +13668,18 @@ async function cloudPull() {
     } catch (e) {
         cloudFail(e);
     }
+}
+
+/* Полная сверка с сервером: снимок забывается, всё серверное считается
+   верным. Спасательная кнопка на случай, когда на устройстве что-то
+   разъехалось. Локальное, чего на сервере нет, остаётся и уезжает следом. */
+async function cloudResync() {
+    if (!sb || !cloudUid) { showToast('Сначала нужно подключение к серверу'); return; }
+    try { localStorage.removeItem(CLOUD_SNAP); } catch (e) {}
+    cloudSet('wait');
+    await cloudPull();
+    await cloudPush();
+    if (cloudState === 'ok') showToast('Данные сверены с сервером');
 }
 
 /* Экран после приёма чужих изменений. Тренировку не трогаем — там вводят числа. */
@@ -13627,6 +13714,7 @@ const CLOUD_LABEL = {
 function renderCloudLine() {
     const host = $('set-profile');
     if (!host || !host.parentNode) return;
+
     let line = $('cloud-line');
     if (!line) {
         line = document.createElement('div');
@@ -13634,9 +13722,20 @@ function renderCloudLine() {
         line.className = 'panel-note';
         line.style.margin = '6px 0 0';
         host.parentNode.insertBefore(line, host.nextSibling);
+
+        const btn = document.createElement('button');
+        btn.id = 'cloud-resync';
+        btn.className = 'btn-soft';
+        btn.style.cssText = 'width: 100%; margin-top: 8px;';
+        btn.innerText = 'Обновить данные с сервера';
+        btn.onclick = function () { cloudResync(); };
+        line.parentNode.insertBefore(btn, line.nextSibling);
     }
     const note = (cloudState === 'ok' || !cloudNote) ? '' : ' · ' + cloudNote;
     line.innerText = (CLOUD_LABEL[cloudState] || '') + note;
+
+    const btn = $('cloud-resync');
+    if (btn) btn.style.display = (cloudState === 'off') ? 'none' : '';
 }
 
 /* --- Связь с остальным приложением --- */
