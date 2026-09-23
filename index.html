@@ -92,7 +92,15 @@ button, input, textarea { font-family: inherit; }
     color-scheme: light;
     --squircle: 20px;
     /* высоту вьюпорта проставляет JS из Telegram.WebApp.viewportStableHeight */
-    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-sab, 0px));
+
+    /* Сколько занято сверху, когда приложение открыто на весь экран:
+       --safe-top — часы и вырез телефона, --head-top — ещё и кнопки
+       Telegram, которые висят поверх нас. Вне полноэкранного режима оба нуля.
+       --vvh — высота видимой части окна: с открытой клавиатурой она меньше. */
+    --safe-top: 0px;
+    --head-top: 0px;
+    --tg-sab: 0px;
 
     /* --- Каналы: базовые цвета в виде троек RGB. Прозрачность задаётся
        на месте через rgba(var(--ch-…), α), поэтому в тёмной теме достаточно
@@ -384,7 +392,7 @@ body {
     backdrop-filter: blur(30px);
     -webkit-backdrop-filter: blur(30px);
     border-bottom: 0.5px solid rgba(var(--ch-hairline), 0.05);
-    padding: 16px 20px;
+    padding: calc(16px + var(--head-top)) 20px 16px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -775,7 +783,7 @@ body {
     top: 0;
     left: 0;
     width: 100%;
-    height: 100%;
+    height: var(--vvh, 100%);
     background: rgba(var(--ch-scrim), 0.25);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
@@ -793,7 +801,9 @@ body {
     -webkit-backdrop-filter: blur(40px);
     border-top-left-radius: 24px;
     border-top-right-radius: 24px;
-    max-height: 80vh;
+    /* выше видимой части окна шторке подниматься некуда: с открытой
+       клавиатурой «80% экрана» уехали бы под неё вместе с найденным */
+    max-height: min(80vh, calc(var(--vvh, 100vh) - var(--head-top) - 12px));
     overflow-y: auto;
     overflow-x: hidden;
     transform: translateY(100%);
@@ -1066,16 +1076,31 @@ body {
 .calendar-capsule.today:not(.active) .capsule-date { color: var(--neon-blue); }
 
 /* --- Шторка со списком недель --- */
-.weeks-sheet {
-    position: relative;      /* точка отсчёта для кнопки «К сегодня» */
-    height: 88vh;
-    max-height: 88vh;
-    padding: 0;
+/* --- Шторка-окно: календарь, окна дня, выбор упражнения и клиента.
+   Такие списки занимают весь экран целиком, шапка остаётся наверху,
+   а прокручивается только содержимое. --- */
+.glass-sheet-content.sheet-tall {
+    height: calc(var(--vvh, 100vh) - var(--head-top));
+    max-height: none;
+    padding: 10px 20px calc(14px + var(--safe-bottom));
     display: flex;
     flex-direction: column;
     overflow: hidden;
 }
-.weeks-sheet .sheet-notch { margin: 10px auto 6px; flex-shrink: 0; }
+.sheet-tall .sheet-notch { display: none; }
+.sheet-tall .sheet-header { flex-shrink: 0; }
+.sheet-tall .sheet-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.weeks-sheet {
+    position: relative;      /* точка отсчёта для кнопки «К сегодня» */
+    padding-left: 0;
+    padding-right: 0;
+}
 .weeks-sheet .sheet-header {
     margin: 0;
     padding: 4px 20px 14px;
@@ -1102,6 +1127,7 @@ body {
 .weeks-scroll {
     position: relative;      /* иначе offsetTop строк считается от шторки */
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
@@ -1201,7 +1227,7 @@ body {
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 16px 20px;
+    padding: calc(16px + var(--head-top)) 20px 16px;
     background: rgba(var(--ch-bg), 0.8);
     backdrop-filter: blur(30px);
     -webkit-backdrop-filter: blur(30px);
@@ -2230,7 +2256,7 @@ canvas { max-width: 100%; margin-top: 10px; }
 /* Пока открыта цифровая клавиатура, низ экрана занят ею: сообщение
    с отменой уходит наверх, иначе оно пряталось бы под панелью. */
 body.pad-open .toast {
-    top: calc(12px + env(safe-area-inset-top, 0px));
+    top: calc(12px + var(--head-top));
     bottom: auto;
     transform: translateY(-140%);
 }
@@ -2634,6 +2660,10 @@ body.pad-open .toast.show { transform: translateY(0); }
 body.pad-open .glass-sheet-content { max-height: 42vh; }
 body.pad-open .ios-navbar { display: none; }
 
+/* То же с клавиатурой самого телефона: окно становится ниже, и панель
+   вкладок всплыла бы на середину экрана поверх списка. */
+body.kb-open .ios-navbar { display: none; }
+
 /* На тренировке нижнее меню убрано: случайный тап не уводит с занятия,
    а выпадающий список упражнений не прячется под панель */
 body[data-screen="screen-workout"] .ios-navbar { display: none; }
@@ -2700,8 +2730,22 @@ body.pad-open { padding-bottom: 62vh; }
 #wk-add-exercise { width: 100%; margin-top: 10px; }
 #wk-empty { padding: 14px 2px; color: var(--text-muted); font-size: 13.5px; text-align: center; }
 /* в шторке выпадающий список — её содержимое, а не подсказка под полем */
-#sheet-wk-pick .ex-picker { position: static; }
-#sheet-wk-pick .ex-dropdown { position: static; margin-top: 8px; max-height: 46vh; box-shadow: none; }
+#sheet-wk-pick .ex-picker {
+    position: static;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+#sheet-wk-pick .ex-dropdown {
+    position: static;
+    margin-top: 8px;
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+    box-shadow: none;
+}
+#sheet-wk-pick .base-toggle, #sheet-wk-pick .fld { flex-shrink: 0; }
 
 /* «Сохранить» всегда под рукой: панель прилипает к низу экрана,
    сколько бы кругов ни было в списке */
@@ -3296,7 +3340,7 @@ body.pad-open { padding-bottom: 62vh; }
 }
 
 /* --- Шапка: аватар тренера с бегущим кольцом, месяц с бликом, «＋» --- */
-:root[data-style="neo"] .sched-header { gap: 14px; padding-top: 20px; padding-bottom: 12px; }
+:root[data-style="neo"] .sched-header { gap: 14px; padding-top: calc(20px + var(--head-top)); padding-bottom: 12px; }
 :root[data-style="neo"] .trainer-av {
     width: 46px;
     height: 46px;
@@ -4436,7 +4480,7 @@ body.pad-open { padding-bottom: 62vh; }
 :root[data-style="minimal"] .premium-header,
 :root[data-style="minimal"] .screen-head {
     gap: 12px;
-    padding: 20px 20px 10px;
+    padding: calc(20px + var(--head-top)) 20px 10px;
     background: var(--m-bg);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
@@ -5535,6 +5579,18 @@ body.pad-open { padding-bottom: 62vh; }
         </div>
     </div>
 
+    <!-- Поиск стоит над разделами и всегда на виду: в списке шестой десяток
+         упражнений, и искать в свёрнутом разделе тренер не догадается -->
+    <label class="day-search cl-search" id="ex-search-row">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input type="text" id="ex-search" autocomplete="off" placeholder="Поиск упражнения"
+               oninput="renderExercisesScreen()">
+        <button type="button" class="day-search-clear" onclick="clearExSearch()" aria-label="Очистить">✕</button>
+    </label>
+
     <!-- Разделы свёрнуты: число в шапке говорит, есть ли что открывать -->
     <div class="panel fold" id="fold-tpl">
         <div class="fold-head" onclick="toggleExFold('tpl')">
@@ -5554,10 +5610,7 @@ body.pad-open { padding-bottom: 62vh; }
             <span class="fold-arrow arr"></span>
         </div>
         <div class="fold-body" id="fold-mine-body" style="display: none;">
-            <!-- поиск идёт по всем упражнениям: и базовым, и своим -->
-            <input class="fld" type="text" id="ex-search" autocomplete="off"
-                   placeholder="Поиск по названию" oninput="renderExercisesScreen()">
-            <button class="btn-soft filled" style="width: 100%; margin-top: 10px;"
+            <button class="btn-soft filled" id="ex-create-btn" style="width: 100%;"
                     onclick="openExerciseEditor(null)">＋ Создать упражнение</button>
             <div id="my-ex-list"></div>
         </div>
@@ -5678,7 +5731,7 @@ body.pad-open { padding-bottom: 62vh; }
 
 <!-- Календарь: список недель без границ -->
 <div id="sheet-weeks" class="glass-sheet-overlay" onclick="closeSheet('sheet-weeks')">
-    <div class="glass-sheet-content weeks-sheet" onclick="event.stopPropagation()">
+    <div class="glass-sheet-content weeks-sheet sheet-tall" onclick="event.stopPropagation()">
         <div class="sheet-notch"></div>
         <div class="sheet-header">
             <h2 id="weeks-title">Месяц</h2>
@@ -5695,13 +5748,13 @@ body.pad-open { padding-bottom: 62vh; }
 
 <!-- Детальная матрица дня -->
 <div id="sheet-matrix" class="glass-sheet-overlay" onclick="closeSheet('sheet-matrix')">
-    <div class="glass-sheet-content" onclick="event.stopPropagation()">
+    <div class="glass-sheet-content sheet-tall" onclick="event.stopPropagation()">
         <div class="sheet-notch"></div>
         <div class="sheet-header">
             <h2 id="matrix-title">День</h2>
             <span class="sheet-close-txt" onclick="closeSheet('sheet-matrix')">Закрыть</span>
         </div>
-        <div class="matrix-container" id="matrix-rows-target"></div>
+        <div class="matrix-container sheet-scroll" id="matrix-rows-target"></div>
     </div>
 </div>
 
@@ -5857,7 +5910,7 @@ body.pad-open { padding-bottom: 62vh; }
 
 <!-- Выбор упражнения: список и есть содержимое шторки, а не подсказка под полем -->
 <div id="sheet-wk-pick" class="glass-sheet-overlay" onclick="closeSheet('sheet-wk-pick')">
-    <div class="glass-sheet-content" onclick="event.stopPropagation()">
+    <div class="glass-sheet-content sheet-tall" onclick="event.stopPropagation()">
         <div class="sheet-notch"></div>
         <div class="sheet-header">
             <div>
@@ -5878,7 +5931,7 @@ body.pad-open { padding-bottom: 62vh; }
 
 <!-- Новая запись: выбор клиента -->
 <div id="sheet-pick-client" class="glass-sheet-overlay" onclick="closeSheet('sheet-pick-client')">
-    <div class="glass-sheet-content" onclick="event.stopPropagation()">
+    <div class="glass-sheet-content sheet-tall" onclick="event.stopPropagation()">
         <div class="sheet-notch"></div>
         <div class="sheet-header">
             <div>
@@ -5887,7 +5940,7 @@ body.pad-open { padding-bottom: 62vh; }
             </div>
             <span class="sheet-close-txt" onclick="closeSheet('sheet-pick-client')">Закрыть</span>
         </div>
-        <div id="pick-client-list" class="premium-menu-list"></div>
+        <div id="pick-client-list" class="premium-menu-list sheet-scroll"></div>
     </div>
 </div>
 
@@ -6122,7 +6175,7 @@ body.pad-open { padding-bottom: 62vh; }
 
 <!-- Список шаблонов -->
 <div id="sheet-templates" class="glass-sheet-overlay" onclick="closeSheet('sheet-templates')">
-    <div class="glass-sheet-content" onclick="event.stopPropagation()">
+    <div class="glass-sheet-content sheet-tall" onclick="event.stopPropagation()">
         <div class="sheet-notch"></div>
         <div class="sheet-header">
             <div>
@@ -6131,7 +6184,7 @@ body.pad-open { padding-bottom: 62vh; }
             </div>
             <span class="sheet-close-txt" onclick="closeSheet('sheet-templates')">Закрыть</span>
         </div>
-        <div id="tpl-list"></div>
+        <div id="tpl-list" class="sheet-scroll"></div>
     </div>
 </div>
 
@@ -6252,10 +6305,34 @@ function applyViewport() {
     if (h) document.documentElement.style.setProperty('--app-height', h + 'px');
 }
 
+/* Полный экран: приложение занимает телефон целиком, а кнопки Telegram
+   («Закрыть», «…») висят поверх него. Просим только на телефоне — на
+   компьютере это развернуло бы окно Telegram во весь монитор. */
+function requestFullscreenIfPhone() {
+    if (!tgSupports('8.0') || typeof tg.requestFullscreen !== 'function') return;
+    if (tg.platform !== 'ios' && tg.platform !== 'android') return;
+    try { tg.requestFullscreen(); } catch (e) {}
+}
+
+/* Сколько занято сверху: часы телефона плюс кнопки Telegram. Пока приложение
+   открыто обычной шторкой, сверху ничего не висит и отступ нулевой. */
+function applyInsets() {
+    const root = document.documentElement;
+    const full = !!(tg && tg.isFullscreen);
+    const sa = (tg && tg.safeAreaInset) || {};
+    const ca = (tg && tg.contentSafeAreaInset) || {};
+    const safeTop = full ? num(sa.top, 0) : 0;
+    root.style.setProperty('--safe-top', safeTop + 'px');
+    root.style.setProperty('--head-top', (safeTop + (full ? num(ca.top, 0) : 0)) + 'px');
+    root.style.setProperty('--tg-sab', num(sa.bottom, 0) + 'px');
+    document.body.classList.toggle('is-fullscreen', full);
+}
+
 function initTelegram() {
     if (!tg) return;
     tg.ready();
     tg.expand();
+    requestFullscreenIfPhone();
 
     try { if (tgSupports('7.7')) tg.disableVerticalSwipes(); } catch (e) {}
     try {
@@ -6267,13 +6344,82 @@ function initTelegram() {
     } catch (e) {}
 
     applyViewport();
+    applyInsets();
     tg.onEvent('viewportChanged', applyViewport);
+    // размеры полосы с часами и кнопок Telegram приходят не сразу
+    ['fullscreenChanged', 'safeAreaChanged', 'contentSafeAreaChanged'].forEach(function (ev) {
+        try { tg.onEvent(ev, applyInsets); } catch (e) {}
+    });
     // тренер поменял тему в самом Telegram — идём следом, если стоит «Авто»
     tg.onEvent('themeChanged', function () {
         const s = lookSettings();
         if (s.style === 'minimal' && s.theme === 'auto') { applyTheme(); renderThemeChips(); }
     });
     if (tg.BackButton) tg.BackButton.onClick(goBack);
+}
+
+/* ==========================================================================
+   КЛАВИАТУРА ТЕЛЕФОНА
+   Пока она открыта, окно приложения становится ниже. Нижняя панель вкладок
+   всплыла бы на середину экрана поверх списка, а найденное ушло бы под саму
+   клавиатуру — поэтому держим видимую высоту в --vvh, помечаем body и
+   поднимаем поле ввода под шапку.
+   ========================================================================== */
+let kbField = null;
+
+function isTypingField(el) {
+    if (!el || el.disabled || el.readOnly) return false;
+    if (el.tagName === 'TEXTAREA') return true;
+    if (el.tagName !== 'INPUT') return false;
+    return ['text', 'search', 'email', 'tel', 'url', 'number', 'password'].indexOf(el.type) !== -1;
+}
+
+function applyVisibleHeight() {
+    const vv = window.visualViewport;
+    const h = vv ? vv.height : window.innerHeight;
+    if (h) document.documentElement.style.setProperty('--vvh', Math.round(h) + 'px');
+}
+
+/* iOS сам подкручивает страницу к полю, только когда окно ужимает он же.
+   Здесь высоту меняет Telegram, поэтому поднимаем поле руками. */
+function bringFieldUp(el) {
+    if (!el || !document.body.contains(el) || document.activeElement !== el) return;
+    if (el.closest('.glass-sheet-content')) return;      // в шторке поле и так сверху
+    const screen = el.closest('.screen');
+    const head = screen ? screen.querySelector('.premium-header, .screen-head') : null;
+    const top = (head ? head.getBoundingClientRect().height : 0) + 8;
+    const vv = window.visualViewport;
+    const seen = vv ? vv.height : window.innerHeight;
+    const r = el.getBoundingClientRect();
+    if (r.top >= top && r.bottom <= seen - 8) return;
+    window.scrollBy({ top: r.top - top, behavior: 'smooth' });
+}
+
+function initKeyboardWatch() {
+    applyVisibleHeight();
+    const vv = window.visualViewport;
+    if (vv) {
+        vv.addEventListener('resize', applyVisibleHeight);
+        vv.addEventListener('scroll', applyVisibleHeight);
+    }
+    window.addEventListener('resize', applyVisibleHeight);
+
+    document.addEventListener('focusin', function (e) {
+        if (!isTypingField(e.target)) return;
+        kbField = e.target;
+        document.body.classList.add('kb-open');
+        bringFieldUp(kbField);
+        // второй раз — когда клавиатура уже поднялась и окно стало ниже
+        setTimeout(function () { bringFieldUp(kbField); }, 380);
+    });
+
+    document.addEventListener('focusout', function (e) {
+        if (!isTypingField(e.target)) return;
+        kbField = null;
+        setTimeout(function () {
+            if (!isTypingField(document.activeElement)) document.body.classList.remove('kb-open');
+        }, 60);
+    });
 }
 
 /* Шапка и фон самого Telegram красятся под тему приложения */
@@ -7314,7 +7460,8 @@ const MUSCLES = [
     "Спина",
     "Трапеция",
     "Разгибатели спины",
-    "Плечи",
+    "Передняя дельта",
+    "Средняя дельта",
     "Задняя дельта",
     "Бицепс",
     "Трицепс",
@@ -7327,13 +7474,18 @@ const MUSCLES = [
     "Пресс"
 ];
 
+/* Как назывались мышцы раньше. Своё упражнение тренера, записанное со старым
+   названием, иначе потеряло бы мышцу или пропало целиком при загрузке. */
+const MUSCLE_ALIAS = { "Плечи": "Передняя дельта" };
+
 /* Категория выводится из целевой мышцы, тренер её не указывает */
 const MUSCLE_CATEGORY = {
     "Грудь": "Грудь",
     "Спина": "Спина",
     "Трапеция": "Спина",
     "Разгибатели спины": "Спина",
-    "Плечи": "Плечи",
+    "Передняя дельта": "Плечи",
+    "Средняя дельта": "Плечи",
     "Задняя дельта": "Плечи",
     "Бицепс": "Руки",
     "Трицепс": "Руки",
@@ -7362,42 +7514,72 @@ const CATEGORY_ORDER = [
 const BASE_EX = {
 
     // Грудь
-    "Жим гантелей лёжа": { category: "Грудь", target: "Грудь", muscles: { "Грудь": 1, "Трицепс": 0.5, "Плечи": 0.5 }, compound: true, unilateral: false, equipment: "dumbbell" },
-    "Жим гантелей на наклонной": { category: "Грудь", target: "Грудь", muscles: { "Грудь": 1, "Трицепс": 0.5, "Плечи": 0.5 }, compound: true, unilateral: false, equipment: "dumbbell" },
-    "Жим лёжа": { category: "Грудь", target: "Грудь", muscles: { "Грудь": 1, "Трицепс": 0.5, "Плечи": 0.5 }, compound: true, unilateral: false, equipment: "barbell" },
-    "Отжимания на брусьях": { category: "Грудь", target: "Грудь", muscles: { "Грудь": 1, "Трицепс": 0.5, "Плечи": 0.5 }, compound: true, unilateral: false, equipment: "bodyweight", bwShare: 1 },
-    "Отжимания от пола": { category: "Грудь", target: "Грудь", muscles: { "Грудь": 1, "Трицепс": 0.5, "Плечи": 0.5 }, compound: true, unilateral: false, equipment: "bodyweight", bwShare: 0.65 },
+    "Бабочка (тренажёр)": { category: "Грудь", target: "Грудь", muscles: { "Грудь": 1, "Передняя дельта": 0.3 }, compound: false, unilateral: false, equipment: "machine" },
+    "Жим в тренажёре": { category: "Грудь", target: "Грудь", muscles: { "Грудь": 1, "Трицепс": 0.5, "Передняя дельта": 0.5 }, compound: true, unilateral: false, equipment: "machine" },
+    "Жим гантелей лёжа": { category: "Грудь", target: "Грудь", muscles: { "Грудь": 1, "Трицепс": 0.5, "Передняя дельта": 0.5 }, compound: true, unilateral: false, equipment: "dumbbell" },
+    "Жим гантелей на наклонной": { category: "Грудь", target: "Грудь", muscles: { "Грудь": 1, "Трицепс": 0.5, "Передняя дельта": 0.5 }, compound: true, unilateral: false, equipment: "dumbbell" },
+    "Жим лёжа": { category: "Грудь", target: "Грудь", muscles: { "Грудь": 1, "Трицепс": 0.5, "Передняя дельта": 0.5 }, compound: true, unilateral: false, equipment: "barbell" },
+    "Жим штанги на наклонной": { category: "Грудь", target: "Грудь", muscles: { "Грудь": 1, "Трицепс": 0.5, "Передняя дельта": 0.5 }, compound: true, unilateral: false, equipment: "barbell" },
+    "Отжимания на брусьях": { category: "Грудь", target: "Грудь", muscles: { "Грудь": 1, "Трицепс": 0.5, "Передняя дельта": 0.5 }, compound: true, unilateral: false, equipment: "bodyweight", bwShare: 1 },
+    "Отжимания от пола": { category: "Грудь", target: "Грудь", muscles: { "Грудь": 1, "Трицепс": 0.5, "Передняя дельта": 0.5 }, compound: true, unilateral: false, equipment: "bodyweight", bwShare: 0.65 },
+    "Сведения в кроссовере": { category: "Грудь", target: "Грудь", muscles: { "Грудь": 1, "Передняя дельта": 0.3 }, compound: false, unilateral: false, equipment: "machine" },
 
     // Спина
-    "Подтягивания": { category: "Спина", target: "Спина", muscles: { "Спина": 1, "Бицепс": 0.5, "Плечи": 0.5, "Предплечья": 0.3 }, compound: true, unilateral: false, equipment: "bodyweight", bwShare: 1 },
-    "Тяга блока сверху": { category: "Спина", target: "Спина", muscles: { "Спина": 1, "Бицепс": 0.5, "Плечи": 0.5, "Предплечья": 0.3 }, compound: true, unilateral: false, equipment: "machine" },
-    "Тяга гантели одной рукой": { category: "Спина", target: "Спина", muscles: { "Спина": 1, "Бицепс": 0.5, "Плечи": 0.5, "Трапеция": 0.3, "Предплечья": 0.3 }, compound: true, unilateral: true, equipment: "dumbbell" },
-    "Тяга горизонтального блока": { category: "Спина", target: "Спина", muscles: { "Спина": 1, "Бицепс": 0.5, "Плечи": 0.5, "Трапеция": 0.3 }, compound: true, unilateral: false, equipment: "machine" },
-    "Тяга штанги в наклоне": { category: "Спина", target: "Спина", muscles: { "Спина": 1, "Бицепс": 0.5, "Плечи": 0.5, "Разгибатели спины": 0.5, "Трапеция": 0.3, "Предплечья": 0.3 }, compound: true, unilateral: false, equipment: "barbell" },
+    "Гиперэкстензия": { category: "Спина", target: "Разгибатели спины", muscles: { "Разгибатели спины": 1, "Ягодицы": 0.5, "Бицепс бедра": 0.5 }, compound: true, unilateral: false, equipment: "bodyweight", bwShare: 0.65 },
+    "Подтягивания": { category: "Спина", target: "Спина", muscles: { "Спина": 1, "Бицепс": 0.5, "Задняя дельта": 0.3, "Трапеция": 0.2, "Предплечья": 0.3 }, compound: true, unilateral: false, equipment: "bodyweight", bwShare: 1 },
+    "Подтягивания в гравитроне": { category: "Спина", target: "Спина", muscles: { "Спина": 1, "Бицепс": 0.5, "Задняя дельта": 0.3, "Предплечья": 0.3 }, compound: true, unilateral: false, equipment: "machine" },
+    "Пуловер на блоке": { category: "Спина", target: "Спина", muscles: { "Спина": 1, "Трицепс": 0.3 }, compound: false, unilateral: false, equipment: "machine" },
+    "Тяга Т-грифа": { category: "Спина", target: "Спина", muscles: { "Спина": 1, "Бицепс": 0.5, "Задняя дельта": 0.5, "Трапеция": 0.3, "Предплечья": 0.3 }, compound: true, unilateral: false, equipment: "barbell" },
+    "Тяга блока сверху": { category: "Спина", target: "Спина", muscles: { "Спина": 1, "Бицепс": 0.5, "Задняя дельта": 0.3, "Трапеция": 0.2, "Предплечья": 0.3 }, compound: true, unilateral: false, equipment: "machine" },
+    "Тяга гантели одной рукой": { category: "Спина", target: "Спина", muscles: { "Спина": 1, "Бицепс": 0.5, "Задняя дельта": 0.5, "Трапеция": 0.3, "Предплечья": 0.3 }, compound: true, unilateral: true, equipment: "dumbbell" },
+    "Тяга горизонтального блока": { category: "Спина", target: "Спина", muscles: { "Спина": 1, "Бицепс": 0.5, "Задняя дельта": 0.5, "Трапеция": 0.3 }, compound: true, unilateral: false, equipment: "machine" },
+    "Тяга штанги в наклоне": { category: "Спина", target: "Спина", muscles: { "Спина": 1, "Бицепс": 0.5, "Задняя дельта": 0.5, "Разгибатели спины": 0.5, "Трапеция": 0.3, "Предплечья": 0.3 }, compound: true, unilateral: false, equipment: "barbell" },
+    "Шраги": { category: "Спина", target: "Трапеция", muscles: { "Трапеция": 1, "Предплечья": 0.3 }, compound: false, unilateral: false, equipment: "dumbbell" },
 
     // Ноги
     "Болгарские приседания": { category: "Ноги", target: "Квадрицепс", muscles: { "Квадрицепс": 1, "Ягодицы": 0.5, "Бицепс бедра": 0.3, "Икроножные": 0.2 }, compound: true, unilateral: true, equipment: "dumbbell" },
     "Выпады": { category: "Ноги", target: "Квадрицепс", muscles: { "Квадрицепс": 1, "Ягодицы": 0.5, "Бицепс бедра": 0.3, "Икроножные": 0.2 }, compound: true, unilateral: true, equipment: "dumbbell" },
+    "Гакк-приседания": { category: "Ноги", target: "Квадрицепс", muscles: { "Квадрицепс": 1, "Ягодицы": 0.5, "Бицепс бедра": 0.3, "Икроножные": 0.2 }, compound: true, unilateral: false, equipment: "machine" },
     "Жим ногами": { category: "Ноги", target: "Квадрицепс", muscles: { "Квадрицепс": 1, "Ягодицы": 0.5, "Бицепс бедра": 0.3, "Икроножные": 0.2 }, compound: true, unilateral: false, equipment: "machine" },
+    "Зашагивания на платформу": { category: "Ноги", target: "Квадрицепс", muscles: { "Квадрицепс": 1, "Ягодицы": 0.5, "Бицепс бедра": 0.3, "Икроножные": 0.2 }, compound: true, unilateral: true, equipment: "dumbbell" },
+    "Махи ногой назад в кроссовере": { category: "Ноги", target: "Ягодицы", muscles: { "Ягодицы": 1, "Бицепс бедра": 0.5 }, compound: false, unilateral: true, equipment: "machine" },
+    "Отведение бедра (тренажёр)": { category: "Ноги", target: "Ягодицы", muscles: { "Ягодицы": 1 }, compound: false, unilateral: false, equipment: "machine" },
+    "Подъёмы на носки сидя": { category: "Ноги", target: "Икроножные", muscles: { "Икроножные": 1 }, compound: false, unilateral: false, equipment: "machine" },
+    "Подъёмы на носки стоя": { category: "Ноги", target: "Икроножные", muscles: { "Икроножные": 1 }, compound: false, unilateral: false, equipment: "machine" },
+    "Приседания в Смите": { category: "Ноги", target: "Квадрицепс", muscles: { "Квадрицепс": 1, "Ягодицы": 0.5, "Бицепс бедра": 0.3, "Икроножные": 0.2 }, compound: true, unilateral: false, equipment: "machine" },
     "Приседания со штангой": { category: "Ноги", target: "Квадрицепс", muscles: { "Квадрицепс": 1, "Ягодицы": 0.5, "Бицепс бедра": 0.3, "Икроножные": 0.2, "Разгибатели спины": 0.5 }, compound: true, unilateral: false, equipment: "barbell" },
     "Разгибание ног (тренажёр)": { category: "Ноги", target: "Квадрицепс", muscles: { "Квадрицепс": 1 }, compound: false, unilateral: false, equipment: "machine" },
     "Румынская тяга": { category: "Ноги", target: "Бицепс бедра", muscles: { "Бицепс бедра": 1, "Ягодицы": 1, "Разгибатели спины": 0.5, "Трапеция": 0.3, "Предплечья": 0.3 }, compound: true, unilateral: false, equipment: "barbell" },
+    "Сведение ног (тренажёр)": { category: "Ноги", target: "Приводящие", muscles: { "Приводящие": 1 }, compound: false, unilateral: false, equipment: "machine" },
     "Сгибание ног (тренажёр)": { category: "Ноги", target: "Бицепс бедра", muscles: { "Бицепс бедра": 1 }, compound: false, unilateral: false, equipment: "machine" },
     "Становая тяга": { category: "Ноги", target: "Бицепс бедра", muscles: { "Бицепс бедра": 1, "Ягодицы": 1, "Разгибатели спины": 0.5, "Спина": 0.5, "Трапеция": 0.5, "Предплечья": 0.3 }, compound: true, unilateral: false, equipment: "barbell" },
     "Ягодичный мост": { category: "Ноги", target: "Ягодицы", muscles: { "Ягодицы": 1, "Бицепс бедра": 0.5 }, compound: true, unilateral: false, equipment: "barbell" },
 
     // Плечи
-    "Жим гантелей сидя (плечи)": { category: "Плечи", target: "Плечи", muscles: { "Плечи": 1, "Трицепс": 0.5 }, compound: true, unilateral: false, equipment: "dumbbell" },
-    "Жим стоя (армейский)": { category: "Плечи", target: "Плечи", muscles: { "Плечи": 1, "Трицепс": 0.5, "Трапеция": 0.3, "Пресс": 0.3 }, compound: true, unilateral: false, equipment: "barbell" },
-    "Махи гантелями в стороны": { category: "Плечи", target: "Плечи", muscles: { "Плечи": 1, "Трапеция": 0.3 }, compound: false, unilateral: false, equipment: "dumbbell" },
+    "Жим Арнольда": { category: "Плечи", target: "Передняя дельта", muscles: { "Передняя дельта": 1, "Средняя дельта": 0.5, "Трицепс": 0.5 }, compound: true, unilateral: false, equipment: "dumbbell" },
+    "Жим гантелей сидя (плечи)": { category: "Плечи", target: "Передняя дельта", muscles: { "Передняя дельта": 1, "Средняя дельта": 0.5, "Трицепс": 0.5 }, compound: true, unilateral: false, equipment: "dumbbell" },
+    "Жим стоя (армейский)": { category: "Плечи", target: "Передняя дельта", muscles: { "Передняя дельта": 1, "Средняя дельта": 0.5, "Трицепс": 0.5, "Трапеция": 0.3, "Пресс": 0.3 }, compound: true, unilateral: false, equipment: "barbell" },
+    "Махи в наклоне": { category: "Плечи", target: "Задняя дельта", muscles: { "Задняя дельта": 1, "Трапеция": 0.3 }, compound: false, unilateral: false, equipment: "dumbbell" },
+    "Махи гантелями в стороны": { category: "Плечи", target: "Средняя дельта", muscles: { "Средняя дельта": 1, "Трапеция": 0.3 }, compound: false, unilateral: false, equipment: "dumbbell" },
+    "Обратная бабочка": { category: "Плечи", target: "Задняя дельта", muscles: { "Задняя дельта": 1, "Трапеция": 0.3 }, compound: false, unilateral: false, equipment: "machine" },
+    "Тяга к подбородку": { category: "Плечи", target: "Средняя дельта", muscles: { "Средняя дельта": 1, "Трапеция": 0.5, "Бицепс": 0.3 }, compound: true, unilateral: false, equipment: "barbell" },
 
     // Руки
+    "Молотковые сгибания": { category: "Руки", target: "Бицепс", muscles: { "Бицепс": 1, "Предплечья": 0.5 }, compound: false, unilateral: false, equipment: "dumbbell" },
+    "Отжимания узким хватом": { category: "Руки", target: "Трицепс", muscles: { "Трицепс": 1, "Грудь": 0.5, "Передняя дельта": 0.3 }, compound: true, unilateral: false, equipment: "bodyweight", bwShare: 0.65 },
+    "Подъём гантелей на бицепс": { category: "Руки", target: "Бицепс", muscles: { "Бицепс": 1, "Предплечья": 0.3 }, compound: false, unilateral: false, equipment: "dumbbell" },
     "Подъём штанги на бицепс": { category: "Руки", target: "Бицепс", muscles: { "Бицепс": 1, "Предплечья": 0.3 }, compound: false, unilateral: false, equipment: "barbell" },
+    "Разгибание гантели из-за головы": { category: "Руки", target: "Трицепс", muscles: { "Трицепс": 1 }, compound: false, unilateral: false, equipment: "dumbbell" },
     "Разгибания на трицепс на блоке": { category: "Руки", target: "Трицепс", muscles: { "Трицепс": 1 }, compound: false, unilateral: false, equipment: "machine" },
+    "Сгибания запястий": { category: "Руки", target: "Предплечья", muscles: { "Предплечья": 1 }, compound: false, unilateral: false, equipment: "barbell" },
+    "Сгибания на скамье Скотта": { category: "Руки", target: "Бицепс", muscles: { "Бицепс": 1, "Предплечья": 0.3 }, compound: false, unilateral: false, equipment: "barbell" },
     "Французский жим": { category: "Руки", target: "Трицепс", muscles: { "Трицепс": 1 }, compound: false, unilateral: false, equipment: "barbell" },
 
     // Пресс
+    "Подъём ног в висе": { category: "Пресс", target: "Пресс", muscles: { "Пресс": 1, "Предплечья": 0.3 }, compound: false, unilateral: false, equipment: "bodyweight", bwShare: 0.4 },
     "Пресс/скручивания": { category: "Пресс", target: "Пресс", muscles: { "Пресс": 1 }, compound: false, unilateral: false, equipment: "machine" },
+    "Русский твист": { category: "Пресс", target: "Пресс", muscles: { "Пресс": 1 }, compound: false, unilateral: false, equipment: "dumbbell" },
+    "Скручивания на блоке": { category: "Пресс", target: "Пресс", muscles: { "Пресс": 1 }, compound: false, unilateral: false, equipment: "machine" },
 };
 
 const BASE_EX_NAMES = Object.keys(BASE_EX);
@@ -7522,14 +7704,16 @@ function normalizeExercises(raw) {
 
         const muscles = {};
         if (e.muscles && typeof e.muscles === 'object') {
-            for (const m in e.muscles) {
+            for (const raw in e.muscles) {
+                const m = MUSCLE_ALIAS[raw] || raw;      // «Плечи» из старых версий
                 if (MUSCLES.indexOf(m) === -1) continue;
-                const c = num(e.muscles[m], 0);
-                if (c > 0) muscles[m] = Math.min(1, c);
+                const c = num(e.muscles[raw], 0);
+                if (c > 0) muscles[m] = Math.max(muscles[m] || 0, Math.min(1, c));
             }
         }
 
-        let target = (typeof e.target === 'string' && MUSCLES.indexOf(e.target) !== -1) ? e.target : null;
+        const rawTarget = (typeof e.target === 'string') ? (MUSCLE_ALIAS[e.target] || e.target) : null;
+        let target = (rawTarget && MUSCLES.indexOf(rawTarget) !== -1) ? rawTarget : null;
         if (!target) target = Object.keys(muscles)[0] || null;
         if (!target) return null;
         muscles[target] = 1;
@@ -9557,6 +9741,25 @@ function onBodyWeightChanged(value) {
 
 /* --- Выбор упражнения --- */
 
+/* Насколько название подходит набранному: начинается с него, начинается
+   с него слово внутри названия или просто где-то встречается. */
+function matchRank(name, query) {
+    const low = name.toLowerCase();
+    const at = low.indexOf(query);
+    if (at === -1) return -1;
+    if (at === 0) return 0;
+    return /[\s(«"'\-\/]/.test(low.charAt(at - 1)) ? 1 : 2;
+}
+
+/* Найденное сортируется по совпадению, а не по алфавиту: набрал «жим» —
+   «Жим лёжа» первый, а не в середине списка. */
+function sortByMatch(names, query) {
+    return names.map(function (n) { return { n: n, r: matchRank(n, query) }; })
+        .filter(function (x) { return x.r !== -1; })
+        .sort(function (a, b) { return a.r - b.r || a.n.localeCompare(b.n, 'ru'); })
+        .map(function (x) { return x.n; });
+}
+
 function renderExDropdown(filterText) {
     const query = String(filterText || '').trim().toLowerCase();
     const grouped = {};
@@ -9569,20 +9772,29 @@ function renderExDropdown(filterText) {
         if (!query || name.toLowerCase().indexOf(query) !== -1) grouped[cat].push({ name: name, idx: idx });
     });
 
+    const option = function (name) {
+        const idx = exNamesCache.indexOf(name);
+        const sel = name === selectedExercise;
+        return '<div class="ex-option ' + (sel ? 'selected' : '') + '" onclick="selectExerciseByIndex(' + idx + ')">' +
+                   '<span>' + esc(name) + '</span>' +
+                   (sel ? '<span style="font-weight:800;">✓</span>' : '') +
+               '</div>';
+    };
+
     let html = '', found = 0;
-    CATEGORY_ORDER.forEach(function (cat) {
-        const items = (grouped[cat] || []).sort(function (a, b) { return a.name.localeCompare(b.name, 'ru'); });
-        if (!items.length) return;
-        html += '<div class="ex-group">' + esc(cat) + '</div>';
-        items.forEach(function (item) {
-            const sel = item.name === selectedExercise;
-            html += '<div class="ex-option ' + (sel ? 'selected' : '') + '" onclick="selectExerciseByIndex(' + item.idx + ')">' +
-                        '<span>' + esc(item.name) + '</span>' +
-                        (sel ? '<span style="font-weight:800;">✓</span>' : '') +
-                    '</div>';
-            found++;
+    if (query) {
+        // идёт поиск: разделы мышц только мешают, важен порядок совпадения
+        const hits = sortByMatch(exNamesCache, query);
+        found = hits.length;
+        html = hits.map(option).join('');
+    } else {
+        CATEGORY_ORDER.forEach(function (cat) {
+            const items = (grouped[cat] || []).sort(function (a, b) { return a.name.localeCompare(b.name, 'ru'); });
+            if (!items.length) return;
+            html += '<div class="ex-group">' + esc(cat) + '</div>';
+            items.forEach(function (item) { html += option(item.name); found++; });
         });
-    });
+    }
 
     const typed = String(filterText || '').trim();
     if (!found && !typed) html = '<div class="ex-empty">Ничего не найдено</div>';
@@ -12049,6 +12261,8 @@ async function applyTemplate(id) {
     });
 
     closeSheet('sheet-templates');
+    // шторка выбора упражнения своё отработала: иначе она остаётся поверх
+    if (sheetStack.indexOf('sheet-wk-pick') !== -1) closeSheet('sheet-wk-pick');
     haptic('success');
     openExFromWorkout(firstIndex);      // сразу открываем первое упражнение плана
 
@@ -12470,6 +12684,7 @@ function renderProfileLine() {
 
 window.addEventListener('DOMContentLoaded', function () {
     initTelegram();
+    initKeyboardWatch();
     initNeoBackground();
     applyTheme();
     renderThemeChips();
@@ -12955,6 +13170,9 @@ function renderExercisesScreen() {
 
     const typed = ($('ex-search') ? $('ex-search').value : '').trim();
     const query = typed.toLowerCase();
+    if ($('ex-search-row')) $('ex-search-row').classList.toggle('has-text', !!typed);
+    // искать в свёрнутом разделе бессмысленно: найденное было бы не видно
+    if (typed) exFolds.mine = true;
     const all = allExercises();
     const names = Object.keys(all);
     const found = names.filter(function (n) { return !query || n.toLowerCase().indexOf(query) !== -1; });
@@ -12963,6 +13181,9 @@ function renderExercisesScreen() {
     setExFold('mine', exFolds.mine, query ? found.length + ' из ' + names.length : names.length);
 
     const box = $('my-ex-list');
+    // во время поиска кнопка «Создать» только отодвигает найденное вниз:
+    // завести упражнение можно из самого списка, последней строкой
+    if ($('ex-create-btn')) $('ex-create-btn').style.display = typed ? 'none' : '';
     if (!exFolds.mine) { box.innerHTML = ''; return; }
 
     if (!found.length) {
@@ -12971,6 +13192,11 @@ function renderExercisesScreen() {
             '<button class="btn-soft" style="width: 100%;" onclick="createExerciseFromList()">' +
                 '＋ Создать «' + esc(typed) + '»' +
             '</button>';
+        return;
+    }
+
+    if (query) {
+        box.innerHTML = sortByMatch(found, query).map(exerciseRow).join('');
         return;
     }
 
@@ -12988,6 +13214,11 @@ function renderExercisesScreen() {
                grouped[cat].sort(function (a, b) { return a.localeCompare(b, 'ru'); })
                    .map(exerciseRow).join('');
     }).join('');
+}
+
+function clearExSearch() {
+    $('ex-search').value = '';
+    renderExercisesScreen();
 }
 
 function createExerciseFromList() {
