@@ -9964,7 +9964,10 @@ function figHtml(cat, cls) {
 let pickGroup = null;
 
 function openExGroup(cat) {
-    pickGroup = cat;
+    // Номер группы, а не название: кавычки внутри onclick обрывают атрибут,
+    // и кнопка молча перестаёт работать. В приложении так же сделаны строки
+    // упражнений — через номер в списке.
+    pickGroup = (typeof cat === 'number') ? CATEGORY_ORDER[cat] : cat;
     haptic('light');
     renderExDropdown($('wk-ex-search').value);
     const box = $('wk-ex-dropdown');
@@ -10036,8 +10039,8 @@ function renderExDropdown(filterText) {
             const cat = exData(n).category || 'Другое';
             count[cat] = (count[cat] || 0) + 1;
         });
-        html = '<div class="ex-groups">' + CATEGORY_ORDER.map(function (cat) {
-            return '<button class="ex-gcard" onclick="openExGroup(' + JSON.stringify(cat) + ')">' +
+        html = '<div class="ex-groups">' + CATEGORY_ORDER.map(function (cat, i) {
+            return '<button class="ex-gcard" onclick="openExGroup(' + i + ')">' +
                        figHtml(cat) +
                        '<span class="nm">' + esc(cat) + '</span>' +
                        '<span class="cnt">' + (count[cat] || 0) + ' ' +
