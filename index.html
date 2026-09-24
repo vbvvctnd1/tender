@@ -569,6 +569,16 @@ body {
 /* тот же поиск на вкладке «Клиенты» — по краям панели со списком */
 :root[data-style] .day-search.cl-search { margin: 12px 16px 0; }
 
+/* Версия и состояние полного экрана: мелко, чтобы не мешать, но так,
+   чтобы тренер мог прислать снимок экрана и всё стало ясно */
+.build-line {
+    margin-top: 8px;
+    font-size: 11.5px;
+    line-height: 1.4;
+    color: var(--text-muted);
+    opacity: 0.75;
+}
+
 /* Остаток занятий плашкой: в Нео-Стекле на карточке записи, в обоих — в поиске */
 .card-pill {
     min-width: 26px;
@@ -2655,6 +2665,22 @@ body.pad-open .toast.show { transform: translateY(0); }
     border-color: var(--neon-blue);
     box-shadow: 0 0 0 3px rgba(var(--ch-blue), 0.14);
 }
+
+/* Пока открыта цифровая клавиатура, экран тренировки делится на троих:
+   шапка, клавиатура и панель «Сохранить». В полном экране на подходы не
+   оставалось ни строки, поэтому на время ввода лишнее убирается — и всё
+   возвращается по «Готово». */
+body.pad-open[data-screen="screen-workout"] .screen-head {
+    padding-top: calc(6px + var(--head-top));
+    padding-bottom: 6px;
+}
+body.pad-open[data-screen="screen-workout"] .screen-head h2 { font-size: 17px; }
+body.pad-open[data-screen="screen-workout"] .screen-head .head-sub { display: none; }
+body.pad-open[data-screen="screen-workout"] .screen-head .back-chip { width: 36px; height: 36px; }
+body.pad-open[data-screen="screen-workout"] #wk-save-bar { display: none; }
+body.pad-open[data-screen="screen-workout"] .panel > .panel-title { display: none; }
+/* у открытой карточки подпись дублирует строки подходов под ней */
+body.pad-open[data-screen="screen-workout"] .ex-item.editing .ex-sets { display: none; }
 
 /* Пока клавиатура открыта, шторка ужимается, чтобы форма была видна */
 body.pad-open .glass-sheet-content { max-height: 42vh; }
@@ -6305,13 +6331,24 @@ function applyViewport() {
     if (h) document.documentElement.style.setProperty('--app-height', h + 'px');
 }
 
+/* Дата сборки: видно в Профиле, чтобы на вопрос «а у меня новая версия?»
+   отвечал сам экран, а не догадки. Меняется вместе с файлом. */
+const BUILD = '23.09.2026';
+let fullReason = '';        // почему полного экрана нет — тоже видно в Профиле
+
 /* Полный экран: приложение занимает телефон целиком, а кнопки Telegram
    («Закрыть», «…») висят поверх него. Просим только на телефоне — на
    компьютере это развернуло бы окно Telegram во весь монитор. */
 function requestFullscreenIfPhone() {
-    if (!tgSupports('8.0') || typeof tg.requestFullscreen !== 'function') return;
-    if (tg.platform !== 'ios' && tg.platform !== 'android') return;
-    try { tg.requestFullscreen(); } catch (e) {}
+    if (tg.platform !== 'ios' && tg.platform !== 'android') {
+        fullReason = 'только на телефоне';
+        return;
+    }
+    if (!tgSupports('8.0') || typeof tg.requestFullscreen !== 'function') {
+        fullReason = 'нужен Telegram новее';
+        return;
+    }
+    try { tg.requestFullscreen(); } catch (e) { fullReason = 'отказ: ' + e; }
 }
 
 /* Сколько занято сверху: часы телефона плюс кнопки Telegram. Пока приложение
@@ -6345,10 +6382,22 @@ function initTelegram() {
 
     applyViewport();
     applyInsets();
+    // Первая просьба иногда уходит раньше, чем Telegram готов её принять,
+    // и молча теряется. Вторая попытка через полсекунды ничего не стоит.
+    setTimeout(function () {
+        if (!tg.isFullscreen && !fullReason) requestFullscreenIfPhone();
+        renderProfileLine();
+    }, 600);
+    try {
+        tg.onEvent('fullscreenFailed', function (e) {
+            fullReason = 'Telegram отказал (' + ((e && e.error) || 'без причины') + ')';
+            renderProfileLine();
+        });
+    } catch (e) {}
     tg.onEvent('viewportChanged', applyViewport);
     // размеры полосы с часами и кнопок Telegram приходят не сразу
     ['fullscreenChanged', 'safeAreaChanged', 'contentSafeAreaChanged'].forEach(function (ev) {
-        try { tg.onEvent(ev, applyInsets); } catch (e) {}
+        try { tg.onEvent(ev, function () { applyInsets(); renderProfileLine(); }); } catch (e) {}
     });
     // тренер поменял тему в самом Telegram — идём следом, если стоит «Авто»
     tg.onEvent('themeChanged', function () {
@@ -12659,10 +12708,24 @@ function renderTrainerAvatar() {
             : '');
 }
 
+/* Короткая справка о том, что за версия открыта и как она себя чувствует.
+   Нужна для беты: по одному снимку экрана видно, обновился ли тренер и
+   включился ли полный экран. */
+function buildLineHtml() {
+    const parts = ['Сборка ' + BUILD];
+    if (inTelegram) {
+        parts.push('Telegram ' + (tg.version || '?') + ' · ' + tg.platform);
+        parts.push('полный экран: ' + (tg.isFullscreen ? 'включён' : (fullReason || 'выключен')));
+    } else {
+        parts.push('открыто вне Telegram');
+    }
+    return '<div class="build-line">' + esc(parts.join(' · ')) + '</div>';
+}
+
 function renderProfileLine() {
     const user = (tg && tg.initDataUnsafe) ? tg.initDataUnsafe.user : null;
     if (!user) {
-        $('set-profile').innerText = 'Открыто вне Telegram';
+        $('set-profile').innerHTML = 'Открыто вне Telegram' + buildLineHtml();
         return;
     }
     const name = [user.first_name, user.last_name].filter(Boolean).join(' ');
@@ -12679,7 +12742,7 @@ function renderProfileLine() {
                 (user.photo_url ? '<img class="avatar-photo" src="' + esc(user.photo_url) + '" alt="" onerror="this.remove()">' : '') +
             '</div>' +
             '<div><div class="pr-name">' + esc(name) + '</div><div class="pr-id">ID ' + user.id + '</div></div>' +
-        '</div>';
+        '</div>' + buildLineHtml();
 }
 
 window.addEventListener('DOMContentLoaded', function () {
@@ -13318,16 +13381,45 @@ function openPad(cfg) {
     }, 90);
 }
 
-/* Поднять правимое поле над панелью. Внутри шторки прокручивается сама
-   шторка, на экране тренировки — страница. */
+/* Полоса, в которой вообще что-то видно: от нижнего края прилипшей шапки
+   до верхнего края клавиатуры. Высоту клавиатуры берём из offsetHeight, а не
+   из положения на экране: в момент вызова она ещё выезжает снизу. */
+function visibleBand() {
+    const screen = document.querySelector('.screen.active');
+    const head = screen ? screen.querySelector('.screen-head, .premium-header') : null;
+    const kp = $('keypad');
+    const padOpen = document.body.classList.contains('pad-open');
+    return {
+        top: head ? head.getBoundingClientRect().bottom : 0,
+        bottom: (padOpen && kp) ? (window.innerHeight - kp.offsetHeight) : window.innerHeight
+    };
+}
+
+/* Поднять правимое поле в эту полосу. Внутри шторки прокручивается сама
+   шторка, на экране тренировки — страница. Прокручиваем ровно настолько,
+   насколько нужно: соседние подходы остаются на виду. */
 function padScrollInto(el) {
     if (!el) return;
     if (el.closest('.glass-sheet-content')) {
         el.scrollIntoView({ block: 'center' });
         return;
     }
-    const top = window.scrollY + el.getBoundingClientRect().top - window.innerHeight * 0.22;
-    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    // Два прохода: прилипшая шапка после прокрутки встаёт иначе, и с одного
+    // раза поле иногда оказывалось ровно на её краю.
+    for (let pass = 0; pass < 2; pass++) {
+        const band = visibleBand();
+        const r = el.getBoundingClientRect();
+        const m = 16;
+        let delta = 0;
+        if (r.height > band.bottom - band.top - 2 * m) delta = r.top - (band.top + m);
+        else if (r.bottom > band.bottom - m) delta = r.bottom - (band.bottom - m);
+        else if (r.top < band.top + m) delta = r.top - (band.top + m);
+        if (Math.abs(delta) < 1) return;
+        // Мгновенно, а не плавно: клавиатура выезжает снизу, и пока она едет,
+        // содержимое должно уже стоять на месте. Плавная прокрутка в этот
+        // момент выглядит как рывок вдогонку.
+        window.scrollTo(0, Math.max(0, window.scrollY + delta));
+    }
 }
 
 function closePad() {
@@ -13485,6 +13577,10 @@ function openSetPad(index, field) {
     if (!currentSetRows[index]) return;
     padSetIndex = index;
     padSetField = field;
+    // Строки перерисовываются, чтобы подсветка правимого поля появилась ДО
+    // открытия клавиатуры: по ней это поле потом и ищут, чтобы поднять его
+    // над панелью. Без этого прокрутки не происходило вовсе.
+    renderSetRows();
 
     const weight = field === 'w';
     openPad({
