@@ -1589,6 +1589,14 @@ select.fld {
 
 .form-row { margin-bottom: 12px; }
 
+/* Пояснение под полем: мелко и приглушённо, чтобы не спорило с подписью */
+.field-note {
+    margin-top: 6px;
+    font-size: 11.5px;
+    line-height: 1.35;
+    color: var(--text-muted);
+}
+
 /* --- Чипсы цели --- */
 .goal-chips {
     display: flex;
@@ -5735,6 +5743,8 @@ body.pad-open { padding-bottom: 62vh; }
         <div class="panel">
             <div class="panel-title"><span class="ttl"><span class="only-neo">⚖️ </span><svg class="mi only-min" aria-hidden="true"><use href="#i-scale"/></svg>Вес тела</span></div>
             <p class="panel-note" id="cl-bw-note"></p>
+            <button class="btn-soft" id="cl-bw-add" style="margin-bottom: 12px;"
+                    onclick="openWeighInPad()">＋ Взвешивание</button>
             <canvas id="chart-weight"></canvas>
             <div id="chart-weight-off" class="chart-off" style="display: none;"><span class="only-neo">📉 </span>График недоступен без подключения к интернету</div>
         </div>
@@ -6068,7 +6078,7 @@ body.pad-open { padding-bottom: 62vh; }
 
         <div class="field-pair">
             <div>
-                <label class="caps-label" for="ce-bw">Вес тела, кг</label>
+                <label class="caps-label" for="ce-bw">Вес сейчас, кг</label>
                 <input class="fld" type="text" id="ce-bw" placeholder="80" readonly onclick="openClientBwPad()">
             </div>
             <div>
@@ -6115,8 +6125,9 @@ body.pad-open { padding-bottom: 62vh; }
                 <input class="fld" type="text" id="wk-well" value="8" readonly onclick="openWellPad()">
             </div>
             <div>
-                <label class="caps-label" for="wk-bw">Вес клиента, кг</label>
+                <label class="caps-label" for="wk-bw">Вес на этой тренировке</label>
                 <input class="fld" type="text" id="wk-bw" placeholder="80" readonly onclick="openWorkoutBwPad()">
+                <div class="field-note">запишется и в карточку клиента</div>
             </div>
         </div>
     </div>
@@ -7771,7 +7782,7 @@ const BASE_EX = {
     // Спина
     "Гиперэкстензия": { category: "Спина", target: "Разгибатели спины", muscles: { "Разгибатели спины": 1, "Ягодицы": 0.5, "Бицепс бедра": 0.5 }, compound: true, unilateral: false, equipment: "bodyweight", bwShare: 0.65 },
     "Подтягивания": { category: "Спина", target: "Спина", muscles: { "Спина": 1, "Бицепс": 0.5, "Задняя дельта": 0.3, "Трапеция": 0.2, "Предплечья": 0.3 }, compound: true, unilateral: false, equipment: "bodyweight", bwShare: 1 },
-    "Подтягивания в гравитроне": { category: "Спина", target: "Спина", muscles: { "Спина": 1, "Бицепс": 0.5, "Задняя дельта": 0.3, "Предплечья": 0.3 }, compound: true, unilateral: false, equipment: "machine" },
+    "Подтягивания в гравитроне": { category: "Спина", target: "Спина", muscles: { "Спина": 1, "Бицепс": 0.5, "Задняя дельта": 0.3, "Предплечья": 0.3 }, compound: true, unilateral: false, equipment: "assisted", bwShare: 1 },
     "Пуловер на блоке": { category: "Спина", target: "Спина", muscles: { "Спина": 1, "Трицепс": 0.3 }, compound: false, unilateral: false, equipment: "machine" },
     "Тяга Т-грифа": { category: "Спина", target: "Спина", muscles: { "Спина": 1, "Бицепс": 0.5, "Задняя дельта": 0.5, "Трапеция": 0.3, "Предплечья": 0.3 }, compound: true, unilateral: false, equipment: "barbell" },
     "Тяга блока сверху": { category: "Спина", target: "Спина", muscles: { "Спина": 1, "Бицепс": 0.5, "Задняя дельта": 0.3, "Трапеция": 0.2, "Предплечья": 0.3 }, compound: true, unilateral: false, equipment: "machine" },
@@ -7859,16 +7870,25 @@ function exData(name) {
 
 function exEquipment(name) { return exData(name).equipment || 'machine'; }
 function isBodyweight(name) { return exEquipment(name) === 'bodyweight'; }
+/* Гравитрон и резина: в поле пишут противовес, и он ПОМОГАЕТ — вычитается
+   из веса клиента, а не прибавляется. */
+function isAssisted(name) { return exEquipment(name) === 'assisted'; }
+/* Оба случая, где в счёт идёт вес клиента: и довес, и противовес. */
+function usesBodyWeight(name) { return isBodyweight(name) || isAssisted(name); }
 function isUnilateral(name) { return !!exData(name).unilateral; }
 function isCustomEx(name) { return !!exData(name).custom; }
 
 /* Вес тренер пишет суммарным, и приложение берёт его как есть — никаких
-   домножений. Единственное исключение: когда снаряда нет, к довесу
-   прибавляется вес клиента. */
+   домножений. Исключения два, и оба про вес клиента:
+   свой вес — к довесу прибавляется вес клиента;
+   с противовесом — противовес вычитается, потому что он помогает. */
 function effWeight(exName, rawWeight, bodyWeight) {
     const w = num(rawWeight, 0);
     const d = exData(exName);
-    if (d.equipment === 'bodyweight') return validBW(bodyWeight, 80) * (d.bwShare || 1) + w;
+    const own = validBW(bodyWeight, 80) * (d.bwShare || 1);
+    if (d.equipment === 'bodyweight') return own + w;
+    // Противовес больше веса клиента — работы нет, а не «минус десять»
+    if (d.equipment === 'assisted') return Math.max(0, own - w);
     return w;
 }
 
@@ -7876,20 +7896,35 @@ function setTonnage(exName, rawWeight, reps, bodyWeight) {
     return effWeight(exName, rawWeight, bodyWeight) * num(reps, 0);
 }
 
+/* Как показать вес подхода словами. Раньше это было переписано в трёх местах
+   по-своему, теперь одна точка: «58+10» — свой вес с довесом, «58−30» —
+   противовес, просто число — железо. */
+function setWeightText(exName, rawWeight, bodyWeight) {
+    const w = num(rawWeight, 0);
+    if (isAssisted(exName)) return bodyWeight ? bodyWeight + '−' + w : '−' + w;
+    if (isBodyweight(exName)) {
+        if (!bodyWeight) return '+' + w;
+        return w > 0 ? bodyWeight + '+' + w : String(bodyWeight);
+    }
+    return String(w);
+}
+
 const EQUIPMENT_LABEL = {
     barbell: 'Штанга',
     dumbbell: 'Гантели',
     machine: 'Тренажёр',
-    bodyweight: 'Свой вес'
+    bodyweight: 'Свой вес',
+    assisted: 'С противовесом'
 };
 
-const EQUIPMENT_ORDER = ['barbell', 'dumbbell', 'machine', 'bodyweight'];
+const EQUIPMENT_ORDER = ['barbell', 'dumbbell', 'machine', 'bodyweight', 'assisted'];
 
 /* Подпись поля веса — словами тренера */
 function weightLabel(name) {
     const eq = exEquipment(name);
     if (eq === 'dumbbell') return 'Вес гантелей, суммарно';
     if (eq === 'bodyweight') return 'Довес к весу клиента';
+    if (eq === 'assisted') return 'Противовес, кг';
     if (eq === 'barbell') return 'Вес штанги';
     return 'Вес на тренажёре';
 }
@@ -7973,7 +8008,8 @@ function normalizeExercises(raw) {
             compound: compound,
             unilateral: normBool(e.unilateral, false),
             equipment: equipment,
-            bwShare: equipment === 'bodyweight' ? Math.min(1, Math.max(0.1, num(e.bwShare, 1))) : 1,
+            bwShare: (equipment === 'bodyweight' || equipment === 'assisted')
+                ? Math.min(1, Math.max(0.1, num(e.bwShare, 1))) : 1,
             custom: true
         };
     }).filter(Boolean);
@@ -8050,6 +8086,23 @@ function normalizeSets(rawSets) {
     }).filter(Boolean);
 }
 
+/* Взвешивания: дата и килограммы. На одну дату одно значение — последнее
+   записанное, иначе график рисовал бы две точки в одном дне. */
+function normalizeWeighIns(list) {
+    if (!Array.isArray(list)) return [];
+    const byDate = {};
+    list.forEach(function (w) {
+        if (!w || typeof w !== 'object') return;
+        const d = (typeof w.d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(w.d)) ? w.d : null;
+        const kg = num(w.kg, 0);
+        if (!d || kg <= 0 || kg > 400) return;
+        byDate[d] = Math.round(kg * 10) / 10;
+    });
+    return Object.keys(byDate).sort().map(function (d) {
+        return { d: d, kg: byDate[d] };
+    });
+}
+
 function normalizeDB(raw) {
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
         throw new Error('Корневой элемент резервной копии должен быть JSON-объектом.');
@@ -8090,7 +8143,10 @@ function normalizeDB(raw) {
             photoUrl: typeof c.photoUrl === 'string' ? c.photoUrl : null,
             // метка клиента-пример из прежних версий: сам пример убран,
             // но у кого-то он мог остаться в данных
-            demo: c.demo === true
+            demo: c.demo === true,
+            // Взвешивания без тренировки. Вес с тренировок лежит в самой
+            // тренировке — здесь только то, что записали отдельно.
+            weighIns: normalizeWeighIns(c.weighIns)
         };
     }).filter(Boolean);
 
@@ -9966,6 +10022,13 @@ function renderExNote() {
             ? 'работает вес клиента · ' + own + ' кг'
             : 'работает ' + Math.round(share * 100) + '% веса · ' + own + ' кг');
     }
+    if (d.equipment === 'assisted') {
+        const share = d.bwShare || 1;
+        const own = fmtKg(currentBodyWeight() * share);
+        notes.push(share >= 1 ? 'вес клиента ' + own + ' кг'
+                              : 'работает ' + Math.round(share * 100) + '% веса · ' + own + ' кг');
+        notes.push('противовес вычитается');
+    }
     if (d.unilateral) notes.push('по одной стороне');
 
     box.innerHTML = notes.length
@@ -10485,6 +10548,7 @@ function renderSetRows() {
 
     const bw = currentBodyWeight();
     const isBW = isBodyweight(selectedExercise);
+    const isAS = isAssisted(selectedExercise);
 
     const past = lastPerformance(selectedExercise, wkHistory);
     const pastWorking = past ? past.sets.filter(function (s) { return !s.isWarmup; }) : [];
@@ -10494,7 +10558,8 @@ function renderSetRows() {
 
     // подписи колонок: без них две цифры в строке — загадка
     const head = '<div class="set-row set-head" aria-hidden="true">' +
-        '<span></span><span></span><span class="caps-label">' + (isBW ? '+кг' : 'кг') + '</span>' +
+        '<span></span><span></span><span class="caps-label">' +
+            (isAS ? '−кг' : (isBW ? '+кг' : 'кг')) + '</span>' +
         '<span class="caps-label">повт</span><span></span><span></span>' +
         '</div>';
 
@@ -10508,7 +10573,8 @@ function renderSetRows() {
         }
         setDefaults[i] = { w: defW, r: defR };
 
-        const wPh = isBW ? '+' + defW + ' (' + bw + ')' : String(defW);
+        const wPh = isBW ? '+' + defW + ' (' + bw + ')'
+                  : (isAS ? bw + '−' + defW : String(defW));
         const warm = !!set.isWarmup;
         const done = !!set.completed;
         const wVal = (set.w !== undefined && set.w !== null) ? set.w : '';
@@ -10611,7 +10677,6 @@ function updateSaveState() {
 
 /* Карточка упражнения в списке тренировки */
 function exItemHtml(e, i, bw) {
-    const isBW = isBodyweight(e.n);
     let workingKg = 0, doneCount = 0;
     const parts = [];
 
@@ -10621,7 +10686,7 @@ function exItemHtml(e, i, bw) {
             doneCount++;
             if (!s.isWarmup) workingKg += setTonnage(e.n, raw, s.r, bw);
         }
-        const wTxt = isBW ? (raw > 0 ? bw + '+' + raw : String(bw)) : String(raw);
+        const wTxt = setWeightText(e.n, raw, bw);
         // разминочные приглушены, запланированные — ещё бледнее
         const cls = !s.completed ? 'planned' : (s.isWarmup ? 'warm' : '');
         parts.push('<span class="' + cls + '">' + wTxt + ' × ' + s.r + '</span>');
@@ -11056,12 +11121,9 @@ function setClientTab(tab) {
 function exListHtml(ex, bw) {
     ex = ex || [];
     const exLine = function (name, sets) {
-        const isBW = isBodyweight(name);
         const txt = sets.map(function (st) {
             const raw = num(st.w, 0);
-            const w = !isBW ? String(raw)
-                : bw ? (raw > 0 ? bw + '+' + raw : String(bw))
-                : '+' + raw;
+            const w = setWeightText(name, raw, bw);
             return '<span class="' + (st.isWarmup ? 'warm' : '') + '">' + w + ' × ' + st.r + '</span>';
         }).join('<span class="sep">·</span>');
         return '<div class="hist-ex"><div class="n">' + esc(name) + exBadge(name) + '</div>' +
@@ -11491,14 +11553,22 @@ function muscleListHtml(musSets) {
     }).join('');
 }
 
-/* Вес тела: одна линия по тем тренировкам периода, где вес записан */
+/* Вес тела: линия по тренировкам периода плюс отдельные взвешивания.
+   Если в один день и то и другое — верим взвешиванию: его записали руками. */
 function renderBodyWeight(list) {
     chWeight = destroyChart(chWeight, 'chart-weight');
 
-    const points = list.filter(function (s) {
-        return num(s.bodyWeight, 0) > 0;
-    }).map(function (s) {
-        return { label: tinyDate(s.date), w: num(s.bodyWeight, 0) };
+    const byDate = {};
+    list.forEach(function (s) {
+        if (num(s.bodyWeight, 0) > 0) byDate[s.date] = num(s.bodyWeight, 0);
+    });
+    const client = getClient(clClientId);
+    ((client && client.weighIns) || []).forEach(function (w) {
+        if (inPeriod(w.d, period)) byDate[w.d] = w.kg;
+    });
+
+    const points = Object.keys(byDate).sort().map(function (d) {
+        return { label: tinyDate(d), w: byDate[d] };
     });
 
     const enough = points.length >= 2;
@@ -11570,7 +11640,8 @@ function renderProgression() {
         return;
     }
 
-    const isBW = isBodyweight(name);
+    // и довес, и противовес: в динамике важен рабочий вес, а не вписанное число
+    const isBW = usesBodyWeight(name);
     const history = clientHistory(clClientId);
 
     // рабочий вес каждой тренировки, по возрастанию даты: по нему считается динамика
@@ -12790,6 +12861,53 @@ function clientAvatarHtml(c, alert) {
            '</div>';
 }
 
+/* Взвешивание: одна запись на день, последняя побеждает. Вес в карточке
+   всегда равен последнему взвешиванию — это и есть «вес сейчас». */
+function addWeighIn(client, kg, date) {
+    if (!client) return;
+    const w = validBW(kg, 0);
+    if (w <= 0) return;
+    const d = date || todayISO();
+    client.weighIns = normalizeWeighIns((client.weighIns || []).concat([{ d: d, kg: w }]));
+    const last = client.weighIns[client.weighIns.length - 1];
+    if (last && last.d >= d) client.bodyWeight = last.kg;
+}
+
+/* Кнопка «Взвешивание» в аналитике клиента: клавиатура без поля на экране,
+   поэтому значение держим здесь. */
+let weighDraft = '';
+
+function openWeighInPad() {
+    const c = getClient(clClientId);
+    if (!c) return;
+    weighDraft = String(num(c.bodyWeight, 0) || '');
+    openPad({
+        label: 'Вес сейчас, кг', dec: true, steps: [-0.5, 0.5], max: 300,
+        scrollTo: 'cl-bw-add',
+        get: function () { return weighDraft; },
+        set: function (v) { weighDraft = v; },
+        onClose: function () { saveWeighIn(); }
+    });
+}
+
+function saveWeighIn() {
+    const c = getClient(clClientId);
+    const kg = validBW(weighDraft, 0);
+    weighDraft = '';
+    if (!c || kg <= 0) return;
+
+    const was = num(c.bodyWeight, 0);
+    addWeighIn(c, kg);
+    if (!saveDB()) return;
+
+    haptic('success');
+    renderAnalytics();
+    renderClientsScreen();
+    const diff = Math.round((kg - was) * 10) / 10;
+    showToast('Записано ' + fmtKg(kg) + ' кг' +
+              (was > 0 && diff !== 0 ? ' · ' + (diff > 0 ? '+' : '') + fmtKg(diff) + ' кг' : ''));
+}
+
 /* --- Создание и правка клиента --- */
 
 /* Готовые цели: тапом, чтобы не печатать. Своё вписывается в поле —
@@ -12984,6 +13102,11 @@ async function saveClientEdit() {
         });
         if (viaTopup) {
             addPassOp(DB, clientId, { kind: 'topup', delta: passLeft, amount: passSum });
+        }
+        // Вес при заведении — первая точка графика. Иначе до второй тренировки
+        // там «Недостаточно данных», хотя вес тренер уже назвал.
+        if ($('ce-bw').value.trim()) {
+            addWeighIn(getClient(clientId), bodyWeight);
         }
     }
 
@@ -13320,6 +13443,7 @@ function exBadge(name) {
     const out = [];
     if (d.unilateral) out.push('по одной стороне');
     if (d.equipment === 'bodyweight') out.push('свой вес');
+    if (d.equipment === 'assisted') out.push('противовес');
     return out.map(function (t) { return '<span class="ex-badge">' + esc(t) + '</span>'; }).join('');
 }
 
@@ -13409,7 +13533,8 @@ function renderExerciseForm() {
     }).join('');
 
     // доля веса тела нужна только там, где снаряда нет
-    $('ex-bw-row').style.display = exEquip === 'bodyweight' ? '' : 'none';
+    $('ex-bw-row').style.display =
+        (exEquip === 'bodyweight' || exEquip === 'assisted') ? '' : 'none';
     $('ex-bw-chips').innerHTML = BW_SHARES.map(function (s, i) {
         return chipHtml(s.label, Math.abs(s.v - exBwShare) < 0.01, 'pickExBwShare(' + i + ')');
     }).join('');
@@ -13444,7 +13569,7 @@ function setExUnilateral(v) { exUnilateral = v; haptic('select'); renderExercise
 
 function setExEquip(eq) {
     exEquip = eq;
-    if (eq !== 'bodyweight') exBwShare = 1.0;
+    if (eq !== 'bodyweight' && eq !== 'assisted') exBwShare = 1.0;
     haptic('select');
     renderExerciseForm();
 }
@@ -13498,7 +13623,7 @@ async function saveExercise() {
         compound: exCompound,
         unilateral: exUnilateral,
         equipment: exEquip,
-        bwShare: exEquip === 'bodyweight' ? exBwShare : 1,
+        bwShare: (exEquip === 'bodyweight' || exEquip === 'assisted') ? exBwShare : 1,
         custom: true
     };
 
@@ -13955,7 +14080,7 @@ function openPaymentPad() {
 }
 
 function openClientBwPad() {
-    padForInput('ce-bw', { label: 'Вес тела, кг', dec: true, steps: [-1, 1], max: 300 });
+    padForInput('ce-bw', { label: 'Вес сейчас, кг', dec: true, steps: [-1, 1], max: 300 });
 }
 
 function openWellPad() {
@@ -13971,7 +14096,7 @@ function openWellPad() {
 
 function openWorkoutBwPad() {
     padForInput('wk-bw', {
-        label: 'Вес клиента, кг', dec: true, steps: [-1, 1], max: 300,
+        label: 'Вес на этой тренировке, кг', dec: true, steps: [-1, 1], max: 300,
         onClose: function () { onBodyWeightChanged($('wk-bw').value); }
     });
 }
@@ -14028,7 +14153,7 @@ const CLOUD_URL  = 'https://loaktwpbrjzttbwzmevr.supabase.co';
 const CLOUD_KEY  = 'sb_publishable_WuY7LPSOxVgw1CnPvDt2yg_WySfyn3Q';
 const CLOUD_SNAP = 'silovoyAssistentV6:synced';   // что уже уехало на сервер
 const CLOUD_AUTH = 'silovoyAssistentV6:auth';     // пропуск Supabase
-const CLOUD_SNAP_V = 2;                           // формат снимка
+const CLOUD_SNAP_V = 3;                           // формат снимка: отпечатки
 
 let sb = null;                 // клиент Supabase
 let cloudUid = null;           // id тренера на сервере
@@ -14037,6 +14162,7 @@ let cloudNote = '';            // человеческая причина, ес�
 let cloudTimer = null;
 let cloudBusy = false;
 let cloudAgain = false;
+let cloudSkew = 0;             // насколько часы сервера впереди часов телефона, мс
 
 /* Соответствие «как в приложении» ↔ «как в базе». Всё, что приложение умеет
    пересчитать само (остаток абонемента, тоннаж), на сервер не едет. */
@@ -14048,14 +14174,15 @@ const CLOUD_TABLES = {
             return { id: c.id, trainer_id: cloudUid, name: c.name, goal: c.goal || '',
                      body_weight: c.bodyWeight, pass_base: c.passBase,
                      lesson_price: c.lessonPrice, tg_id: c.tgId, photo_url: c.photoUrl,
-                     is_demo: !!c.demo };
+                     is_demo: !!c.demo, weigh_ins: c.weighIns || [] };
         },
         in:   function (r) {
             return { id: r.id, name: r.name, goal: r.goal || '',
                      bodyWeight: num(r.body_weight, 80), passLeft: 0,
                      passBase: num(r.pass_base, 0), totalDebt: 0,
                      lessonPrice: num(r.lesson_price, 0), tgId: r.tg_id || null,
-                     photoUrl: r.photo_url || null, demo: !!r.is_demo };
+                     photoUrl: r.photo_url || null, demo: !!r.is_demo,
+                     weighIns: normalizeWeighIns(r.weigh_ins) };
         }
     },
     sessions: {
@@ -14127,18 +14254,76 @@ const CLOUD_TABLES = {
 
 const CLOUD_ORDER = ['clients', 'sessions', 'pass_ops', 'exercises', 'templates'];
 
+/* Отпечаток строки — короткое число вместо всей строки данных. Раньше снимок
+   хранил полные копии, и это была третья копия базы в памяти телефона, где на
+   всё про всё около 5 МБ. Сравнивать отпечатки для наших целей достаточно:
+   изменилась строка — изменился и он. */
+function fingerprint(text) {
+    const s = String(text);
+    let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+    for (let i = 0; i < s.length; i++) {
+        const ch = s.charCodeAt(i);
+        h1 = Math.imul(h1 ^ ch, 2654435761);
+        h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    // длина в конце: две разные строки одной длины совпадут отпечатком крайне
+    // редко, а разной — теперь вообще никогда
+    return (h2 >>> 0).toString(36) + (h1 >>> 0).toString(36) + s.length.toString(36);
+}
+
+/* Часы сервера. Своим доверять нельзя: телефон, ушедший вперёд, решал бы
+   споры всегда в свою пользу и не принимал чужие правки, а отставший — молча
+   терял свои. Разницу узнаём из того, каким временем сервер пометил нашу же
+   запись, и помним её между запусками: правка без связи делается раньше, чем
+   мы в следующий раз увидим сервер. */
+function noteServerClock(rows) {
+    let newest = null;
+    (rows || []).forEach(function (r) {
+        if (r && r.updated_at && (!newest || r.updated_at > newest)) newest = r.updated_at;
+    });
+    if (!newest) return;
+    const server = Date.parse(newest);
+    if (!isFinite(server)) return;
+    cloudSkew = server - Date.now();
+}
+
+/* Время, которым метим свои правки: часы телефона плюс поправка на сервер. */
+function serverNowISO() {
+    return new Date(Date.now() + cloudSkew).toISOString();
+}
+
 /* Снимок: что и когда уехало на сервер.
-   rows[таблица][ключ] = { j: строка, d: когда заметили расхождение } */
+   rows[таблица][ключ] = { j: отпечаток, d: когда заметили расхождение } */
 function cloudSnap() {
     let s = null;
     try { s = JSON.parse(localStorage.getItem(CLOUD_SNAP) || 'null'); } catch (e) {}
+
+    // Снимок прошлой версии хранил полные копии строк. Не выбрасываем его:
+    // пустой снимок означает «правда на сервере», и местные неотправленные
+    // правки были бы затёрты. Пересчитываем копии в отпечатки — состояние
+    // остаётся тем же.
+    if (s && s.v === 2) {
+        CLOUD_ORDER.forEach(function (t) {
+            const rows = (s.rows && s.rows[t]) || {};
+            for (const k in rows) {
+                if (rows[k] && typeof rows[k].j === 'string') rows[k].j = fingerprint(rows[k].j);
+            }
+        });
+        if (typeof s.settings === 'string') s.settings = fingerprint(s.settings);
+        s.v = CLOUD_SNAP_V;
+    }
+
     if (!s || s.v !== CLOUD_SNAP_V) s = { v: CLOUD_SNAP_V, at: null, rows: {}, settings: null };
     if (!s.rows) s.rows = {};
     CLOUD_ORDER.forEach(function (t) { if (!s.rows[t]) s.rows[t] = {}; });
+    if (typeof s.skew === 'number' && isFinite(s.skew)) cloudSkew = s.skew;
     return s;
 }
 
 function cloudSnapSave(snap) {
+    snap.skew = Math.round(cloudSkew);
     try { localStorage.setItem(CLOUD_SNAP, JSON.stringify(snap)); } catch (e) {}
 }
 
@@ -14246,7 +14431,7 @@ async function cloudPush() {
     cloudBusy = true;
     try {
         const snap = cloudSnap();
-        const now = new Date().toISOString();
+        const now = serverNowISO();
 
         for (const t of CLOUD_ORDER) {
             const meta = CLOUD_TABLES[t];
@@ -14257,10 +14442,10 @@ async function cloudPush() {
             meta.rows().forEach(function (item) {
                 const k = String(meta.key(item));
                 const row = meta.out(item);
-                const json = JSON.stringify(row);
+                const mark = fingerprint(JSON.stringify(row));
                 const prev = was[k];
-                fresh[k] = prev && prev.j === json ? prev : { j: json, d: (prev && prev.d) || now };
-                if (!prev || prev.j !== json) send.push(row);
+                fresh[k] = prev && prev.j === mark ? prev : { j: mark, d: (prev && prev.d) || now };
+                if (!prev || prev.j !== mark) send.push(row);
             });
 
             // Пометка «расходится с сервером» ставится до отправки: если связи
@@ -14269,8 +14454,10 @@ async function cloudPush() {
             cloudSnapSave(snap);
 
             if (send.length) {
-                const res = await sb.from(t).upsert(send);
+                // updated_at ставит сам сервер — заодно узнаём его часы
+                const res = await sb.from(t).upsert(send).select('updated_at');
                 if (res.error) throw res.error;
+                noteServerClock(res.data);
                 send.forEach(function (row) {
                     const k = String(t === 'exercises' ? row.name : row.id);
                     if (fresh[k]) delete fresh[k].d;      // уехало — расхождения нет
@@ -14280,7 +14467,7 @@ async function cloudPush() {
             // Удалённое помечаем на сервере: иначе второй телефон вернёт его назад
             const gone = Object.keys(was).filter(function (k) { return !(k in fresh); });
             for (const k of gone) {
-                let q = sb.from(t).update({ deleted_at: new Date().toISOString() })
+                let q = sb.from(t).update({ deleted_at: serverNowISO() })
                           .eq('trainer_id', cloudUid);
                 q = (t === 'exercises') ? q.eq('name', k) : q.eq('id', k);
                 const res = await q;
@@ -14288,7 +14475,7 @@ async function cloudPush() {
             }
         }
 
-        const look = JSON.stringify(DB.settings || {});
+        const look = fingerprint(JSON.stringify(DB.settings || {}));
         if (snap.settings !== look) {
             const res = await sb.from('trainers').update({ settings: DB.settings }).eq('id', cloudUid);
             if (res.error) throw res.error;
@@ -14347,7 +14534,7 @@ async function cloudPull() {
                 const list = meta.rows();
                 const at = cloudFind(list, meta, k);
                 const prev = was[k];
-                const mine = at >= 0 ? JSON.stringify(meta.out(list[at])) : null;
+                const mine = at >= 0 ? fingerprint(JSON.stringify(meta.out(list[at]))) : null;
 
                 // Чья запись свежее. Своя правка держится, только пока она
                 // новее серверной; иначе побеждает сервер — так два устройства
@@ -14362,10 +14549,10 @@ async function cloudPull() {
                     return;
                 }
                 const item = meta.in(r, at >= 0 ? list[at] : null);
-                const json = JSON.stringify(meta.out(item));
-                if (json !== mine) changed = true;
+                const mark = fingerprint(JSON.stringify(meta.out(item)));
+                if (mark !== mine) changed = true;
                 if (at >= 0) list[at] = item; else list.push(item);
-                was[k] = { j: json };
+                was[k] = { j: mark };
             });
         }
 
