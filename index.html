@@ -715,6 +715,34 @@ body {
     padding: 0;
 }
 
+/* --- Подсказка про галочки: рядом с самими галочками, а не внизу экрана --- */
+.tick-hint {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 2px 0 10px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    border: 0.5px solid rgba(var(--ch-blue), 0.3);
+    background: rgba(var(--ch-blue), 0.10);
+}
+.tick-hint .th-text { flex: 1; min-width: 0; font-size: 12.5px; line-height: 1.35; color: var(--text-main); }
+.tick-hint .th-off {
+    flex: 0 0 auto;
+    padding: 6px 10px;
+    border: none;
+    border-radius: 10px;
+    background: rgba(var(--ch-fill), 0.14);
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.2;
+    max-width: 92px;
+    cursor: pointer;
+}
+.tick-hint .th-off:active { transform: scale(0.96); }
+
 /* Остаток занятий плашкой: в Нео-Стекле на карточке записи, в обоих — в поиске */
 .card-pill {
     min-width: 26px;
@@ -1677,7 +1705,7 @@ select.fld {
     color: var(--text-main);
 }
 
-/* Нажимается вся карточка; ✏️ и «Продлить» ловят тап сами */
+/* Нажимается вся карточка; 🖊️ и «Продлить» ловят тап сами */
 .cl-card { cursor: pointer; transition: transform 0.2s ease; }
 .cl-card:active { transform: scale(0.98); }
 .cl-card .avatar-sphere { flex: 0 0 auto; }
@@ -5077,7 +5105,9 @@ body.pad-open { padding-bottom: 62vh; }
     background: var(--m-card);
     border: none;
     border-radius: 16px;
-    box-shadow: var(--m-sh-1);
+    /* Панель под карточками тоже белая, поэтому одной тени не хватает:
+       границу рисуем волосяным контуром — как у выпадающего списка */
+    box-shadow: var(--m-sh-1), 0 0 0 1px rgba(var(--ch-hairline), 0.1);
 }
 :root[data-style="minimal"] .client-row .cr-name { font-size: 14px; font-weight: 700; }
 :root[data-style="minimal"] .client-row .cr-sub { font-size: 12px; color: var(--m-muted); }
@@ -5610,6 +5640,12 @@ body.pad-open { padding-bottom: 62vh; }
                 <!-- Отмеченный подход сразу записывается в тренировку: отдельной
                      кнопки «в тренировку» нет, упражнение встаёт в список с первой галочкой -->
                 <div id="wk-set-rows"></div>
+                <!-- Пока в упражнении нет ни одной галочки, тренер может не
+                     понимать, что без неё подход никуда не попадёт -->
+                <div id="wk-tick-hint" class="tick-hint" hidden>
+                    <span class="th-text">Отмечайте ✓ — в тренировку попадают только отмеченные подходы</span>
+                    <button class="th-off" onclick="hideTickHint()">Больше не показывать</button>
+                </div>
                 <div class="btn-row" id="wk-add-set">
                     <button class="btn-soft" onclick="addSetRow()">+ Подход</button>
                 </div>
@@ -5887,6 +5923,11 @@ body.pad-open { padding-bottom: 62vh; }
         </div>
     </div>
 
+    <div class="panel">
+        <div class="panel-title"><span class="ttl"><span class="only-neo">💡 </span><svg class="mi only-min" aria-hidden="true"><use href="#i-zap"/></svg>Подсказки</span></div>
+        <div id="set-hints"></div>
+    </div>
+
 </div>
 
 
@@ -6036,6 +6077,14 @@ body.pad-open { padding-bottom: 62vh; }
             </div>
         </div>
         <div class="goal-chips form-row" id="ce-pass-chips" style="margin-top: 8px;"></div>
+
+        <!-- Сумму спрашиваем только у нового клиента: дальше цена живёт
+             в журнале абонемента, и второе место для неё путало бы -->
+        <div class="form-row" id="ce-sum-row" style="display: none;">
+            <label class="caps-label" for="ce-sum">Сумма за абонемент, ₽</label>
+            <input class="fld" type="text" id="ce-sum" placeholder="12000" readonly onclick="openClientSumPad()">
+            <div id="ce-price" class="price-hint dim" style="margin-top: 8px;">Без суммы цену спросим при первом пополнении</div>
+        </div>
 
         <div id="ce-error" class="tp-error"></div>
 
@@ -6313,7 +6362,7 @@ body.pad-open { padding-bottom: 62vh; }
         <p class="panel-note tv-note">Веса на тренировке подставятся по истории клиента.</p>
         <div class="premium-menu-list">
             <button class="premium-menu-btn" onclick="renameTemplateFromView()">
-                <span class="ttl up"><span class="only-neo">✏️ </span><svg class="mi only-min" aria-hidden="true"><use href="#i-pencil"/></svg>Переименовать</span>
+                <span class="ttl up"><span class="only-neo">🖊️ </span><svg class="mi only-min" aria-hidden="true"><use href="#i-pencil"/></svg>Переименовать</span>
                 <span class="arrow-icon arr"></span>
             </button>
             <button class="premium-menu-btn danger" onclick="deleteTemplateFromView()">
@@ -6470,9 +6519,12 @@ function applyViewport() {
     if (h) document.documentElement.style.setProperty('--app-height', h + 'px');
 }
 
-/* Дата сборки: видно в Профиле, чтобы на вопрос «а у меня новая версия?»
-   отвечал сам экран, а не догадки. Меняется вместе с файлом. */
-const BUILD = '23.09.2026';
+/* Дата и время сборки: видно в Профиле, чтобы на вопрос «а у меня новая
+   версия?» отвечал сам экран, а не догадки. Время нужно потому, что за
+   день файл выкладывается не раз: по одной дате не понять, приехало ли
+   обновление или Telegram показывает копию из кэша. Ставится при выкладке
+   скриптом publish.py — руками не правится. */
+const BUILD = '24.09.2026, 20:19';
 let fullReason = '';        // почему полного экрана нет — тоже видно в Профиле
 
 /* Полный экран: приложение занимает телефон целиком, а кнопки Telegram
@@ -6657,7 +6709,10 @@ function openDialog(message, opts) {
         const ok = $('dlg-ok');
         ok.innerText = opts.ok;
         ok.className = 'premium-menu-btn ' + (opts.danger ? 'danger' : 'primary');
-        $('dlg-cancel').style.display = opts.cancel ? '' : 'none';
+        const no = $('dlg-cancel');
+        no.style.display = opts.cancel ? '' : 'none';
+        // вторую кнопку иногда нужно назвать по делу, а не «Отмена»
+        no.innerText = opts.cancelText || 'Отмена';
 
         dialogResolve = resolve;
         openSheet('sheet-dialog');
@@ -6689,7 +6744,8 @@ function showAlert(message) {
 /* opts.ok — подпись кнопки, opts.danger — красная, для необратимого */
 function showConfirm(message, opts) {
     opts = opts || {};
-    return openDialog(message, { ok: opts.ok || 'Да', danger: !!opts.danger, cancel: true });
+    return openDialog(message, { ok: opts.ok || 'Да', danger: !!opts.danger,
+                                 cancel: true, cancelText: opts.cancelText });
 }
 
 function haptic(kind) {
@@ -9354,7 +9410,7 @@ function renderMatrixRows() {
                          'onclick="event.stopPropagation(); openClientMenu(\'' + s.id + '\')">' +
                         emo('👤 ') + ico('user') + esc(c.name) + ' · ' + esc(s.time) + ' (' + esc(c.goal || '—') + ')' + mark +
                     '</div>' +
-                    '<button class="edit-time-btn" onclick="event.stopPropagation(); editSessionTime(\'' + s.id + '\')">' + emo('✏️') + ico('pencil') + '</button>' +
+                    '<button class="edit-time-btn" onclick="event.stopPropagation(); editSessionTime(\'' + s.id + '\')">' + emo('🖊️') + ico('pencil') + '</button>' +
                 '</div>';
         });
     }
@@ -9823,6 +9879,52 @@ function openWorkout(sessionId) {
     showScreen('screen-workout', 'screen-schedule');
 }
 
+/* Подсказки тренер может выключить навсегда. Флаг живёт в настройках, а не
+   в памяти телефона: настройки уезжают на сервер, и на втором устройстве
+   подсказка тоже молчит. */
+function hintsOn(name) {
+    const h = ensureSettings().hints;
+    return !h || h[name] !== false;
+}
+
+function updateTickHint() {
+    const box = $('wk-tick-hint');
+    if (!box) return;
+    const show = !!selectedExercise && hintsOn('tick') && currentSetRows.length &&
+        !currentSetRows.some(function (s) { return s.completed; });
+    box.hidden = !show;
+}
+
+function hideTickHint() {
+    const set = ensureSettings();
+    set.hints = set.hints || {};
+    set.hints.tick = false;
+    saveDB();
+    haptic('light');
+    updateTickHint();
+    renderHintsPanel();
+    showToast('Подсказка выключена. Вернуть — в настройках');
+}
+
+function showHintsAgain() {
+    const set = ensureSettings();
+    set.hints = {};
+    saveDB();
+    haptic('success');
+    renderHintsPanel();
+    updateTickHint();
+    showToast('Подсказки снова включены');
+}
+
+function renderHintsPanel() {
+    const row = $('set-hints');
+    if (!row) return;
+    const on = hintsOn('tick');
+    row.innerHTML = on
+        ? '<p class="panel-note" style="margin: 0;">Подсказки показываются. Выключить их можно на самой подсказке.</p>'
+        : '<button class="btn-soft" style="width: 100%;" onclick="showHintsAgain()">Показывать подсказки снова</button>';
+}
+
 function blankRows() {
     return [stampRow({ w: '', r: '', isWarmup: false, completed: false, manualOverride: false })];
 }
@@ -9856,7 +9958,13 @@ function renderExNote() {
 
     if (d.equipment === 'dumbbell') notes.push('вес гантелей суммарно');
     if (d.equipment === 'bodyweight') {
-        notes.push('+' + Math.round((d.bwShare || 1) * 100) + '% веса клиента');
+        // «+40%» читалось как «вес плюс 40%», а в работе доля ОТ веса тела.
+        // Показываем и долю, и сколько это килограммов у этого клиента.
+        const share = d.bwShare || 1;
+        const own = fmtKg(currentBodyWeight() * share);
+        notes.push(share >= 1
+            ? 'работает вес клиента · ' + own + ' кг'
+            : 'работает ' + Math.round(share * 100) + '% веса · ' + own + ' кг');
     }
     if (d.unilateral) notes.push('по одной стороне');
 
@@ -9922,6 +10030,7 @@ function onBodyWeightChanged(value) {
     const c = getClient(wkSession.clientId);
     if (c) c.bodyWeight = validBW(value, c.bodyWeight);
     wkSession.bodyWeight = validBW(value, wkSession.bodyWeight);
+    renderExNote();               // в подписи стоят килограммы — они поехали
     renderSetRows();
     renderWorkoutExList();
     saveDraft();
@@ -10424,6 +10533,7 @@ function renderSetRows() {
         '</div>';
     }).join('');
 
+    updateTickHint();
     updateSaveState();
 }
 
@@ -10753,6 +10863,42 @@ async function saveWorkout() {
     const withEditor = fromEditor.length
         ? wkSession.ex.concat([{ n: selectedExercise, sets: JSON.parse(JSON.stringify(fromEditor)) }])
         : wkSession.ex;
+
+    // Строки, куда тренер вписал цифры, но забыл галочку. Дальше они будут
+    // отброшены навсегда, поэтому спрашиваем до того, как трогать данные.
+    // Нетронутый план из шаблона молчит: он не работа, а намерение.
+    // Открытое упражнение становится блоком тренировки только с первой
+    // галочкой. Пока её нет, его строки живут отдельно — и именно их мы
+    // и ищем, поэтому смотрим и туда.
+    const scan = wkSession.ex.slice();
+    if (wkEditingIndex === null && selectedExercise) {
+        scan.push({ n: selectedExercise, sets: currentSetRows });
+    }
+
+    const missed = [];
+    scan.forEach(function (e) {
+        const nums = [];
+        (e.sets || []).forEach(function (row, i) {
+            if (!row.completed && !rowUntouched(row)) nums.push(i + 1);
+        });
+        if (nums.length) missed.push({ n: e.n, nums: nums });
+    });
+
+    if (missed.length) {
+        const lines = missed.slice(0, 4).map(function (m) {
+            // «подходы 1, 2», а не «подхода 1, 2»: дальше идёт перечисление
+            return m.n + ' — ' + (m.nums.length === 1 ? 'подход ' : 'подходы ') +
+                   m.nums.join(', ');
+        });
+        if (missed.length > 4) lines.push('и ещё ' + (missed.length - 4));
+        haptic('warning');
+        const anyway = await openDialog(
+            'Не отмечены подходы\n\n' + lines.join('\n') +
+            '\n\nВ тренировку попадут только отмеченные ✓.',
+            { ok: 'Сохранить без них', danger: true,
+              cancel: true, cancelText: 'Вернуться и отметить' });
+        if (!anyway) return;          // закрыли окно — тоже возвращаемся
+    }
 
     // Незасчитанные подходы — это план, а не результат: в историю они не идут.
     // Считаем в отдельный список: пока не убедились, что есть что сохранять,
@@ -11714,7 +11860,7 @@ function renderPassLog(c) {
                        (canEditOp(o)
                            ? '<div class="btn-row" style="margin-top:0;">' +
                                  '<button class="btn-soft" onclick="editPassOp(\'' + o.id + '\')">' +
-                                     '<span class="ttl">' + emo('✏️ ') + ico('pencil') + 'Изменить</span>' +
+                                     '<span class="ttl">' + emo('🖊️ ') + ico('pencil') + 'Изменить</span>' +
                                  '</button>' +
                                  '<button class="btn-soft danger" onclick="undoPassOp(\'' + o.id + '\')">' +
                                      'Удалить' +
@@ -12453,14 +12599,16 @@ function plannedSetsFor(exName, tplSets, cursor) {
         const pool = ts.isWarmup ? warm : work;
         const idx = ts.isWarmup ? at.warm++ : at.work++;
         const ref = pool[idx] || (pool.length ? pool[pool.length - 1] : null);
-        return {
+        // stampRow запоминает, с какими цифрами строка появилась: иначе
+        // правку плана руками не отличить от нетронутого плана
+        return stampRow({
             w: ref ? num(ref.w, num(ts.w, 0)) : num(ts.w, 0),
             r: ts.r,
             isWarmup: !!ts.isWarmup,
             completed: false,          // это план, а не результат
             manualOverride: !!ts.isWarmup,
             fromPlan: true             // серым, пока не отмечен; при уходе с упражнения не стирается
-        };
+        });
     });
 }
 
@@ -12598,7 +12746,7 @@ function renderClientsScreen() {
                    '<div class="cr-stats">' +
                        '<div class="cr-stat' + (noPass ? ' alert' : '') + '"><b>' + c.passLeft + '</b><span>зан.</span></div>' +
                    '</div>' +
-                   '<div class="cr-edit" onclick="event.stopPropagation(); openClientEdit(\'' + c.id + '\')">' + emo('✏️') + ico('pencil') + '</div>' +
+                   '<div class="cr-edit" onclick="event.stopPropagation(); openClientEdit(\'' + c.id + '\')">' + emo('🖊️') + ico('pencil') + '</div>' +
                '</div>';
     }).join('');
 }
@@ -12745,6 +12893,9 @@ function openClientEdit(clientId, continueBooking) {
     // остаток тот же, что в балансе: висящее ручное списание уже учтено
     ceOpenedPass = c ? shownPassLeft(c) : null;
     $('ce-pass').value = c ? ceOpenedPass : '';
+    $('ce-sum').value = '';
+    $('ce-sum-row').style.display = c ? 'none' : '';
+    updateClientPrice();
     $('ce-error').innerText = '';
 
     $('ce-save-label').innerText = c ? 'Сохранить' : 'Добавить клиента';
@@ -12752,6 +12903,23 @@ function openClientEdit(clientId, continueBooking) {
 
     haptic('light');
     openSheet('sheet-client-edit');
+}
+
+/* Цена за занятие у нового клиента — считается на каждую цифру, как в форме
+   пополнения. Поле суммы необязательное, поэтому пока пусто — объясняем зачем. */
+function updateClientPrice() {
+    const box = $('ce-price');
+    if (!box) return;
+    const lessons = Math.round(num($('ce-pass').value, 0));
+    const sum = Math.round(num($('ce-sum').value, 0));
+
+    if (lessons > 0 && sum > 0) {
+        box.className = 'price-hint';
+        box.innerText = 'Цена за занятие: ' + Math.round(sum / lessons).toLocaleString('ru') + ' ₽';
+    } else {
+        box.className = 'price-hint dim';
+        box.innerText = 'Без суммы цену спросим при первом пополнении';
+    }
 }
 
 function onClientEditKey(e) {
@@ -12770,6 +12938,15 @@ async function saveClientEdit() {
     const goal = $('ce-goal').value.trim();
     const bodyWeight = validBW($('ce-bw').value, 80);
     const passLeft = Math.max(0, Math.round(num($('ce-pass').value, 0)));
+    const passSum = Math.max(0, Math.round(num($('ce-sum').value, 0)));
+
+    // Сумма без занятий пропала бы молча — лучше спросить
+    if (!ceEditingId && passSum > 0 && passLeft <= 0) {
+        $('ce-error').innerText = 'Впишите занятия, на которые эта сумма';
+        flashField($('ce-pass'));
+        haptic('error');
+        return;
+    }
 
     let clientId = ceEditingId;
 
@@ -12790,17 +12967,24 @@ async function saveClientEdit() {
         }
     } else {
         clientId = uid('cl');
+        // Назвали сумму — абонемент заводим пополнением в журнале: тогда у клиента
+        // есть цена за занятие и списания считаются в деньгах. Точка отсчёта при
+        // этом нулевая, иначе занятия легли бы дважды: и в ней, и в пополнении.
+        const viaTopup = passLeft > 0 && passSum > 0;
         DB.clients.push({
             id: clientId,
             name: name,
             goal: goal,
             bodyWeight: bodyWeight,
-            passLeft: passLeft,
-            passBase: passLeft,
+            passLeft: viaTopup ? 0 : passLeft,
+            passBase: viaTopup ? 0 : passLeft,
             totalDebt: 0,
             lessonPrice: 0,
             tgId: null
         });
+        if (viaTopup) {
+            addPassOp(DB, clientId, { kind: 'topup', delta: passLeft, amount: passSum });
+        }
     }
 
     const continueBooking = ceContinueBooking && !ceEditingId && !!pendingSlot;
@@ -12942,6 +13126,7 @@ window.addEventListener('DOMContentLoaded', function () {
     initNeoBackground();
     applyTheme();
     renderThemeChips();
+    renderHintsPanel();
     renderTemplatesSection();
     renderProfileLine();
     renderTrainerAvatar();
@@ -13504,7 +13689,7 @@ function exerciseRow(name) {
                        esc(modeNote) +
                    '</div>' +
                '</div>' +
-               '<div class="cr-edit" onclick="openExerciseEditorAt(' + idx + ')">' + emo('✏️') + ico('pencil') + '</div>' +
+               '<div class="cr-edit" onclick="openExerciseEditorAt(' + idx + ')">' + emo('🖊️') + ico('pencil') + '</div>' +
            '</div>';
 }
 
@@ -13595,6 +13780,25 @@ function padScrollInto(el) {
         el.scrollIntoView({ block: 'center' });
         return;
     }
+    padScrollFix(el);
+
+    // Шапка ужимается, а клавиатура выезжает не мгновенно: к концу движения
+    // полоса видимого сдвигается на десяток точек, и поле, поднятое ровно в
+    // край, оказывается под шапкой. Поэтому поправляем ещё дважды — сразу на
+    // следующем кадре и когда движение закончилось. Если тренер за это время
+    // прокрутил список сам, не вмешиваемся: спорить с рукой нельзя.
+    let mine = Math.round(window.scrollY);
+    const again = function () {
+        if (!document.body.classList.contains('pad-open')) return;
+        if (!el.isConnected || Math.abs(window.scrollY - mine) > 2) return;
+        padScrollFix(el);
+        mine = Math.round(window.scrollY);
+    };
+    requestAnimationFrame(again);
+    setTimeout(again, 280);
+}
+
+function padScrollFix(el) {
     // Два прохода: прилипшая шапка после прокрутки встаёт иначе, и с одного
     // раза поле иногда оказывалось ровно на её краю.
     for (let pass = 0; pass < 2; pass++) {
@@ -13719,7 +13923,17 @@ function padForInput(id, opts) {
 }
 
 function openPassPad() {
-    padForInput('ce-pass', { label: 'Абонемент, занятий', steps: [-1, 1], remember: 'pass', max: 999 });
+    padForInput('ce-pass', {
+        label: 'Абонемент, занятий', steps: [-1, 1], remember: 'pass', max: 999,
+        after: updateClientPrice
+    });
+}
+
+function openClientSumPad() {
+    padForInput('ce-sum', {
+        label: 'Сумма, ₽', steps: [-500, 500], remember: 'money', max: 99999,
+        after: updateClientPrice
+    });
 }
 
 function openTopupLessonsPad() {
