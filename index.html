@@ -1589,6 +1589,88 @@ select.fld {
 
 .form-row { margin-bottom: 12px; }
 
+/* «?» рядом с «＋»: тем же кругом, но спокойнее — это не действие */
+.sched-help {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 auto;
+    margin-right: 8px;
+    border: 0.5px solid var(--card-border);
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--text-muted);
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.help-btn { font-weight: 700; color: var(--text-muted); }
+
+/* --- Режим подсказок ---
+   Полоса и карточка висят поверх всего, включая шторки: из режима надо уметь
+   выйти с любого экрана. Обе сверху, а не снизу, — внизу нижнее меню, по
+   которому в этом режиме как раз ходят. */
+.help-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10050;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: calc(env(safe-area-inset-top, 0px) + 8px) 14px 8px;
+    background: var(--neon-blue, #0a84ff);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+}
+.help-bar .hb-text { flex: 1; min-width: 0; line-height: 1.3; }
+.help-bar .hb-off {
+    flex: 0 0 auto;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.22);
+    color: #fff;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.help-plate {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 46px);
+    left: 12px;
+    right: 12px;
+    z-index: 10060;
+    padding: 14px 16px;
+    background: var(--surface);
+    border: 0.5px solid var(--card-border);
+    border-radius: 16px;
+    box-shadow: 0 12px 30px rgba(var(--ch-shadow), 0.18);
+}
+.help-plate .hp-name { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+.help-plate .hp-text { font-size: 13.5px; line-height: 1.45; color: var(--text-muted); }
+.help-plate .hp-acts { display: flex; gap: 8px; margin-top: 12px; }
+.help-plate .hp-acts button { flex: 1; }
+/* Кнопка, по которой ткнули: её видно из-под карточки */
+.help-pick {
+    outline: 2px solid var(--neon-blue, #0a84ff);
+    outline-offset: 2px;
+    border-radius: 10px;
+}
+:root[data-style="minimal"] .help-bar { background: var(--m-act); color: var(--m-act-text); }
+:root[data-style="minimal"] .help-bar .hb-off {
+    background: var(--m-act-text);
+    color: var(--m-act);
+}
+:root[data-style="minimal"] .help-plate {
+    background: var(--m-card);
+    border: none;
+    box-shadow: var(--m-sh-3), 0 0 0 1px var(--m-input);
+}
+:root[data-style="minimal"] .help-pick { outline-color: var(--m-act); }
+
 /* Пояснение под полем: мелко и приглушённо, чтобы не спорило с подписью */
 .field-note {
     margin-top: 6px;
@@ -5530,6 +5612,20 @@ body.pad-open { padding-bottom: 62vh; }
 </div>
 
 
+<!-- Режим подсказок: полоса сверху и карточка с объяснением -->
+<div id="help-bar" class="help-bar" style="display: none;">
+    <span class="hb-text">Нажмите любую кнопку — расскажу, что она делает. Вкладки внизу работают как обычно.</span>
+    <button class="hb-off" onclick="setHelpMode(false)">Выйти</button>
+</div>
+<div id="help-plate" class="help-plate" style="display: none;">
+    <div class="hp-name" id="help-plate-name"></div>
+    <div class="hp-text" id="help-plate-text"></div>
+    <div class="hp-acts">
+        <button class="btn-soft" onclick="closeHelpPlate()">Понятно</button>
+        <button class="btn-soft filled" onclick="helpRunAnyway()">Всё равно нажать</button>
+    </div>
+</div>
+
 <!-- ==========================================================================
      ЭКРАН 1 — РАСПИСАНИЕ
      ========================================================================== -->
@@ -5542,6 +5638,7 @@ body.pad-open { padding-bottom: 62vh; }
         <button class="trainer-av" id="cal-trainer" onclick="showScreen('screen-profile', 'screen-schedule')"
                 aria-label="Профиль"></button>
         <h1 id="cal-month" onclick="openWeeksSheet()">—</h1>
+        <button class="sched-help" onclick="setHelpMode(true)" aria-label="Что делают кнопки">?</button>
         <button class="sched-add" onclick="openAddModal(null)" aria-label="Записать клиента">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round">
                 <path d="M12 5v14M5 12h14"/>
@@ -5585,6 +5682,7 @@ body.pad-open { padding-bottom: 62vh; }
     <div class="premium-header">
         <h1 data-text="Клиенты">Клиенты</h1>
         <div class="header-icons">
+            <div class="icon-btn help-btn" onclick="setHelpMode(true)" aria-label="Что делают кнопки">?</div>
             <div class="icon-btn" onclick="openClientEdit(null)"><span class="only-neo">＋</span><svg class="mi only-min" aria-hidden="true"><use href="#i-plus"/></svg></div>
         </div>
     </div>
@@ -5786,6 +5884,7 @@ body.pad-open { padding-bottom: 62vh; }
     <div class="premium-header">
         <h1 data-text="Упражнения">Упражнения</h1>
         <div class="header-icons">
+            <div class="icon-btn help-btn" onclick="setHelpMode(true)" aria-label="Что делают кнопки">?</div>
             <div class="icon-btn" onclick="openExerciseEditor(null)"><span class="only-neo">＋</span><svg class="mi only-min" aria-hidden="true"><use href="#i-plus"/></svg></div>
         </div>
     </div>
@@ -14136,6 +14235,202 @@ function padActiveClass(index, field) {
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
 <script>
 /* ==========================================================================
+   20. РЕЖИМ ПОДСКАЗОК
+   «?» в шапке. Пока режим включён, нажатие по кнопке её не запускает, а
+   рассказывает, что она делает. Так можно потрогать всё подряд и ничего не
+   сломать — это и была главная претензия к прежнему проводнику.
+   ========================================================================== */
+
+let helpMode = false;
+let helpTarget = null;      // по какой кнопке ткнули
+let helpBypass = false;     // «всё равно нажать» — пропускаем один клик
+
+/* Объяснения привязаны к имени обработчика, а не к самой кнопке: так одна
+   запись покрывает и кнопку в разметке, и такую же, нарисованную на ходу. */
+const HELP_TEXTS = {
+    // расписание
+    openAddModal: ['Записать клиента', 'Заводит тренировку на выбранный день и час.'],
+    openWeeksSheet: ['Месяц', 'Открывает календарь на месяц, чтобы прыгнуть на другую дату.'],
+    stepStripWeek: ['Стрелки недели', 'Листают неделю назад и вперёд.'],
+    scrollToTodayWeek: ['Сегодня', 'Возвращает полосу недели на сегодняшний день.'],
+    openClientMenu: ['Запись в дне', 'Меню записи: провести тренировку, перенести, отметить или удалить.'],
+    startWorkout: ['Провести тренировку', 'Открывает экран тренировки — там записывают подходы.'],
+    openUnmarked: ['Неотмеченные', 'Прошедшие записи, по которым не сказано, состоялись они или нет.'],
+    openMatrixSheet: ['Все окна дня', 'Показывает свободное время, чтобы записать ещё одного клиента.'],
+    pickClientForSlot: ['Кого записать', 'Выбирает клиента на это время.'],
+    pickTime: ['Время', 'Час и минуты записи.'],
+    shiftTime: ['Сдвинуть время', 'Двигает время записи на несколько минут.'],
+    uiMarkSession: ['Отметить', 'Состоялась тренировка, не пришёл или отменили.'],
+    markAsWorkout: ['Провести', 'Тренировка состоялась — занятие спишется с абонемента.'],
+    markAsMissed: ['Не пришёл', 'Клиент не пришёл. Занятие тоже списывается.'],
+    markAsCancelled: ['Отменена', 'Отменена заранее — занятие остаётся на абонементе.'],
+    uiDeleteBooking: ['Удалить запись', 'Убирает запись из расписания.'],
+    uiExtendPass: ['Пополнить абонемент', 'Добавляет занятия, не уходя из расписания.'],
+    uiEditSessionTime: ['Изменить время', 'Переносит запись на другой час.'],
+    editSessionTime: ['Изменить время', 'Переносит запись на другой час.'],
+    uiClientReport: ['Отчёт клиенту', 'Сводка за период файлом. Раздел ещё не подключён.'],
+    uiRestoreSession: ['Вернуть в план', 'Отменяет отметку — запись снова просто запланирована.'],
+
+    // клиенты
+    openClient: ['Карточка клиента', 'История, аналитика и абонемент этого клиента.'],
+    openClientScreen: ['Карточка клиента', 'История, аналитика и абонемент этого клиента.'],
+    openClientEdit: ['Клиент', 'Заводит нового или правит карточку: имя, цель, вес, абонемент.'],
+    openClientBwPad: ['Вес сейчас', 'Текущий вес клиента. Нужен для упражнений с собственным весом.'],
+    openPassPad: ['Абонемент', 'Сколько занятий оплачено.'],
+    openClientSumPad: ['Сумма за абонемент', 'По желанию. Впишешь — посчитается цена за занятие.'],
+    pickGoal: ['Цель', 'Цель клиента. Влияет только на карточку.'],
+    saveClientEdit: ['Сохранить', 'Записывает карточку клиента.'],
+    deleteClientFromEdit: ['Удалить клиента', 'Вместе с историей тренировок и оплатами. Спросит подтверждение.'],
+
+    // карточка клиента
+    setClientTab: ['Вкладки клиента', 'История, аналитика и абонемент.'],
+    setPeriod: ['Период', 'За какой срок считать: неделя, месяц или всё время.'],
+    toggleHistEntry: ['Тренировка в истории', 'Разворачивает — видно, что именно делали.'],
+    moreHistory: ['Показать ещё', 'Достаёт более старые тренировки.'],
+    toggleAnFold: ['Раздел аналитики', 'Сворачивает и разворачивает.'],
+    openWeighInPad: ['Взвешивание', 'Записывает вес клиента без тренировки — ляжет на график.'],
+    openTopupSheet: ['Пополнить', 'Добавляет занятия и сумму, считает цену за занятие.'],
+    manualSpend: ['Списать вручную', 'Снимает занятие без тренировки. Пять секунд на отмену.'],
+    undoPassOp: ['Отменить операцию', 'Убирает запись из журнала, остаток пересчитается.'],
+    editPassOp: ['Изменить', 'Правит пополнение: занятия и сумму.'],
+    openPaymentSheet: ['Погасить долг', 'Записывает, сколько клиент внёс.'],
+    morePassLog: ['Показать ещё', 'Достаёт более старые операции.'],
+    toggleLogItem: ['Строка журнала', 'Разворачивает подробности операции.'],
+    openClientLink: ['Привязать Telegram', 'Даёт клиенту свой кабинет: тренировки, прогресс, остаток занятий. Денег он не видит.'],
+    showClientQr: ['QR клиента', 'Код для приглашения — показать человеку, который рядом.'],
+    copyClientLink: ['Скопировать ссылку', 'Кладёт приглашение в буфер обмена.'],
+    shareClientLink: ['Отправить', 'Передаёт приглашение через Telegram.'],
+    unlinkClientTg: ['Отвязать', 'Клиент потеряет доступ к своему кабинету.'],
+
+    // тренировка
+    openExPicker: ['＋ Упражнение', 'Добавляет упражнение в тренировку.'],
+    openExGroup: ['Группа мышц', 'Упражнения этой группы. Свои попадают сюда сами.'],
+    backToExGroups: ['Назад к группам', 'Возвращает к фигурам мышц.'],
+    selectExerciseByIndex: ['Упражнение', 'Выбирает его в тренировку.'],
+    createExerciseFromSearch: ['Создать своё', 'Заводит упражнение прямо отсюда.'],
+    createExerciseFromList: ['Создать своё', 'Заводит упражнение прямо отсюда.'],
+    openTemplatesSheet: ['Из шаблона', 'Вставляет сразу весь набор упражнений.'],
+    toggleTemplate: ['Шаблон', 'Готовый набор упражнений.'],
+    addSetRow: ['+ Подход', 'Добавляет ещё один подход к этому упражнению.'],
+    removeSetRow: ['Убрать подход', 'Удаляет строку подхода.'],
+    toggleSetDone: ['Галочка подхода', 'Отмечает, что подход сделан. В тренировку попадают только отмеченные.'],
+    toggleSetWarmup: ['Разминка / Рабочий', 'Разминочные подходы не идут в тоннаж и в рекорды.'],
+    openSetPad: ['Вес и повторы', 'Открывает клавиатуру. Что писать в вес — сказано под названием упражнения.'],
+    toggleExInWorkout: ['Упражнение в тренировке', 'Сворачивает и разворачивает карточку.'],
+    removeExFromWorkout: ['Убрать упражнение', 'Удаляет его из тренировки.'],
+    collapseWorkoutEditor: ['Свернуть', 'Прячет подходы этого упражнения.'],
+    openWorkoutParams: ['Параметры занятия', 'Самочувствие и вес клиента на этой тренировке.'],
+    openWorkoutBwPad: ['Вес на этой тренировке', 'Запишется и в карточку клиента.'],
+    openWellPad: ['Самочувствие', 'От 1 до 10. Видно в истории.'],
+    openRound: ['Круг', 'Связка упражнений, которую делают по кругу.'],
+    repeatRound: ['Повторить круг', 'Добавляет ещё один проход той же связки.'],
+    saveWorkout: ['Сохранить тренировку', 'Заносит её в историю и списывает занятие с абонемента.'],
+
+    // упражнения
+    openExerciseEditor: ['Упражнение', 'Заводит своё или правит: мышца, характер, снаряд.'],
+    openExerciseEditorAt: ['Упражнение', 'Правит: мышца, характер, снаряд.'],
+    toggleExFold: ['Раздел', 'Сворачивает и разворачивает список.'],
+    saveExercise: ['Сохранить', 'Записывает упражнение в твой справочник.'],
+    deleteExercise: ['Удалить', 'Убирает упражнение. Базовое просто спрячется.'],
+    renameTemplateFromView: ['Переименовать', 'Меняет название шаблона.'],
+    deleteTemplateFromView: ['Удалить шаблон', 'Убирает готовый набор упражнений.'],
+
+    // профиль и настройки
+    showInviteQr: ['QR приглашения', 'Код, по которому другой тренер откроет приложение.'],
+    copyInvite: ['Скопировать', 'Кладёт приглашение в буфер обмена.'],
+    shareInvite: ['Отправить', 'Передаёт приглашение через Telegram.'],
+    cloudResync: ['Обновить с сервера', 'Если устройства разошлись — берёт серверную версию за правду.'],
+    setLookStyle: ['Стиль', 'Нео-Стекло или Минимализм.'],
+    setLookVariant: ['Время суток', 'Цвет под утро, день, вечер или ночь.'],
+    toggleLookOption: ['Переключатель', 'Живой фон и подписи под значками нижнего меню.'],
+    showHintsAgain: ['Вернуть подсказки', 'Снова покажет те, что ты скрыл.'],
+    enterCabinet: ['Кабинет клиента', 'Показывает приложение глазами клиента.'],
+    leaveCabinet: ['Вернуться', 'Обратно в приложение тренера.'],
+
+    // общее
+    goBack: ['Назад', 'Возвращает на предыдущий экран.'],
+    showScreen: ['Переход', 'Открывает другой экран.'],
+    closeSheet: ['Закрыть', 'Закрывает это окно.'],
+    closePad: ['Готово', 'Прячет клавиатуру.'],
+    padDigit: ['Цифра', 'Набирает число в поле, над которым открыта клавиатура.'],
+    padStep: ['Плюс и минус', 'Меняет число на шаг, не набирая заново.'],
+    padSet: ['Готовое число', 'Подставляет то, что ты вводил раньше.'],
+    padBack: ['Стереть', 'Убирает последнюю цифру.']
+};
+
+/* Имя обработчика из разметки: openClient('cl_1') → openClient */
+function helpKeyOf(el) {
+    const raw = el && el.getAttribute && el.getAttribute('onclick');
+    if (!raw) return null;
+    const m = String(raw).replace(/event\.stopPropagation\(\);?/g, '')
+                         .match(/([A-Za-z_$][\w$]*)\s*\(/);
+    return m ? m[1] : null;
+}
+
+function helpLabelOf(el) {
+    const aria = el.getAttribute && el.getAttribute('aria-label');
+    if (aria) return aria;
+    const t = (el.innerText || el.value || '').replace(/\s+/g, ' ').trim();
+    return t ? t.slice(0, 40) : 'Эта кнопка';
+}
+
+function setHelpMode(on) {
+    helpMode = !!on;
+    closeHelpPlate();
+    $('help-bar').style.display = helpMode ? '' : 'none';
+    document.body.classList.toggle('help-on', helpMode);
+    haptic('light');
+}
+
+function showHelpPlate(el) {
+    const key = helpKeyOf(el);
+    const found = key && HELP_TEXTS[key];
+
+    if (helpTarget) helpTarget.classList.remove('help-pick');
+    helpTarget = el;
+    el.classList.add('help-pick');
+
+    $('help-plate-name').innerText = found ? found[0] : helpLabelOf(el);
+    $('help-plate-text').innerText = found ? found[1]
+        : 'Про эту кнопку объяснения пока нет.';
+    $('help-plate').style.display = '';
+    haptic('select');
+}
+
+function closeHelpPlate() {
+    if (helpTarget) helpTarget.classList.remove('help-pick');
+    helpTarget = null;
+    const box = $('help-plate');
+    if (box) box.style.display = 'none';
+}
+
+/* «Всё равно нажать»: иначе в режиме подсказок не открыть ни одного окна,
+   а объяснять кнопки внутри них тоже надо. */
+function helpRunAnyway() {
+    const el = helpTarget;
+    closeHelpPlate();
+    if (!el) return;
+    helpBypass = true;
+    try { el.click(); } finally { setTimeout(function () { helpBypass = false; }, 0); }
+}
+
+/* Перехват на входе: до того, как клик дойдёт до самой кнопки. */
+document.addEventListener('click', function (e) {
+    if (!helpMode || helpBypass) return;
+    const t = e.target;
+    if (!t || !t.closest) return;
+    // свои кнопки и нижнее меню работают как обычно — иначе из режима
+    // не выйти и по приложению не походить
+    if (t.closest('#help-bar') || t.closest('#help-plate') || t.closest('.nav-tab')) return;
+
+    const el = t.closest('[onclick], button, input, select, textarea');
+    if (!el) return;
+    e.preventDefault();
+    e.stopPropagation();
+    showHelpPlate(el);
+}, true);
+
+/* ==========================================================================
    21. ОБЛАКО
    Телефон остаётся главным: запись идёт в него мгновенно, и в зале без связи
    ничего не теряется. Сервер догоняется в фоне — уезжает только то, что
@@ -15309,6 +15604,20 @@ function cabEntryHtml(s) {
 
 /* Прогресс: то же «было → стало», что видит тренер, но без вердиктов
    про него самого — клиенту важно, растут ли его веса. */
+/* --- Запас на случай «нет связи» ---
+   Рядом с приложением на сайте лежит файл sw.js: он кладёт приложение в память
+   браузера, и в зале без связи оно открывается из неё. Свежая версия всё равно
+   побеждает — сеть спрашивается первой. Файла нет (например, открыли с флешки)
+   — просто работаем как раньше. */
+(function () {
+    if (!('serviceWorker' in navigator)) return;
+    const local = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    if (location.protocol !== 'https:' && !local) return;
+    window.addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js').catch(function () {});
+    });
+})();
+
 function renderCabinetProgress() {
     const box = $('cab-progress');
     if (!box) return;
