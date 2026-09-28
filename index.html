@@ -1703,33 +1703,6 @@ select.fld {
 
 .form-row { margin-bottom: 12px; }
 
-/* --- Короткая подсказка по нажатию ---
-   Всплывает сверху после первого нажатия и уходит сама. Ничего не
-   перекрывает: кнопка уже сработала, объяснение просто догоняет. */
-.btn-hint {
-    position: fixed;
-    top: calc(env(safe-area-inset-top, 0px) + 10px);
-    left: 12px;
-    right: 12px;
-    z-index: 10060;
-    padding: 12px 14px;
-    background: var(--surface);
-    border: 0.5px solid var(--card-border);
-    border-radius: 16px;
-    box-shadow: 0 12px 30px rgba(var(--ch-shadow), 0.18);
-    animation: bhIn 0.18s ease;
-}
-@keyframes bhIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
-.btn-hint .bh-name { font-size: 14.5px; font-weight: 700; margin-bottom: 3px; }
-.btn-hint .bh-text { font-size: 13px; line-height: 1.4; color: var(--text-muted); }
-.btn-hint .bh-acts { display: flex; gap: 8px; margin-top: 10px; }
-.btn-hint .bh-acts button { flex: 1; font-size: 12.5px; }
-:root[data-style="minimal"] .btn-hint {
-    background: var(--m-card);
-    border: none;
-    box-shadow: var(--m-sh-3), 0 0 0 1px var(--m-input);
-}
-
 /* Пояснение под полем: мелко и приглушённо, чтобы не спорило с подписью */
 .field-note {
     margin-top: 6px;
@@ -2986,6 +2959,8 @@ body.pad-open .toast.show { transform: translateY(0); }
 body.pad-open[data-screen="screen-workout"] .screen-head {
     padding-top: calc(6px + var(--head-top));
     padding-bottom: 6px;
+    /* общая высота шапок тут не действует: на время ввода место дороже */
+    min-height: calc(48px + var(--head-top));
 }
 body.pad-open[data-screen="screen-workout"] .screen-head h2 { font-size: 17px; }
 body.pad-open[data-screen="screen-workout"] .screen-head .head-sub { display: none; }
@@ -5670,6 +5645,34 @@ body.pad-open { padding-bottom: 62vh; }
 :root[data-style="minimal"] .panel-title .btn-soft.base-toggle { height: 32px; padding: 0 10px; font-size: 12px; }
 /* панель сохранения лежит поверх списка — тень вверх отделяет её от карточек */
 :root[data-style="minimal"] #wk-save-bar { box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.08), var(--m-sh-1); }
+
+/* --- Одна высота шапки на всех экранах ---
+   Образец — Ежедневник: при переключении вкладок заголовок не должен
+   прыгать. Раньше разброс доходил до пятидесяти точек, и вот почему:
+   браузер сам вешает поля на заголовки, а сняты они были только у
+   Ежедневника. Снимаем везде, а высоту задаём самой полосе — содержимое
+   в ней стоит по центру, поэтому «Клиенты», «Профиль» и «Тренировка»
+   встают на ту же строку, что и месяц в Ежедневнике.
+
+   Блок стоит последним нарочно: правила тем и другой темы выше по файлу
+   задают свои отступы, и перебить их может только то, что идёт после. */
+:root { --head-h: 79px; }
+:root[data-style="minimal"] { --head-h: 70px; }
+
+:root[data-style="neo"] .premium-header,
+:root[data-style="neo"] .screen-head,
+:root[data-style="minimal"] .premium-header,
+:root[data-style="minimal"] .screen-head {
+    box-sizing: border-box;
+    min-height: calc(var(--head-h) + var(--head-top));
+    padding-top: var(--head-top);
+    padding-bottom: 0;
+    align-items: center;
+}
+:root[data-style="neo"] .premium-header h1,
+:root[data-style="neo"] .screen-head h2,
+:root[data-style="minimal"] .premium-header h1,
+:root[data-style="minimal"] .screen-head h2 { margin: 0; }
 </style>
 </head>
 <body>
@@ -5728,16 +5731,6 @@ body.pad-open { padding-bottom: 62vh; }
     <div class="spinner"></div>
 </div>
 
-
-<!-- Короткая подсказка после нажатия. Ничего не перекрывает и уходит сама. -->
-<div id="btn-hint" class="btn-hint" style="display: none;">
-    <div class="bh-name" id="btn-hint-name"></div>
-    <div class="bh-text" id="btn-hint-text"></div>
-    <div class="bh-acts">
-        <button class="btn-soft" onclick="closeButtonHint()">Понятно</button>
-        <button class="btn-soft" onclick="hintOffForever()">Больше не показывать</button>
-    </div>
-</div>
 
 <!-- ==========================================================================
      ЭКРАН 1 — РАСПИСАНИЕ
@@ -10279,13 +10272,10 @@ function showHintsAgain() {
 function renderHintsPanel() {
     const row = $('set-hints');
     if (!row) return;
-    const h = ensureSettings().hints || {};
-    let off = 0;
-    for (const k in h) if (h[k] === false) off++;
-    row.innerHTML = !off
+    const on = hintsOn('tick');
+    row.innerHTML = on
         ? '<p class="panel-note" style="margin: 0;">Подсказки показываются. Выключить их можно на самой подсказке.</p>'
-        : '<button class="btn-soft" style="width: 100%;" onclick="showHintsAgain()">Показывать подсказки снова' +
-          ' <span class="fold-count">' + off + '</span></button>';
+        : '<button class="btn-soft" style="width: 100%;" onclick="showHintsAgain()">Показывать подсказки снова</button>';
 }
 
 function blankRows() {
@@ -14442,213 +14432,6 @@ function padActiveClass(index, field) {
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
 <script>
-/* ==========================================================================
-   20. РЕЖИМ ПОДСКАЗОК
-   «?» в шапке. Пока режим включён, нажатие по кнопке её не запускает, а
-   рассказывает, что она делает. Так можно потрогать всё подряд и ничего не
-   сломать — это и была главная претензия к прежнему проводнику.
-   ========================================================================== */
-
-/* Объяснения привязаны к имени обработчика, а не к самой кнопке: так одна
-   запись покрывает и кнопку в разметке, и такую же, нарисованную на ходу. */
-const HELP_TEXTS = {
-    // расписание
-    openAddModal: ['Записать клиента', 'Заводит тренировку на выбранный день и час.'],
-    openWeeksSheet: ['Месяц', 'Открывает календарь на месяц, чтобы прыгнуть на другую дату.'],
-    stepStripWeek: ['Стрелки недели', 'Листают неделю назад и вперёд.'],
-    scrollToTodayWeek: ['Сегодня', 'Возвращает полосу недели на сегодняшний день.'],
-    openClientMenu: ['Запись в дне', 'Меню записи: провести тренировку, перенести, отметить или удалить.'],
-    startWorkout: ['Провести тренировку', 'Открывает экран тренировки — там записывают подходы.'],
-    openUnmarked: ['Неотмеченные', 'Прошедшие записи, по которым не сказано, состоялись они или нет.'],
-    openMatrixSheet: ['Все окна дня', 'Сетка часов: сразу видно, что занято и что свободно.'],
-    setSlotFlow: ['Порядок часов', 'Столбцами — утро, день и вечер отдельными столбцами. Рядами — подряд, как текст.'],
-    openHourSheet: ['Несколько записей', 'В этом часу их больше одной — покажу, кого открыть.'],
-    pickClientForSlot: ['Кого записать', 'Выбирает клиента на это время.'],
-    pickTime: ['Время', 'Час и минуты записи.'],
-    shiftTime: ['Сдвинуть время', 'Двигает время записи на несколько минут.'],
-    uiMarkSession: ['Отметить', 'Состоялась тренировка, не пришёл или отменили.'],
-    markAsWorkout: ['Провести', 'Тренировка состоялась — занятие спишется с абонемента.'],
-    markAsMissed: ['Не пришёл', 'Клиент не пришёл. Занятие тоже списывается.'],
-    markAsCancelled: ['Отменена', 'Отменена заранее — занятие остаётся на абонементе.'],
-    uiDeleteBooking: ['Удалить запись', 'Убирает запись из расписания.'],
-    uiExtendPass: ['Пополнить абонемент', 'Добавляет занятия, не уходя из расписания.'],
-    uiEditSessionTime: ['Изменить время', 'Переносит запись на другой час.'],
-    editSessionTime: ['Изменить время', 'Переносит запись на другой час.'],
-    uiClientReport: ['Отчёт клиенту', 'Сводка за период файлом. Раздел ещё не подключён.'],
-    uiRestoreSession: ['Вернуть в план', 'Отменяет отметку — запись снова просто запланирована.'],
-
-    // клиенты
-    openClient: ['Карточка клиента', 'История, аналитика и абонемент этого клиента.'],
-    openClientScreen: ['Карточка клиента', 'История, аналитика и абонемент этого клиента.'],
-    openClientEdit: ['Клиент', 'Заводит нового или правит карточку: имя, цель, вес, абонемент.'],
-    openClientBwPad: ['Вес сейчас', 'Текущий вес клиента. Нужен для упражнений с собственным весом.'],
-    openPassPad: ['Абонемент', 'Сколько занятий оплачено.'],
-    openClientSumPad: ['Сумма за абонемент', 'По желанию. Впишешь — посчитается цена за занятие.'],
-    pickGoal: ['Цель', 'Цель клиента. Влияет только на карточку.'],
-    saveClientEdit: ['Сохранить', 'Записывает карточку клиента.'],
-    deleteClientFromEdit: ['Удалить клиента', 'Вместе с историей тренировок и оплатами. Спросит подтверждение.'],
-
-    // карточка клиента
-    setClientTab: ['Вкладки клиента', 'История, аналитика и абонемент.'],
-    setPeriod: ['Период', 'За какой срок считать: неделя, месяц или всё время.'],
-    toggleHistEntry: ['Тренировка в истории', 'Разворачивает — видно, что именно делали.'],
-    moreHistory: ['Показать ещё', 'Достаёт более старые тренировки.'],
-    toggleAnFold: ['Раздел аналитики', 'Сворачивает и разворачивает.'],
-    openWeighInPad: ['Взвешивание', 'Записывает вес клиента без тренировки — ляжет на график.'],
-    openTopupSheet: ['Пополнить', 'Добавляет занятия и сумму, считает цену за занятие.'],
-    manualSpend: ['Списать вручную', 'Снимает занятие без тренировки. Пять секунд на отмену.'],
-    undoPassOp: ['Отменить операцию', 'Убирает запись из журнала, остаток пересчитается.'],
-    editPassOp: ['Изменить', 'Правит пополнение: занятия и сумму.'],
-    openPaymentSheet: ['Погасить долг', 'Записывает, сколько клиент внёс.'],
-    morePassLog: ['Показать ещё', 'Достаёт более старые операции.'],
-    toggleLogItem: ['Строка журнала', 'Разворачивает подробности операции.'],
-    openClientLink: ['Привязать Telegram', 'Даёт клиенту свой кабинет: тренировки, прогресс, остаток занятий. Денег он не видит.'],
-    showClientQr: ['QR клиента', 'Код для приглашения — показать человеку, который рядом.'],
-    copyClientLink: ['Скопировать ссылку', 'Кладёт приглашение в буфер обмена.'],
-    shareClientLink: ['Отправить', 'Передаёт приглашение через Telegram.'],
-    unlinkClientTg: ['Отвязать', 'Клиент потеряет доступ к своему кабинету.'],
-
-    // тренировка
-    openExPicker: ['＋ Упражнение', 'Добавляет упражнение в тренировку.'],
-    openExGroup: ['Группа мышц', 'Упражнения этой группы. Свои попадают сюда сами.'],
-    backToExGroups: ['Назад к группам', 'Возвращает к фигурам мышц.'],
-    selectExerciseByIndex: ['Упражнение', 'Выбирает его в тренировку.'],
-    createExerciseFromSearch: ['Создать своё', 'Заводит упражнение прямо отсюда.'],
-    createExerciseFromList: ['Создать своё', 'Заводит упражнение прямо отсюда.'],
-    openTemplatesSheet: ['Из шаблона', 'Вставляет сразу весь набор упражнений.'],
-    toggleTemplate: ['Шаблон', 'Готовый набор упражнений.'],
-    addSetRow: ['+ Подход', 'Добавляет ещё один подход к этому упражнению.'],
-    removeSetRow: ['Убрать подход', 'Удаляет строку подхода.'],
-    toggleSetDone: ['Галочка подхода', 'Отмечает, что подход сделан. В тренировку попадают только отмеченные.'],
-    toggleSetWarmup: ['Разминка / Рабочий', 'Разминочные подходы не идут в тоннаж и в рекорды.'],
-    openSetPad: ['Вес и повторы', 'Открывает клавиатуру. Что писать в вес — сказано под названием упражнения.'],
-    toggleExInWorkout: ['Упражнение в тренировке', 'Сворачивает и разворачивает карточку.'],
-    removeExFromWorkout: ['Убрать упражнение', 'Удаляет его из тренировки.'],
-    collapseWorkoutEditor: ['Свернуть', 'Прячет подходы этого упражнения.'],
-    openWorkoutParams: ['Параметры занятия', 'Самочувствие и вес клиента на этой тренировке.'],
-    openWorkoutBwPad: ['Вес на этой тренировке', 'Запишется и в карточку клиента.'],
-    openWellPad: ['Самочувствие', 'От 1 до 10. Видно в истории.'],
-    openRound: ['Круг', 'Связка упражнений, которую делают по кругу.'],
-    repeatRound: ['Повторить круг', 'Добавляет ещё один проход той же связки.'],
-    saveWorkout: ['Сохранить тренировку', 'Заносит её в историю и списывает занятие с абонемента.'],
-
-    // упражнения
-    openExerciseEditor: ['Упражнение', 'Заводит своё или правит: мышца, характер, снаряд.'],
-    openExerciseEditorAt: ['Упражнение', 'Правит: мышца, характер, снаряд.'],
-    toggleExFold: ['Раздел', 'Сворачивает и разворачивает список.'],
-    saveExercise: ['Сохранить', 'Записывает упражнение в твой справочник.'],
-    deleteExercise: ['Удалить', 'Убирает упражнение. Базовое просто спрячется.'],
-    renameTemplateFromView: ['Переименовать', 'Меняет название шаблона.'],
-    deleteTemplateFromView: ['Удалить шаблон', 'Убирает готовый набор упражнений.'],
-
-    // профиль и настройки
-    showInviteQr: ['QR приглашения', 'Код, по которому другой тренер откроет приложение.'],
-    copyInvite: ['Скопировать', 'Кладёт приглашение в буфер обмена.'],
-    shareInvite: ['Отправить', 'Передаёт приглашение через Telegram.'],
-    cloudResync: ['Обновить с сервера', 'Если устройства разошлись — берёт серверную версию за правду.'],
-    setLookStyle: ['Стиль', 'Нео-Стекло или Минимализм.'],
-    setLookVariant: ['Время суток', 'Цвет под утро, день, вечер или ночь.'],
-    toggleLookOption: ['Переключатель', 'Живой фон и подписи под значками нижнего меню.'],
-    showHintsAgain: ['Вернуть подсказки', 'Снова покажет те, что ты скрыл.'],
-    enterCabinet: ['Кабинет клиента', 'Показывает приложение глазами клиента.'],
-    leaveCabinet: ['Вернуться', 'Обратно в приложение тренера.'],
-
-    // общее
-    goBack: ['Назад', 'Возвращает на предыдущий экран.'],
-    showScreen: ['Переход', 'Открывает другой экран.'],
-    closeSheet: ['Закрыть', 'Закрывает это окно.'],
-    closePad: ['Готово', 'Прячет клавиатуру.'],
-    padDigit: ['Цифра', 'Набирает число в поле, над которым открыта клавиатура.'],
-    padStep: ['Плюс и минус', 'Меняет число на шаг, не набирая заново.'],
-    padSet: ['Готовое число', 'Подставляет то, что ты вводил раньше.'],
-    padBack: ['Стереть', 'Убирает последнюю цифру.']
-};
-
-/* Каким кнопкам показываем подсказку при первом нажатии. Список нарочно
-   короткий: объяснять каждую кнопку — это шум. Остальные объяснения из
-   HELP_TEXTS лежат готовыми, их можно включить одной строкой здесь. */
-const HINT_BUTTONS = [
-    'openAddModal', 'openClientMenu', 'startWorkout', 'uiMarkSession',
-    'openMatrixSheet', 'setSlotFlow', 'openHourSheet',
-    'openClientEdit', 'openPassPad', 'openClientSumPad',
-    'openTopupSheet', 'manualSpend', 'openWeighInPad', 'openClientLink',
-    'openExPicker', 'addSetRow', 'toggleSetWarmup', 'openSetPad', 'saveWorkout',
-    'openExerciseEditor', 'showInviteQr'
-];
-
-const HINT_MAX = 3;          // столько раз показываем и сами замолкаем
-let hintTimer = null;
-let hintKey = null;
-
-/* Имя обработчика из разметки: openClient('cl_1') → openClient */
-function helpKeyOf(el) {
-    const raw = el && el.getAttribute && el.getAttribute('onclick');
-    if (!raw) return null;
-    const m = String(raw).replace(/event\.stopPropagation\(\);?/g, '')
-                         .match(/([A-Za-z_$][\w$]*)\s*\(/);
-    return m ? m[1] : null;
-}
-
-function closeButtonHint() {
-    clearTimeout(hintTimer);
-    hintKey = null;
-    const box = $('btn-hint');
-    if (box) box.style.display = 'none';
-}
-
-/* «Больше не показывать» — у каждой кнопки своё. Флаг живёт в настройках
-   рядом с подсказкой про галочки, поэтому уезжает на сервер и молчит на
-   втором устройстве тоже. */
-function hintOffForever() {
-    if (!hintKey) { closeButtonHint(); return; }
-    const set = ensureSettings();
-    set.hints = set.hints || {};
-    set.hints['b:' + hintKey] = false;
-    saveDB();
-    haptic('light');
-    closeButtonHint();
-    renderHintsPanel();
-    showToast('Подсказка выключена. Вернуть — в настройках');
-}
-
-function showButtonHint(key) {
-    const text = HELP_TEXTS[key];
-    if (!text) return;
-    const set = ensureSettings();
-    set.hints = set.hints || {};
-
-    const seen = set.hints['b:' + key];
-    if (seen === false) return;                  // выключена навсегда
-    const times = typeof seen === 'number' ? seen : 0;
-    if (times >= HINT_MAX) return;               // сама замолчала
-    set.hints['b:' + key] = times + 1;
-    saveDB();
-
-    hintKey = key;
-    $('btn-hint-name').innerText = text[0];
-    $('btn-hint-text').innerText = text[1];
-    $('btn-hint').style.display = '';
-
-    clearTimeout(hintTimer);
-    hintTimer = setTimeout(closeButtonHint, 7000);
-}
-
-/* Слушаем на входе, а не на всплытии: карточка упражнения нарочно гасит
-   всплытие (иначе тап по кнопке сворачивал бы её), и до документа такие
-   нажатия не доходят. Ничего не перехватываем — кнопка срабатывает как
-   обычно, подсказка просто показывается рядом. */
-document.addEventListener('click', function (e) {
-    const t = e.target;
-    if (!t || !t.closest) return;
-    if (t.closest('#btn-hint')) return;           // свои кнопки
-
-    const el = t.closest('[onclick]');
-    if (!el) { return; }
-    const key = helpKeyOf(el);
-    if (!key || HINT_BUTTONS.indexOf(key) === -1) return;
-    showButtonHint(key);
-}, true);
-
 /* ==========================================================================
    21. ОБЛАКО
    Телефон остаётся главным: запись идёт в него мгновенно, и в зале без связи
