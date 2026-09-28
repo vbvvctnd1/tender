@@ -6140,7 +6140,9 @@ body.pad-open { padding-bottom: 62vh; }
         </div>
     </div>
 
-    <div class="panel">
+    <!-- Панели нет, пока подсказки не выключены: сообщать «подсказки
+         показываются» — значит занимать экран ничем. -->
+    <div class="panel" id="set-hints-panel" style="display: none;">
         <div class="panel-title"><span class="ttl"><span class="only-neo">💡 </span><svg class="mi only-min" aria-hidden="true"><use href="#i-zap"/></svg>Подсказки</span></div>
         <div id="set-hints"></div>
     </div>
@@ -6326,6 +6328,9 @@ body.pad-open { padding-bottom: 62vh; }
         <button class="premium-menu-btn primary" onclick="saveClientEdit()">
             <span id="ce-save-label" class="up">Сохранить</span>
             <span class="arrow-icon arr"></span>
+        </button>
+        <button id="ce-unlink" class="premium-menu-btn" style="display: none;" onclick="unlinkClientTg()">
+            <span class="ttl up"><span class="only-neo">🔗 </span><svg class="mi only-min" aria-hidden="true"><use href="#i-ban"/></svg>Отвязать Telegram</span>
         </button>
         <button id="ce-delete" class="premium-menu-btn danger" style="display: none;" onclick="deleteClientFromEdit()">
             <span class="ttl up"><span class="only-neo">🗑️ </span><svg class="mi only-min" aria-hidden="true"><use href="#i-trash"/></svg>Удалить клиента</span>
@@ -6760,7 +6765,7 @@ function applyViewport() {
    день файл выкладывается не раз: по одной дате не понять, приехало ли
    обновление или Telegram показывает копию из кэша. Ставится при выкладке
    скриптом publish.py — руками не правится. */
-const BUILD = '24.09.2026, 20:19';
+const BUILD = '28.09.2026, 04:42';
 let fullReason = '';        // почему полного экрана нет — тоже видно в Профиле
 
 /* Полный экран: приложение занимает телефон целиком, а кнопки Telegram
@@ -10272,9 +10277,11 @@ function showHintsAgain() {
 function renderHintsPanel() {
     const row = $('set-hints');
     if (!row) return;
+    const panel = $('set-hints-panel');
     const on = hintsOn('tick');
+    if (panel) panel.style.display = on ? 'none' : '';
     row.innerHTML = on
-        ? '<p class="panel-note" style="margin: 0;">Подсказки показываются. Выключить их можно на самой подсказке.</p>'
+        ? ''
         : '<button class="btn-soft" style="width: 100%;" onclick="showHintsAgain()">Показывать подсказки снова</button>';
 }
 
@@ -13315,6 +13322,7 @@ function openClientEdit(clientId, continueBooking) {
 
     $('ce-save-label').innerText = c ? 'Сохранить' : 'Добавить клиента';
     $('ce-delete').style.display = c ? '' : 'none';
+    $('ce-unlink').style.display = (c && c.tgId) ? '' : 'none';
 
     haptic('light');
     openSheet('sheet-client-edit');
@@ -15233,16 +15241,10 @@ function renderClientTg() {
     const c = getClient(clClientId);
     if (!c) { box.innerHTML = ''; return; }
 
-    if (c.tgId) {
-        box.innerHTML =
-            '<div class="tg-strip linked">' +
-                '<span class="tg-text"><b>Telegram привязан</b>' +
-                    '<span class="tg-sub">Имя и фото подтягиваются из Telegram</span>' +
-                '</span>' +
-                '<button class="btn-ghost" onclick="unlinkClientTg()" title="Отвязать">✕</button>' +
-            '</div>';
-        return;
-    }
+    // Привязан — и молчим: полоска сообщала о том, что уже случилось, и
+    // занимала место на каждой вкладке карточки. Отвязать можно в правке
+    // клиента, там же где удалить.
+    if (c.tgId) { box.innerHTML = ''; return; }
 
     box.innerHTML =
         '<div class="tg-strip" onclick="openClientLink()">' +
@@ -15255,6 +15257,9 @@ function renderClientTg() {
 }
 
 async function unlinkClientTg() {
+    // Отвязка теперь вызывается и из правки клиента: там свой клиент,
+    // и закрыть форму надо, иначе кнопка останется висеть.
+    if (ceEditingId) clClientId = ceEditingId;
     const c = getClient(clClientId);
     if (!c) return;
     const ok = await showConfirm('Отвязать Telegram клиента «' + c.name + '»?\n' +
