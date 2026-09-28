@@ -1071,6 +1071,120 @@ body {
     font-weight: 600;
 }
 
+/* --- Окна дня сеткой ---
+   Весь день одним взглядом: 17 клеток, 07:00–23:00, три столбца по шесть.
+   Цвета только из токенов приложения — в Минимализме они сами становятся
+   монохромными, как и всё остальное, а единственным цветом остаётся
+   предупреждение. */
+.mx-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    /* Сетка занимает всю высоту шторки, но клетка не мельче 58 точек:
+       на маленьком экране появится прокрутка, а не нечитаемые квадратики. */
+    grid-template-rows: repeat(6, minmax(58px, 1fr));
+    gap: 7px;
+}
+/* «Столбцами» день сам делится на утро, день и вечер; «рядами» читается
+   как текст. Выбор тренера запоминается. */
+.mx-grid[data-flow="col"] { grid-auto-flow: column; }
+.mx-grid[data-flow="row"] { grid-auto-flow: row; }
+
+.mx-flow-seg { margin-bottom: 10px; }
+
+.mx-cell {
+    position: relative;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 4px;
+    border-radius: 16px;
+    background: var(--surface);
+    border: 0.5px solid var(--card-border);
+    box-shadow: 0 2px 8px rgba(var(--ch-shadow), 0.04);
+    color: var(--text-main);
+    font: inherit;
+    text-align: center;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+.mx-cell:active { transform: scale(0.95); }
+
+.mx-hour {
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: -0.4px;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+.mx-hour .mx-min { font-size: 0.62em; font-weight: 700; margin-left: 1px; opacity: 0.5; }
+
+.mx-cell .mx-sub {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+.mx-cell .mx-sub.off { font-weight: 500; }
+.mx-plus {
+    font-size: 17px;
+    font-weight: 300;
+    line-height: 1;
+    color: var(--neon-blue);
+    opacity: 0.5;
+}
+/* Сколько записей в этом часу кроме показанной */
+.mx-more {
+    position: absolute;
+    top: 3px;
+    right: 6px;
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--text-muted);
+}
+
+/* Тренер открывает эти окна, чтобы найти СВОБОДНОЕ время. Поэтому громкие
+   здесь именно пустые часы, а занятые — спокойные: их он и так знает. */
+.mx-cell.free {
+    background: rgba(var(--ch-blue), 0.10);
+    border-color: rgba(var(--ch-blue), 0.35);
+    box-shadow: none;
+}
+.mx-cell.free .mx-hour { color: var(--neon-blue); }
+.mx-free-txt {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--neon-blue);
+}
+.mx-cell.free.past { opacity: 0.35; }
+/* Текущий час обведён — глаз находит «сейчас» без чтения цифр */
+.mx-cell.now {
+    box-shadow: 0 0 0 2px var(--neon-blue), 0 4px 14px rgba(var(--ch-blue), 0.18);
+    z-index: 1;
+}
+.mx-cell.busy { background: var(--surface); border-color: var(--card-border); }
+.mx-cell.busy .mx-sub { color: var(--text-main); font-weight: 700; }
+.mx-cell.done { background: rgba(var(--ch-green), 0.08); border-color: rgba(var(--ch-green), 0.28); }
+.mx-cell.done .mx-sub { color: var(--neon-green); font-weight: 700; }
+/* Кончившийся абонемент отличаем не цветом, а пунктиром: в Нео-Стекле
+   акцент вечером сам красный, и цвет тут ничего не сказал бы. */
+.mx-cell.zero {
+    background: var(--surface);
+    border: 1.5px dashed var(--text-muted);
+    box-shadow: none;
+}
+.mx-cell.zero .mx-sub { color: var(--text-muted); font-weight: 700; }
+.mx-cell.warn { background: rgba(var(--ch-orange), 0.1); border-color: rgba(var(--ch-orange), 0.32); }
+.mx-cell.warn .mx-sub { color: var(--text-orange); font-weight: 700; }
 
 .matrix-container {
     background: var(--surface);
@@ -1589,87 +1703,32 @@ select.fld {
 
 .form-row { margin-bottom: 12px; }
 
-/* «?» рядом с «＋»: тем же кругом, но спокойнее — это не действие */
-.sched-help {
-    width: 34px;
-    height: 34px;
-    flex: 0 0 auto;
-    margin-right: 8px;
-    border: 0.5px solid var(--card-border);
-    border-radius: 50%;
-    background: var(--surface);
-    color: var(--text-muted);
-    font-size: 16px;
-    font-weight: 700;
-    cursor: pointer;
-}
-.help-btn { font-weight: 700; color: var(--text-muted); }
-
-/* --- Режим подсказок ---
-   Полоса и карточка висят поверх всего, включая шторки: из режима надо уметь
-   выйти с любого экрана. Обе сверху, а не снизу, — внизу нижнее меню, по
-   которому в этом режиме как раз ходят. */
-.help-bar {
+/* --- Короткая подсказка по нажатию ---
+   Всплывает сверху после первого нажатия и уходит сама. Ничего не
+   перекрывает: кнопка уже сработала, объяснение просто догоняет. */
+.btn-hint {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 10050;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: calc(env(safe-area-inset-top, 0px) + 8px) 14px 8px;
-    background: var(--neon-blue, #0a84ff);
-    color: #fff;
-    font-size: 13px;
-    font-weight: 600;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
-}
-.help-bar .hb-text { flex: 1; min-width: 0; line-height: 1.3; }
-.help-bar .hb-off {
-    flex: 0 0 auto;
-    padding: 6px 12px;
-    border: none;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.22);
-    color: #fff;
-    font-size: 12.5px;
-    font-weight: 700;
-    cursor: pointer;
-}
-.help-plate {
-    position: fixed;
-    top: calc(env(safe-area-inset-top, 0px) + 46px);
+    top: calc(env(safe-area-inset-top, 0px) + 10px);
     left: 12px;
     right: 12px;
     z-index: 10060;
-    padding: 14px 16px;
+    padding: 12px 14px;
     background: var(--surface);
     border: 0.5px solid var(--card-border);
     border-radius: 16px;
     box-shadow: 0 12px 30px rgba(var(--ch-shadow), 0.18);
+    animation: bhIn 0.18s ease;
 }
-.help-plate .hp-name { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
-.help-plate .hp-text { font-size: 13.5px; line-height: 1.45; color: var(--text-muted); }
-.help-plate .hp-acts { display: flex; gap: 8px; margin-top: 12px; }
-.help-plate .hp-acts button { flex: 1; }
-/* Кнопка, по которой ткнули: её видно из-под карточки */
-.help-pick {
-    outline: 2px solid var(--neon-blue, #0a84ff);
-    outline-offset: 2px;
-    border-radius: 10px;
-}
-:root[data-style="minimal"] .help-bar { background: var(--m-act); color: var(--m-act-text); }
-:root[data-style="minimal"] .help-bar .hb-off {
-    background: var(--m-act-text);
-    color: var(--m-act);
-}
-:root[data-style="minimal"] .help-plate {
+@keyframes bhIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+.btn-hint .bh-name { font-size: 14.5px; font-weight: 700; margin-bottom: 3px; }
+.btn-hint .bh-text { font-size: 13px; line-height: 1.4; color: var(--text-muted); }
+.btn-hint .bh-acts { display: flex; gap: 8px; margin-top: 10px; }
+.btn-hint .bh-acts button { flex: 1; font-size: 12.5px; }
+:root[data-style="minimal"] .btn-hint {
     background: var(--m-card);
     border: none;
     box-shadow: var(--m-sh-3), 0 0 0 1px var(--m-input);
 }
-:root[data-style="minimal"] .help-pick { outline-color: var(--m-act); }
 
 /* Пояснение под полем: мелко и приглушённо, чтобы не спорило с подписью */
 .field-note {
@@ -3221,6 +3280,20 @@ body.pad-open { padding-bottom: 62vh; }
     border: 1px solid var(--neo-glass-border);
     box-shadow: var(--neo-glass-shadow);
 }
+:root[data-style="neo"] .mx-cell.free {
+    background: linear-gradient(180deg, rgba(var(--ch-blue), 0.24), rgba(var(--ch-blue), 0.06));
+    border: 1px solid rgba(var(--ch-blue), 0.45);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.16),
+        0 0 22px -8px rgba(var(--ch-blue), 0.7);
+}
+:root[data-style="neo"] .mx-cell.busy,
+:root[data-style="neo"] .mx-cell.done,
+:root[data-style="neo"] .mx-cell.warn {
+    border-width: 1px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+:root[data-style="neo"] .mx-cell.zero { border-color: rgba(255, 255, 255, 0.35); }
 :root[data-style="neo"] .panel { position: relative; border-radius: 24px; }
 :root[data-style="neo"] .premium-card,
 :root[data-style="neo"] .client-row { position: relative; border-radius: 22px; }
@@ -4739,6 +4812,10 @@ body.pad-open { padding-bottom: 62vh; }
 /* Эмодзи со значком в одной строке */
 :root[data-style="minimal"] .ttl { display: inline-flex; align-items: center; gap: 8px; }
 :root[data-style="minimal"] .arr::after { content: '›'; }
+/* У кнопки «назад к группам» стрелка только левая: общий ❯ достался ей
+   от .arr за компанию и читался как «вперёд». */
+.ex-back .arr::after,
+:root[data-style="minimal"] .ex-back .arr::after { content: none; }
 
 /* --- Заставка --- */
 :root[data-style="minimal"] #splash-screen { background: var(--m-bg); color: var(--m-text); }
@@ -5188,6 +5265,46 @@ body.pad-open { padding-bottom: 62vh; }
 :root[data-style="minimal"] .btn-ghost:active { color: var(--m-text); background: var(--m-input); }
 :root[data-style="minimal"] .hist-star.on { color: var(--m-text); }
 
+/* Сетка окон: в этой теме состояния различаются не цветом, а подписью —
+   ✓ у проведённой, «· ?» у неотмеченной, «· 0» у кончившегося абонемента.
+   Цветом остаётся только предупреждение, как и во всём Минимализме. */
+:root[data-style="minimal"] .mx-cell {
+    border: none;
+    box-shadow: var(--m-sh-1), 0 0 0 1px rgba(var(--ch-hairline), 0.1);
+}
+/* Цвета тут нет, поэтому громкость делается светлотой: свободный час —
+   самая светлая карточка, занятый — приглушённая подложка. */
+:root[data-style="minimal"] .mx-cell.free {
+    background: var(--m-card);
+    border: none;
+    box-shadow: var(--m-sh-1), 0 0 0 1.5px var(--m-text);
+}
+:root[data-style="minimal"] .mx-cell.free .mx-hour,
+:root[data-style="minimal"] .mx-free-txt,
+:root[data-style="minimal"] .mx-plus { color: var(--m-text); opacity: 1; }
+:root[data-style="minimal"] .mx-cell.free.past { box-shadow: var(--m-sh-1), 0 0 0 1px var(--m-muted-2); }
+:root[data-style="minimal"] .mx-cell.busy {
+    background: var(--m-input);
+    box-shadow: none;
+}
+:root[data-style="minimal"] .mx-cell.busy .mx-sub { color: var(--m-text); }
+:root[data-style="minimal"] .mx-cell.done { background: var(--m-input); box-shadow: none; }
+:root[data-style="minimal"] .mx-cell.done .mx-sub { color: var(--m-muted); }
+:root[data-style="minimal"] .mx-cell.zero {
+    background: var(--m-card);
+    border: 1.5px dashed var(--m-muted);
+    box-shadow: none;
+}
+:root[data-style="minimal"] .mx-cell.zero .mx-sub { color: var(--m-muted); }
+:root[data-style="minimal"] .mx-cell.warn {
+    background: var(--m-warn-bg);
+    box-shadow: none;
+}
+:root[data-style="minimal"] .mx-cell.warn .mx-sub { color: var(--m-warn-text); }
+:root[data-style="minimal"] .mx-cell.now { box-shadow: 0 0 0 2px var(--m-act); }
+:root[data-style="minimal"] .mx-plus { color: var(--m-muted); opacity: 1; }
+:root[data-style="minimal"] .mx-cell .mi { width: 13px; height: 13px; }
+
 /* --- Строки клиентов, шаблонов и упражнений --- */
 :root[data-style="minimal"] .client-row {
     gap: 12px;
@@ -5612,17 +5729,13 @@ body.pad-open { padding-bottom: 62vh; }
 </div>
 
 
-<!-- Режим подсказок: полоса сверху и карточка с объяснением -->
-<div id="help-bar" class="help-bar" style="display: none;">
-    <span class="hb-text">Нажмите любую кнопку — расскажу, что она делает. Вкладки внизу работают как обычно.</span>
-    <button class="hb-off" onclick="setHelpMode(false)">Выйти</button>
-</div>
-<div id="help-plate" class="help-plate" style="display: none;">
-    <div class="hp-name" id="help-plate-name"></div>
-    <div class="hp-text" id="help-plate-text"></div>
-    <div class="hp-acts">
-        <button class="btn-soft" onclick="closeHelpPlate()">Понятно</button>
-        <button class="btn-soft filled" onclick="helpRunAnyway()">Всё равно нажать</button>
+<!-- Короткая подсказка после нажатия. Ничего не перекрывает и уходит сама. -->
+<div id="btn-hint" class="btn-hint" style="display: none;">
+    <div class="bh-name" id="btn-hint-name"></div>
+    <div class="bh-text" id="btn-hint-text"></div>
+    <div class="bh-acts">
+        <button class="btn-soft" onclick="closeButtonHint()">Понятно</button>
+        <button class="btn-soft" onclick="hintOffForever()">Больше не показывать</button>
     </div>
 </div>
 
@@ -5638,7 +5751,6 @@ body.pad-open { padding-bottom: 62vh; }
         <button class="trainer-av" id="cal-trainer" onclick="showScreen('screen-profile', 'screen-schedule')"
                 aria-label="Профиль"></button>
         <h1 id="cal-month" onclick="openWeeksSheet()">—</h1>
-        <button class="sched-help" onclick="setHelpMode(true)" aria-label="Что делают кнопки">?</button>
         <button class="sched-add" onclick="openAddModal(null)" aria-label="Записать клиента">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round">
                 <path d="M12 5v14M5 12h14"/>
@@ -5682,7 +5794,6 @@ body.pad-open { padding-bottom: 62vh; }
     <div class="premium-header">
         <h1 data-text="Клиенты">Клиенты</h1>
         <div class="header-icons">
-            <div class="icon-btn help-btn" onclick="setHelpMode(true)" aria-label="Что делают кнопки">?</div>
             <div class="icon-btn" onclick="openClientEdit(null)"><span class="only-neo">＋</span><svg class="mi only-min" aria-hidden="true"><use href="#i-plus"/></svg></div>
         </div>
     </div>
@@ -5810,13 +5921,18 @@ body.pad-open { padding-bottom: 62vh; }
             <div id="cl-verdict"></div>
         </div>
 
-        <div class="panel">
-            <div class="panel-title"><span class="ttl"><span class="only-neo">🎯 </span><svg class="mi only-min" aria-hidden="true"><use href="#i-target"/></svg>Ключевые упражнения</span></div>
-            <div id="cl-keyex"></div>
+        <!-- Разделы свёрнуты: на экране и так много цифр, а смотрят их
+             не каждый раз. Открываются тапом по заголовку. -->
+        <div class="panel fold" id="fold-key">
+            <div class="fold-head" onclick="toggleAnFold('key')">
+                <span class="fold-title"><span class="ttl"><span class="only-neo">🎯 </span><svg class="mi only-min" aria-hidden="true"><use href="#i-target"/></svg>Ключевые упражнения</span></span>
+                <span class="fold-arrow arr"></span>
+            </div>
+            <div class="fold-body" id="fold-key-body" style="display: none;">
+                <div id="cl-keyex"></div>
+            </div>
         </div>
 
-        <!-- Разделы свёрнуты: на экране и так много цифр, а эти два смотрят
-             не каждый раз. Открываются тапом по заголовку. -->
         <div class="panel fold" id="fold-prog">
             <div class="fold-head" onclick="toggleAnFold('prog')">
                 <span class="fold-title"><span class="ttl"><span class="only-neo">📈 </span><svg class="mi only-min" aria-hidden="true"><use href="#i-trend-up"/></svg>Прогрессия в упражнении</span></span>
@@ -5884,7 +6000,6 @@ body.pad-open { padding-bottom: 62vh; }
     <div class="premium-header">
         <h1 data-text="Упражнения">Упражнения</h1>
         <div class="header-icons">
-            <div class="icon-btn help-btn" onclick="setHelpMode(true)" aria-label="Что делают кнопки">?</div>
             <div class="icon-btn" onclick="openExerciseEditor(null)"><span class="only-neo">＋</span><svg class="mi only-min" aria-hidden="true"><use href="#i-plus"/></svg></div>
         </div>
     </div>
@@ -6069,7 +6184,25 @@ body.pad-open { padding-bottom: 62vh; }
             <h2 id="matrix-title">День</h2>
             <span class="sheet-close-txt" onclick="closeSheet('sheet-matrix')">Закрыть</span>
         </div>
-        <div class="matrix-container sheet-scroll" id="matrix-rows-target"></div>
+        <div class="seg-control compact mx-flow-seg">
+            <button type="button" class="seg-btn" id="mx-flow-col"
+                    onclick="setSlotFlow('col')">Столбцами</button>
+            <button type="button" class="seg-btn" id="mx-flow-row"
+                    onclick="setSlotFlow('row')">Рядами</button>
+        </div>
+        <div class="mx-grid sheet-scroll" id="matrix-grid"></div>
+    </div>
+</div>
+
+<!-- Несколько записей в одном часу: сетка показывает первую, остальные тут -->
+<div id="sheet-hour" class="glass-sheet-overlay" onclick="closeSheet('sheet-hour')">
+    <div class="glass-sheet-content" onclick="event.stopPropagation()">
+        <div class="sheet-notch"></div>
+        <div class="sheet-header">
+            <h2 id="hour-title">Час</h2>
+            <span class="sheet-close-txt" onclick="closeSheet('sheet-hour')">Закрыть</span>
+        </div>
+        <div class="matrix-container" id="hour-rows"></div>
     </div>
 </div>
 
@@ -8066,7 +8199,7 @@ function defaultDB() {
    при переключении между ними. */
 function defaultSettings() {
     return { style: 'neo', theme: 'auto', neoVariant: 'auto', liveBg: true,
-             navLabels: true, hiddenBase: [] };
+             navLabels: true, hiddenBase: [], slotFlow: 'col' };
 }
 
 /* Свои упражнения тренера. Мышцы принимаются только из общего списка —
@@ -8320,6 +8453,7 @@ function normalizeDB(raw) {
         if (NEO_VARIANTS.some(function (o) { return o.v === rs.neoVariant; })) settings.neoVariant = rs.neoVariant;
         settings.liveBg = normBool(rs.liveBg, true);
         settings.navLabels = normBool(rs.navLabels, true);
+        if (rs.slotFlow === 'row' || rs.slotFlow === 'col') settings.slotFlow = rs.slotFlow;
         // спрятанные базовые: только настоящие названия из справочника
         if (Array.isArray(rs.hiddenBase)) {
             settings.hiddenBase = rs.hiddenBase.filter(function (n) { return !!BASE_EX[n]; });
@@ -9512,65 +9646,136 @@ function renderDayFeed() {
     feed.innerHTML = html;
 }
 
-function renderMatrixRows() {
-    const target = $('matrix-rows-target');
-    const list = sessionsOnDate(currentDate);
-    let html = '';
+/* Порядок обхода сетки. «Столбцами» — день делится на утро, день и вечер;
+   «рядами» — читается как текст. Запоминается у тренера. */
+function slotFlow() {
+    return ((DB && DB.settings && DB.settings.slotFlow) === 'row') ? 'row' : 'col';
+}
 
+function setSlotFlow(flow) {
+    const v = flow === 'row' ? 'row' : 'col';
+    if (slotFlow() === v) return;
+    if (!DB.settings) DB.settings = defaultSettings();
+    DB.settings.slotFlow = v;
+    saveDB();
+    haptic('select');
+    renderMatrixRows();
+}
+
+/* Одна клетка часа. Время рисуется настоящее: записали на 07:30 — так и будет. */
+function slotCellHtml(cls, time, body, click) {
+    const t = String(time).split(':');
+    return '<button type="button" class="mx-cell ' + cls + '" onclick="' + click + '">' +
+               '<span class="mx-hour">' + esc(t[0]) +
+                   '<span class="mx-min">:' + esc(t[1] || '00') + '</span></span>' +
+               body +
+           '</button>';
+}
+
+function renderMatrixRows() {
+    const target = $('matrix-grid');
+    if (!target) return;
+
+    const list = sessionsOnDate(currentDate);
+    const today = todayISO();
+    const nowHour = new Date().getHours();
+    const flow = slotFlow();
+
+    target.setAttribute('data-flow', flow);
+    ['col', 'row'].forEach(function (f) {
+        const b = $('mx-flow-' + f);
+        if (b) b.classList.toggle('active', f === flow);
+    });
+
+    let html = '';
     for (let i = 0; i < SLOT_COUNT; i++) {
         const hour = START_HOUR + i;
         const label = pad2(hour) + ':00';
-        const inHour = list.filter(function (s) { return parseInt(s.time.split(':')[0], 10) === hour; });
-        // отменённые и «не пришёл» час не держат: показываем их серыми,
-        // но строка остаётся свободным окном для записи
-        const hasActive = inHour.some(holdsSlot);
+        const inHour = list.filter(function (s) {
+            return parseInt(s.time.split(':')[0], 10) === hour;
+        });
+        // отменённые и «не пришёл» час не держат: клетка остаётся свободной,
+        // но след от записи виден мелкой строкой
+        const active = inHour.filter(holdsSlot);
+        const past = currentDate < today || (currentDate === today && hour < nowHour);
+        const now = currentDate === today && hour === nowHour;
 
-        if (!hasActive) {
-            html +=
-                // нажатие ловит вся строка: попасть в один значок ＋ на телефоне трудно
-                '<div class="matrix-row free" onclick="openAddModal(\'' + label + '\')">' +
-                    '<div class="matrix-time">' + label + '</div>' +
-                    // короткая строка: занятые часы должны читаться среди свободных сразу
-                    '<div class="matrix-slot-info mx-free">свободно</div>' +
-                    '<div class="plus-neon-icon">＋</div>' +
-                '</div>';
+        if (!active.length) {
+            const off = inHour.length ? getClient(inHour[0].clientId) : null;
+            const note = off
+                ? '<span class="mx-sub off">' + esc(off.name) + ' · ' +
+                  esc((STATUS_LABEL[inHour[0].status] || '').toLowerCase()) + '</span>'
+                : '<span class="mx-plus">＋</span>' +
+                  '<span class="mx-free-txt">свободно</span>';
+            html += slotCellHtml('free' + (past ? ' past' : '') + (now ? ' now' : ''),
+                                 label, note, "openAddModal('" + label + "')");
+            continue;
         }
 
-        inHour.forEach(function (s, n) {
-            const c = getClient(s.clientId);
-            if (!c) return;
-            const timeCell = (hasActive && n === 0) ? label : '';
+        const s = active[0];
+        const c = getClient(s.clientId);
+        const done = s.status === 'done';
+        const zero = !done && c && c.passLeft <= 0;
+        // прошло, а тренер не сказал, состоялось ли
+        const unmarked = !done && past;
+        const cls = (done ? 'done' : unmarked ? 'warn' : zero ? 'zero' : 'busy') +
+                    (now ? ' now' : '');
 
-            if (!holdsSlot(s)) {
-                html +=
-                    '<div class="matrix-row">' +
-                        '<div class="matrix-time">' + timeCell + '</div>' +
-                        '<div class="matrix-slot-info mx-name off" ' +
-                             'onclick="event.stopPropagation(); openClientMenu(\'' + s.id + '\')">' +
-                            emo('👤 ') + ico('user') + esc(c.name) + ' · ' + esc(s.time) + ' — ' + esc(STATUS_LABEL[s.status]) +
-                        '</div>' +
-                    '</div>';
-                return;
-            }
+        const body =
+            '<span class="mx-sub">' + esc(c ? c.name : '—') +
+                (done ? emo(' ✓') + ico('check', 'mi-after') : '') +
+                (unmarked ? ' · ?' : (zero ? ' · 0' : '')) +
+            '</span>' +
+            (active.length > 1 ? '<span class="mx-more">+' + (active.length - 1) + '</span>' : '');
 
-            const done = s.status === 'done';
-            const zero = !done && c.passLeft <= 0;
-            const mark = done ? emo(' ✅') + ico('check', 'mi-after')
-                       : zero ? emo(' 🔴') + '<span class="card-badge warn only-min mi-after">0 зан.</span>'
-                       : '';
-            html +=
-                '<div class="matrix-row">' +
-                    '<div class="matrix-time">' + timeCell + '</div>' +
-                    '<div class="matrix-slot-info mx-name ' + (done ? 'done' : zero ? 'zero' : 'ok') + '" ' +
-                         'onclick="event.stopPropagation(); openClientMenu(\'' + s.id + '\')">' +
-                        emo('👤 ') + ico('user') + esc(c.name) + ' · ' + esc(s.time) + ' (' + esc(c.goal || '—') + ')' + mark +
-                    '</div>' +
-                    '<button class="edit-time-btn" onclick="event.stopPropagation(); editSessionTime(\'' + s.id + '\')">' + emo('🖊️') + ico('pencil') + '</button>' +
-                '</div>';
-        });
+        // Несколько записей в часу — сначала спрашиваем, кого открыть:
+        // клетка одна, а записей две.
+        const click = active.length > 1
+            ? 'openHourSheet(' + hour + ')'
+            : "openClientMenu('" + s.id + "')";
+
+        html += slotCellHtml(cls, s.time, body, click);
     }
 
     target.innerHTML = html;
+}
+
+/* --- Несколько записей в одном часу --- */
+
+let hourSheetHour = null;
+
+function openHourSheet(hour) {
+    hourSheetHour = hour;
+    $('hour-title').innerText = pad2(hour) + ':00 · ' + humanDate(currentDate);
+    renderHourRows();
+    haptic('light');
+    openSheet('sheet-hour');
+}
+
+function renderHourRows() {
+    const box = $('hour-rows');
+    if (!box || hourSheetHour === null) return;
+
+    const list = sessionsOnDate(currentDate).filter(function (s) {
+        return parseInt(s.time.split(':')[0], 10) === hourSheetHour;
+    });
+
+    box.innerHTML = list.map(function (s) {
+        const c = getClient(s.clientId);
+        if (!c) return '';
+        const done = s.status === 'done';
+        const zero = !done && c.passLeft <= 0;
+        const held = holdsSlot(s);
+        return '<div class="matrix-row">' +
+                   '<div class="matrix-time">' + esc(s.time) + '</div>' +
+                   '<div class="matrix-slot-info mx-name ' +
+                        (!held ? 'off' : done ? 'done' : zero ? 'zero' : 'ok') + '" ' +
+                        'onclick="openClientMenu(\'' + s.id + '\')">' +
+                       emo('👤 ') + ico('user') + esc(c.name) +
+                       (held ? '' : ' — ' + esc(STATUS_LABEL[s.status])) +
+                   '</div>' +
+               '</div>';
+    }).join('');
 }
 
 function openMatrixSheet() {
@@ -10074,10 +10279,13 @@ function showHintsAgain() {
 function renderHintsPanel() {
     const row = $('set-hints');
     if (!row) return;
-    const on = hintsOn('tick');
-    row.innerHTML = on
+    const h = ensureSettings().hints || {};
+    let off = 0;
+    for (const k in h) if (h[k] === false) off++;
+    row.innerHTML = !off
         ? '<p class="panel-note" style="margin: 0;">Подсказки показываются. Выключить их можно на самой подсказке.</p>'
-        : '<button class="btn-soft" style="width: 100%;" onclick="showHintsAgain()">Показывать подсказки снова</button>';
+        : '<button class="btn-soft" style="width: 100%;" onclick="showHintsAgain()">Показывать подсказки снова' +
+          ' <span class="fold-count">' + off + '</span></button>';
 }
 
 function blankRows() {
@@ -11433,7 +11641,7 @@ async function deleteHistorySession(sessionId) {
 
 /* Свёрнутые разделы аналитики. Закрыты по умолчанию: вердикт и ключевые
    упражнения отвечают на главный вопрос, остальное — по запросу. */
-const anFolds = { prog: false, mus: false };
+const anFolds = { key: false, prog: false, mus: false };
 
 function toggleAnFold(key) {
     anFolds[key] = !anFolds[key];
@@ -11442,7 +11650,7 @@ function toggleAnFold(key) {
 }
 
 function applyAnFolds() {
-    [['prog', 'fold-prog'], ['mus', 'fold-mus']].forEach(function (pair) {
+    [['key', 'fold-key'], ['prog', 'fold-prog'], ['mus', 'fold-mus']].forEach(function (pair) {
         const fold = $(pair[1]);
         const body = $(pair[1] + '-body');
         if (!fold || !body) return;
@@ -14241,10 +14449,6 @@ function padActiveClass(index, field) {
    сломать — это и была главная претензия к прежнему проводнику.
    ========================================================================== */
 
-let helpMode = false;
-let helpTarget = null;      // по какой кнопке ткнули
-let helpBypass = false;     // «всё равно нажать» — пропускаем один клик
-
 /* Объяснения привязаны к имени обработчика, а не к самой кнопке: так одна
    запись покрывает и кнопку в разметке, и такую же, нарисованную на ходу. */
 const HELP_TEXTS = {
@@ -14256,7 +14460,9 @@ const HELP_TEXTS = {
     openClientMenu: ['Запись в дне', 'Меню записи: провести тренировку, перенести, отметить или удалить.'],
     startWorkout: ['Провести тренировку', 'Открывает экран тренировки — там записывают подходы.'],
     openUnmarked: ['Неотмеченные', 'Прошедшие записи, по которым не сказано, состоялись они или нет.'],
-    openMatrixSheet: ['Все окна дня', 'Показывает свободное время, чтобы записать ещё одного клиента.'],
+    openMatrixSheet: ['Все окна дня', 'Сетка часов: сразу видно, что занято и что свободно.'],
+    setSlotFlow: ['Порядок часов', 'Столбцами — утро, день и вечер отдельными столбцами. Рядами — подряд, как текст.'],
+    openHourSheet: ['Несколько записей', 'В этом часу их больше одной — покажу, кого открыть.'],
     pickClientForSlot: ['Кого записать', 'Выбирает клиента на это время.'],
     pickTime: ['Время', 'Час и минуты записи.'],
     shiftTime: ['Сдвинуть время', 'Двигает время записи на несколько минут.'],
@@ -14358,6 +14564,22 @@ const HELP_TEXTS = {
     padBack: ['Стереть', 'Убирает последнюю цифру.']
 };
 
+/* Каким кнопкам показываем подсказку при первом нажатии. Список нарочно
+   короткий: объяснять каждую кнопку — это шум. Остальные объяснения из
+   HELP_TEXTS лежат готовыми, их можно включить одной строкой здесь. */
+const HINT_BUTTONS = [
+    'openAddModal', 'openClientMenu', 'startWorkout', 'uiMarkSession',
+    'openMatrixSheet', 'setSlotFlow', 'openHourSheet',
+    'openClientEdit', 'openPassPad', 'openClientSumPad',
+    'openTopupSheet', 'manualSpend', 'openWeighInPad', 'openClientLink',
+    'openExPicker', 'addSetRow', 'toggleSetWarmup', 'openSetPad', 'saveWorkout',
+    'openExerciseEditor', 'showInviteQr'
+];
+
+const HINT_MAX = 3;          // столько раз показываем и сами замолкаем
+let hintTimer = null;
+let hintKey = null;
+
 /* Имя обработчика из разметки: openClient('cl_1') → openClient */
 function helpKeyOf(el) {
     const raw = el && el.getAttribute && el.getAttribute('onclick');
@@ -14367,67 +14589,64 @@ function helpKeyOf(el) {
     return m ? m[1] : null;
 }
 
-function helpLabelOf(el) {
-    const aria = el.getAttribute && el.getAttribute('aria-label');
-    if (aria) return aria;
-    const t = (el.innerText || el.value || '').replace(/\s+/g, ' ').trim();
-    return t ? t.slice(0, 40) : 'Эта кнопка';
-}
-
-function setHelpMode(on) {
-    helpMode = !!on;
-    closeHelpPlate();
-    $('help-bar').style.display = helpMode ? '' : 'none';
-    document.body.classList.toggle('help-on', helpMode);
-    haptic('light');
-}
-
-function showHelpPlate(el) {
-    const key = helpKeyOf(el);
-    const found = key && HELP_TEXTS[key];
-
-    if (helpTarget) helpTarget.classList.remove('help-pick');
-    helpTarget = el;
-    el.classList.add('help-pick');
-
-    $('help-plate-name').innerText = found ? found[0] : helpLabelOf(el);
-    $('help-plate-text').innerText = found ? found[1]
-        : 'Про эту кнопку объяснения пока нет.';
-    $('help-plate').style.display = '';
-    haptic('select');
-}
-
-function closeHelpPlate() {
-    if (helpTarget) helpTarget.classList.remove('help-pick');
-    helpTarget = null;
-    const box = $('help-plate');
+function closeButtonHint() {
+    clearTimeout(hintTimer);
+    hintKey = null;
+    const box = $('btn-hint');
     if (box) box.style.display = 'none';
 }
 
-/* «Всё равно нажать»: иначе в режиме подсказок не открыть ни одного окна,
-   а объяснять кнопки внутри них тоже надо. */
-function helpRunAnyway() {
-    const el = helpTarget;
-    closeHelpPlate();
-    if (!el) return;
-    helpBypass = true;
-    try { el.click(); } finally { setTimeout(function () { helpBypass = false; }, 0); }
+/* «Больше не показывать» — у каждой кнопки своё. Флаг живёт в настройках
+   рядом с подсказкой про галочки, поэтому уезжает на сервер и молчит на
+   втором устройстве тоже. */
+function hintOffForever() {
+    if (!hintKey) { closeButtonHint(); return; }
+    const set = ensureSettings();
+    set.hints = set.hints || {};
+    set.hints['b:' + hintKey] = false;
+    saveDB();
+    haptic('light');
+    closeButtonHint();
+    renderHintsPanel();
+    showToast('Подсказка выключена. Вернуть — в настройках');
 }
 
-/* Перехват на входе: до того, как клик дойдёт до самой кнопки. */
+function showButtonHint(key) {
+    const text = HELP_TEXTS[key];
+    if (!text) return;
+    const set = ensureSettings();
+    set.hints = set.hints || {};
+
+    const seen = set.hints['b:' + key];
+    if (seen === false) return;                  // выключена навсегда
+    const times = typeof seen === 'number' ? seen : 0;
+    if (times >= HINT_MAX) return;               // сама замолчала
+    set.hints['b:' + key] = times + 1;
+    saveDB();
+
+    hintKey = key;
+    $('btn-hint-name').innerText = text[0];
+    $('btn-hint-text').innerText = text[1];
+    $('btn-hint').style.display = '';
+
+    clearTimeout(hintTimer);
+    hintTimer = setTimeout(closeButtonHint, 7000);
+}
+
+/* Слушаем на входе, а не на всплытии: карточка упражнения нарочно гасит
+   всплытие (иначе тап по кнопке сворачивал бы её), и до документа такие
+   нажатия не доходят. Ничего не перехватываем — кнопка срабатывает как
+   обычно, подсказка просто показывается рядом. */
 document.addEventListener('click', function (e) {
-    if (!helpMode || helpBypass) return;
     const t = e.target;
     if (!t || !t.closest) return;
-    // свои кнопки и нижнее меню работают как обычно — иначе из режима
-    // не выйти и по приложению не походить
-    if (t.closest('#help-bar') || t.closest('#help-plate') || t.closest('.nav-tab')) return;
+    if (t.closest('#btn-hint')) return;           // свои кнопки
 
-    const el = t.closest('[onclick], button, input, select, textarea');
-    if (!el) return;
-    e.preventDefault();
-    e.stopPropagation();
-    showHelpPlate(el);
+    const el = t.closest('[onclick]');
+    if (!el) { return; }
+    const key = helpKeyOf(el);
+    if (!key || HINT_BUTTONS.indexOf(key) === -1) return;
+    showButtonHint(key);
 }, true);
 
 /* ==========================================================================
