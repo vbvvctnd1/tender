@@ -6140,6 +6140,14 @@ body.pad-open { padding-bottom: 62vh; }
         </div>
     </div>
 
+    <div class="panel">
+        <div class="panel-title"><span class="ttl"><span class="only-neo">🕒 </span><svg class="mi only-min" aria-hidden="true"><use href="#i-clock"/></svg>Часовой пояс</span></div>
+        <p class="panel-note">В нём считаются «сегодня», неделя и месяц — на любом
+            устройстве и в любой поездке.</p>
+        <select class="fld" id="set-tz" onchange="setTz(this.value)"></select>
+        <p class="panel-note" id="set-tz-now" style="margin: 10px 0 0;"></p>
+    </div>
+
     <!-- Панели нет, пока подсказки не выключены: сообщать «подсказки
          показываются» — значит занимать экран ничем. -->
     <div class="panel" id="set-hints-panel" style="display: none;">
@@ -6765,7 +6773,7 @@ function applyViewport() {
    день файл выкладывается не раз: по одной дате не понять, приехало ли
    обновление или Telegram показывает копию из кэша. Ставится при выкладке
    скриптом publish.py — руками не правится. */
-const BUILD = '28.09.2026, 04:42';
+const BUILD = '29.09.2026, 23:45';
 let fullReason = '';        // почему полного экрана нет — тоже видно в Профиле
 
 /* Полный экран: приложение занимает телефон целиком, а кнопки Telegram
@@ -7828,7 +7836,57 @@ const MONTH_GEN = ['января', 'февраля', 'марта', 'апреля
                    'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
 
 function toISO(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
-function todayISO() { return toISO(new Date()); }
+
+/* --- «Сейчас» в поясе тренера ---
+   Раньше приложение спрашивало у телефона, и тренер, улетевший в другой
+   пояс, получал не тот день: в Таиланде «сегодня» наступает на пять часов
+   раньше московского, и запись ложилась на завтра.
+
+   Сами тренировки от этого не страдали никогда: дата и время хранятся
+   строками ровно так, как их вписал тренер. От телефона зависело только
+   слово «сегодня» — его и чиним.
+
+   Пустой пояс означает «как на телефоне»: так у всех, кто никуда не ездит,
+   ничего не меняется. */
+function tzName() {
+    const s = (typeof DB !== 'undefined' && DB && DB.settings && DB.settings.tz) || '';
+    if (s) return s;
+    try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { return ''; }
+}
+
+let tzFmt = null, tzFmtFor = null;
+
+/* Заготовка дорогая, а «сегодня» спрашивают сотни раз за отрисовку —
+   поэтому делаем её один раз на пояс. */
+function zoneFmt(tz) {
+    if (tzFmt && tzFmtFor === tz) return tzFmt;
+    tzFmt = new Intl.DateTimeFormat('en-GB', {
+        timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hour12: false
+    });
+    tzFmtFor = tz;
+    return tzFmt;
+}
+
+function zoneNow() {
+    const d = new Date();
+    const tz = tzName();
+    if (!tz) return { iso: toISO(d), hour: d.getHours(), min: d.getMinutes() };
+    try {
+        const p = {};
+        zoneFmt(tz).formatToParts(d).forEach(function (x) { p[x.type] = x.value; });
+        return {
+            iso: p.year + '-' + p.month + '-' + p.day,
+            hour: Number(p.hour) % 24,          // кое-где полночь пишется как 24
+            min: Number(p.minute)
+        };
+    } catch (e) {
+        tzFmt = null;                            // пояс оказался негодным
+        return { iso: toISO(d), hour: d.getHours(), min: d.getMinutes() };
+    }
+}
+
+function todayISO() { return zoneNow().iso; }
 
 function fromISO(iso) {
     const p = String(iso || '').split('-').map(Number);
@@ -7848,9 +7906,9 @@ const MONTH_NOM = ['Январь', 'Февраль', 'Март', 'Апрель',
 
 function monthName(iso) {
     const d = fromISO(iso);
-    const now = new Date();
+    const nowYear = Number(todayISO().slice(0, 4));
     return MONTH_NOM[d.getMonth()] +
-        (d.getFullYear() !== now.getFullYear() ? ' ' + d.getFullYear() : '');
+        (d.getFullYear() !== nowYear ? ' ' + d.getFullYear() : '');
 }
 
 /* «10 сентября» — в журнале операций день недели только мешает */
@@ -8197,7 +8255,7 @@ function defaultDB() {
    при переключении между ними. */
 function defaultSettings() {
     return { style: 'neo', theme: 'auto', neoVariant: 'auto', liveBg: true,
-             navLabels: true, hiddenBase: [], slotFlow: 'col' };
+             navLabels: true, hiddenBase: [], slotFlow: 'col', tz: '' };
 }
 
 /* Свои упражнения тренера. Мышцы принимаются только из общего списка —
@@ -8452,6 +8510,11 @@ function normalizeDB(raw) {
         settings.liveBg = normBool(rs.liveBg, true);
         settings.navLabels = normBool(rs.navLabels, true);
         if (rs.slotFlow === 'row' || rs.slotFlow === 'col') settings.slotFlow = rs.slotFlow;
+        // пояс проверяем на деле: негодное имя уронило бы все даты
+        if (typeof rs.tz === 'string' && rs.tz) {
+            try { new Intl.DateTimeFormat('en-GB', { timeZone: rs.tz }); settings.tz = rs.tz; }
+            catch (e) { settings.tz = ''; }
+        }
         // спрятанные базовые: только настоящие названия из справочника
         if (Array.isArray(rs.hiddenBase)) {
             settings.hiddenBase = rs.hiddenBase.filter(function (n) { return !!BASE_EX[n]; });
@@ -9479,7 +9542,8 @@ function clearDaySearch() {
 
 /* Ближайшая предстоящая запись клиента, чтобы в поиске сразу видеть, когда он придёт */
 function nextBookingOf(clientId) {
-    const now = todayISO() + ' ' + minToTime(new Date().getHours() * 60 + new Date().getMinutes());
+    const z = zoneNow();
+    const now = z.iso + ' ' + minToTime(z.hour * 60 + z.min);
     return DB.sessions.filter(function (s) {
         return s.clientId === clientId && s.status === 'planned' && (s.date + ' ' + s.time) >= now;
     }).sort(function (a, b) {
@@ -9676,7 +9740,7 @@ function renderMatrixRows() {
 
     const list = sessionsOnDate(currentDate);
     const today = todayISO();
-    const nowHour = new Date().getHours();
+    const nowHour = zoneNow().hour;
     const flow = slotFlow();
 
     target.setAttribute('data-flow', flow);
@@ -10274,12 +10338,93 @@ function showHintsAgain() {
     showToast('Подсказки снова включены');
 }
 
+/* Пояса, в которых работают наши тренеры. Полный список Intl — это сотни
+   строк, в которых не найти свой город. */
+const TZ_LIST = [
+    ['Europe/Kaliningrad', 'Калининград'],
+    ['Europe/Moscow', 'Москва, Санкт-Петербург'],
+    ['Europe/Samara', 'Самара, Ижевск'],
+    ['Asia/Yekaterinburg', 'Екатеринбург, Уфа'],
+    ['Asia/Omsk', 'Омск'],
+    ['Asia/Krasnoyarsk', 'Красноярск, Новокузнецк'],
+    ['Asia/Irkutsk', 'Иркутск, Улан-Удэ'],
+    ['Asia/Yakutsk', 'Якутск, Чита'],
+    ['Asia/Vladivostok', 'Владивосток, Хабаровск'],
+    ['Asia/Magadan', 'Магадан, Сахалин'],
+    ['Asia/Kamchatka', 'Камчатка, Чукотка'],
+    ['Europe/Minsk', 'Минск'],
+    ['Europe/Kyiv', 'Киев'],
+    ['Asia/Almaty', 'Алматы, Астана'],
+    ['Asia/Tashkent', 'Ташкент'],
+    ['Asia/Tbilisi', 'Тбилиси'],
+    ['Asia/Yerevan', 'Ереван'],
+    ['Asia/Baku', 'Баку'],
+    ['Asia/Dubai', 'Дубай'],
+    ['Asia/Bangkok', 'Бангкок, Пхукет']
+];
+
+/* «UTC+3» рядом с городом: так видно, туда ли попал, даже если города нет */
+function tzOffset(tz) {
+    try {
+        const part = new Intl.DateTimeFormat('en-GB', { timeZone: tz, timeZoneName: 'shortOffset' })
+            .formatToParts(new Date())
+            .filter(function (x) { return x.type === 'timeZoneName'; })[0];
+        return part ? part.value.replace('GMT', 'UTC') : '';
+    } catch (e) {
+        return '';
+    }
+}
+
+function setTz(v) {
+    const set = ensureSettings();
+    set.tz = v || '';
+    tzFmt = null;                       // заготовка была на прошлый пояс
+    saveDB();
+    haptic('select');
+    renderTzPanel();
+    renderCalendarStrip();
+    renderDayFeed();
+    renderMatrixRows();
+}
+
+function renderTzPanel() {
+    const box = $('set-tz');
+    if (!box) return;
+    const cur = (ensureSettings().tz) || '';
+
+    let own = '';
+    try { own = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) {}
+
+    const rows = [['', 'Как на телефоне' + (own ? ' · ' + own : '')]];
+    TZ_LIST.forEach(function (t) {
+        const off = tzOffset(t[0]);
+        rows.push([t[0], t[1] + (off ? ' · ' + off : '')]);
+    });
+    // пояс из настроек может быть не из нашего списка — не теряем его
+    if (cur && !TZ_LIST.some(function (t) { return t[0] === cur; })) {
+        rows.push([cur, cur + (tzOffset(cur) ? ' · ' + tzOffset(cur) : '')]);
+    }
+
+    box.innerHTML = rows.map(function (r) {
+        return '<option value="' + esc(r[0]) + '"' + (r[0] === cur ? ' selected' : '') + '>' +
+               esc(r[1]) + '</option>';
+    }).join('');
+
+    const z = zoneNow();
+    const note = $('set-tz-now');
+    if (note) {
+        note.innerText = 'Сейчас по этому поясу: ' + humanDate(z.iso) +
+                         ', ' + pad2(z.hour) + ':' + pad2(z.min);
+    }
+}
+
 function renderHintsPanel() {
     const row = $('set-hints');
     if (!row) return;
     const panel = $('set-hints-panel');
     const on = hintsOn('tick');
     if (panel) panel.style.display = on ? 'none' : '';
+    renderTzPanel();
     row.innerHTML = on
         ? ''
         : '<button class="btn-soft" style="width: 100%;" onclick="showHintsAgain()">Показывать подсказки снова</button>';
@@ -14672,6 +14817,11 @@ function cloudFetch(input, init) {
 async function cloudStart() {
     if (!window.supabase) { cloudSet('off', 'библиотека облака не загрузилась'); return; }
     if (!tg || !tg.initData) { cloudSet('off', 'открыто вне Telegram'); return; }
+
+    // Не в самую первую секунду: пусть приложение сначала покажется, иначе
+    // человек увидит системный вопрос раньше, чем поймёт, куда попал.
+    setTimeout(askWelcome, 1500);
+
     try {
         sb = sb || window.supabase.createClient(CLOUD_URL, CLOUD_KEY, {
             auth: { persistSession: true, autoRefreshToken: true,
@@ -14696,6 +14846,87 @@ async function cloudStart() {
         loadInviteInfo();
     } catch (e) {
         cloudFail(e);
+    }
+}
+
+/* --- Чтобы человек мог вернуться в приложение ---
+   Ссылка t.me/бот?startapp=… открывает приложение напрямую и переписку с
+   ботом НЕ начинает. Человек посмотрел, вышел — и возвращаться некуда: ни
+   чата в списке, ни истории. Больнее всего с QR в зале: показал незнакомому
+   тренеру, он глянул и потерял приложение навсегда.
+
+   Поэтому один раз просим у него разрешение написать и отправляем одно
+   короткое сообщение с кнопкой. Чат с ботом остаётся в списке чатов
+   навсегда — там приложение и ищут. */
+
+const WELCOME_KEY = 'silovoyAssistentV6:welcome';   // спросили уже или нет
+
+function welcomeState() {
+    try { return localStorage.getItem(WELCOME_KEY) || ''; } catch (e) { return 'skip'; }
+}
+
+function rememberWelcome(v) {
+    try { localStorage.setItem(WELCOME_KEY, v); } catch (e) {}
+}
+
+/* Само сообщение отправляет сервер: только он знает токен бота. */
+async function sendWelcomeMessage() {
+    try {
+        const r = await cloudFetch(CLOUD_URL + '/functions/v1/tg-welcome', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', apikey: CLOUD_KEY },
+            body: JSON.stringify({ initData: tg.initData })
+        });
+        const out = await r.json().catch(function () { return {}; });
+        if (out && out.sent) {
+            rememberWelcome('sent');
+            showToast('Ссылка на приложение отправлена вам в чат');
+            return true;
+        }
+        return false;
+    } catch (e) {
+        return false;                    // связи нет — попросим в другой раз
+    }
+}
+
+/* Спрашиваем один раз на устройство и только внутри Telegram. Отказ тоже
+   запоминаем: переспрашивать — навязчиво. */
+function askWelcome() {
+    if (!tg || !tg.initData || typeof tg.requestWriteAccess !== 'function') return;
+    if (!tg.isVersionAtLeast || !tg.isVersionAtLeast('6.9')) return;
+    if (welcomeState()) return;
+
+    // Пришёл по приглашению — значит уже прошёл через чат с ботом, и чат у
+    // него в списке. Спрашивать разрешение незачем: вопрос без пользы.
+    if ((tg.initDataUnsafe && tg.initDataUnsafe.start_param) || '') {
+        rememberWelcome('через бота');
+        return;
+    }
+    try {
+        tg.requestWriteAccess(function (ok) {
+            if (!ok) { rememberWelcome('no'); return; }
+            sendWelcomeMessage();
+        });
+    } catch (e) {}
+}
+
+/* Если человек когда-то отказался — пусть сможет позвать сам. */
+async function welcomeAgain() {
+    if (!tg || typeof tg.requestWriteAccess !== 'function') {
+        showToast('Работает только внутри Telegram');
+        return;
+    }
+    // На старом Telegram этот вызов не возвращает «нет», а бросает ошибку —
+    // без перехвата приложение просто молча падало бы.
+    try {
+        tg.requestWriteAccess(function (ok) {
+            if (!ok) { showToast('Без разрешения бот написать не может'); return; }
+            sendWelcomeMessage().then(function (sent) {
+                if (!sent) showToast('Не получилось — попробуйте позже');
+            });
+        });
+    } catch (e) {
+        showToast('Telegram на этом устройстве так не умеет — обновите приложение');
     }
 }
 
@@ -15032,7 +15263,11 @@ let cloudRefCode = null;        // свой код приглашения
 let refStats = null;            // { invited, active }
 
 function inviteLink() {
-    return cloudRefCode ? 'https://t.me/' + BOT_NAME + '?startapp=ref_' + cloudRefCode : '';
+    // ?start=, а не ?startapp=: первое открывает ЧАТ с ботом, второе —
+    // сразу приложение мимо чата. Нам нужен чат: он остаётся в списке, и
+    // человек всегда может вернуться. Дальше бот сам даёт кнопку в
+    // приложение, и код приглашения едет вместе с ней.
+    return cloudRefCode ? 'https://t.me/' + BOT_NAME + '?start=ref_' + cloudRefCode : '';
 }
 
 /* Код и счётчик приходят с сервера: в файле их держать негде, а считать
@@ -15231,7 +15466,8 @@ let tgLinkCode = null;          // код приглашения с сервер
 let tgLinkBusy = false;
 
 function clientInviteLink() {
-    return tgLinkCode ? 'https://t.me/' + BOT_NAME + '?startapp=inv_' + tgLinkCode : '';
+    // Через чат, а не сразу в приложение — см. ссылку приглашения тренера
+    return tgLinkCode ? 'https://t.me/' + BOT_NAME + '?start=inv_' + tgLinkCode : '';
 }
 
 /* Полоска в карточке клиента: привязан или нет */
