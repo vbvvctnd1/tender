@@ -1730,6 +1730,21 @@ textarea.fld {
     color: #fff;
 }
 
+/* Отметка в прохождении: сделано, текущая, впереди. Цветом выделяем только
+   текущую — в Минимализме цвет значит «внимание», и это как раз оно. */
+.rn-mark {
+    width: 24px;
+    flex: none;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text-muted);
+}
+.rn-mark.done { color: var(--neon-green); }
+.rn-mark.now { color: var(--neon-blue); }
+:root[data-style="minimal"] .rn-mark.done { color: var(--text-main); }
+:root[data-style="minimal"] .rn-mark.now { color: var(--m-warn-text); }
+
 .pg-day-no {
     width: 28px;
     flex: none;
@@ -2992,6 +3007,10 @@ body.pad-open .toast.show { transform: translateY(0); }
 }
 .kp-key:active { transform: scale(0.94); background: rgba(var(--ch-blue), 0.07); }
 .kp-key.kp-dim { background: rgba(var(--ch-fill), 0.10); box-shadow: none; }
+
+/* В программе отмечать нечего: подход попадает в неё сразу, как вписаны
+   повторы, и галочка встаёт сама. Подсказка «отмечайте ✓» тут соврала бы. */
+body.prog-edit .tick-hint { display: none; }
 
 /* Поле, которое сейчас правится */
 .fld.pad-active {
@@ -6533,10 +6552,17 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
             <span class="sheet-close-txt" onclick="closeSheet('sheet-pg-day')">Закрыть</span>
         </div>
         <div id="pd-body"></div>
-        <div class="field-pair" style="margin-top: 14px;">
+        <button class="btn-soft filled" style="width: 100%; margin-top: 14px;"
+                onclick="openProgramDayEditor(pgDayIndex)">
+            Изменить упражнения
+        </button>
+        <div class="field-pair" style="margin-top: 10px;">
             <button class="btn-soft" id="pd-up" onclick="moveProgramDay(-1)">Выше</button>
             <button class="btn-soft" id="pd-down" onclick="moveProgramDay(1)">Ниже</button>
         </div>
+        <button class="btn-soft" style="width: 100%; margin-top: 10px;" onclick="copyProgramDay()">
+            Повторить следующей
+        </button>
         <button class="btn-soft" style="width: 100%; margin-top: 10px;" onclick="deleteProgramDay()">
             Убрать из программы
         </button>
@@ -7001,9 +7027,39 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
         </div>
     </div>
 
+    <div class="panel" id="pg-runs-panel" style="display: none;">
+        <div class="clients-total">Иду по программе</div>
+        <div id="pg-runs"></div>
+    </div>
+
     <div class="panel">
         <div class="clients-total" id="pg-total"></div>
         <div id="pg-list"></div>
+    </div>
+</div>
+
+
+<!-- ==========================================================================
+     ЭКРАН — ПРОХОЖДЕНИЕ ПРОГРАММЫ
+     Тренировки по порядку, без привязки к календарю: сделал первую — открылась
+     вторая. План отдельно, факт отдельно: отметка ведёт в настоящую тренировку.
+     ========================================================================== -->
+<div id="screen-run" class="screen">
+
+    <div class="screen-head">
+        <div class="back-chip" onclick="goBack()"><span class="only-neo">❮</span><svg class="mi only-min" aria-hidden="true"><use href="#i-chev-left"/></svg></div>
+        <div class="head-titles">
+            <h2 id="rn-title">Программа</h2>
+            <span class="head-sub" id="rn-sub"></span>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="clients-total" id="rn-progress"></div>
+        <div id="rn-days"></div>
+        <button class="btn-soft" style="width: 100%; margin-top: 12px;" onclick="deleteRun()">
+            Прекратить прохождение
+        </button>
     </div>
 </div>
 
@@ -7048,12 +7104,25 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
             <label class="caps-label" for="pv-price">Цена, ₽</label>
             <input class="fld" type="text" id="pv-price" placeholder="2990" readonly onclick="openProgramPricePad()">
         </div>
+
+        <div class="form-row">
+            <label class="caps-label">Веса в программе</label>
+            <div class="goal-chips" id="pv-weight-chips"></div>
+            <div class="price-hint dim" id="pv-weight-note"></div>
+        </div>
     </div>
 
     <div class="panel">
         <div class="clients-total" id="pv-days-total"></div>
         <div id="pv-days"></div>
-        <button class="btn-soft" style="width: 100%; margin-top: 12px;" onclick="deleteProgram()">
+        <div class="field-pair" style="margin-top: 14px;">
+            <button class="btn-soft filled" onclick="startRunForSelf()">Открыть в дневнике</button>
+            <button class="btn-soft" onclick="openRunClientPick()">Отдать клиенту</button>
+        </div>
+        <button class="btn-soft filled" style="width: 100%; margin-top: 12px;" onclick="addProgramDay()">
+            ＋ Тренировка
+        </button>
+        <button class="btn-soft" style="width: 100%; margin-top: 10px;" onclick="deleteProgram()">
             Удалить программу
         </button>
     </div>
@@ -7164,7 +7233,7 @@ function applyViewport() {
    день файл выкладывается не раз: по одной дате не понять, приехало ли
    обновление или Telegram показывает копию из кэша. Ставится при выкладке
    скриптом publish.py — руками не правится. */
-const BUILD = '04.10.2026, 20:52';
+const BUILD = '04.10.2026, 22:06';
 let fullReason = '';        // почему полного экрана нет — тоже видно в Профиле
 
 /* Полный экран: приложение занимает телефон целиком, а кнопки Telegram
@@ -8107,10 +8176,20 @@ function goBack() {
         return;
     }
 
+    // Из правки тренировки программы назад — это «Готово»: уходить
+    // некуда, а терять набранное молча нельзя
+    if (isProgramEdit()) { saveProgramDay(); return; }
+
     // В Программах назад ведёт к списку, а со списка — в роли
     if (isProgramsMode()) {
         if (currentScreen === 'screen-programs') { openRoles(); return; }
-        showScreen('screen-programs');
+        // из тренировки по программе возвращаемся к её же списку
+        if (currentScreen === 'screen-workout' && rnOpenId &&
+            runOfSession(wkSession && wkSession.id)) {
+            showScreen('screen-run');
+            return;
+        }
+        showScreen(backFrom[currentScreen] === 'screen-run' ? 'screen-run' : 'screen-programs');
         return;
     }
 
@@ -8159,6 +8238,7 @@ function showScreen(id, from) {
     if (id === 'screen-clients') renderClientsScreen();
     if (id === 'screen-programs') renderProgramsScreen();
     if (id === 'screen-program') renderProgramScreen();
+    if (id === 'screen-run') renderRunScreen();
     if (id === 'screen-exercises') renderExercisesScreen();
     if (id === 'screen-profile') {
         renderProfileLine(); renderCloudLine(); renderInvitePanel(); renderRoleSwitch();
@@ -8703,7 +8783,7 @@ const STORE_BACKUP = 'silovoyAssistentV6:backup';
 function defaultDB() {
     return {
         v: 7, clients: [], sessions: [], exercises: [],
-        templates: [], programs: [], passOps: [], settings: defaultSettings()
+        templates: [], programs: [], runs: [], passOps: [], settings: defaultSettings()
     };
 }
 
@@ -8853,10 +8933,11 @@ function normalizePrograms(raw) {
     return (Array.isArray(raw) ? raw : []).map(function (p, i) {
         if (!p || typeof p !== 'object' || Array.isArray(p)) return null;
 
+        // Пустую тренировку оставляем: тренер добавил её, чтобы заполнить
+        // позже. Выбрасывать её при перезагрузке значило бы терять работу.
         const days = (Array.isArray(p.days) ? p.days : []).map(function (d, k) {
             if (!d || typeof d !== 'object' || Array.isArray(d)) return null;
             const ex = normalizePlanEx(d.ex);
-            if (!ex.length) return null;          // пустой день проходить нечем
             return {
                 name: (typeof d.name === 'string' && d.name.trim())
                     ? d.name.trim().slice(0, 60) : ('Тренировка ' + (k + 1)),
@@ -8876,10 +8957,57 @@ function normalizePrograms(raw) {
             goal: PROG_GOALS.some(function (g) { return g.v === p.goal; }) ? p.goal : '',
             level: PROG_LEVELS.some(function (l) { return l.v === p.level; }) ? p.level : '',
             price: Math.max(0, Math.round(num(p.price, 0))),
+            // Веса своего клиента — подсказка для своих и ловушка для чужих:
+            // жим 80 кг новичку не ориентир. Тренер решает сам.
+            hideWeights: p.hideWeights === true,
             // Опубликовать пока нечем — витрины нет. Поле заведено заранее,
             // чтобы при её появлении не переписывать уже сохранённые программы.
             status: p.status === 'published' ? 'published' : 'draft',
             createdAt: num(p.createdAt, 0) || null,
+            days: days
+        };
+    }).filter(Boolean);
+}
+
+/* --- Прохождение программы ---
+   Прохождение — это снимок программы, по которому кто-то идёт. Именно снимок,
+   а не ссылка: автор потом поправит оригинал, а у идущего останется то, с чем
+   он начал. Иначе программа менялась бы под ногами.
+
+   Тренировки идут по порядку, без привязки к календарю: не «пн-ср-пт», а
+   «сделал первую, потом вторую, когда захочет». Отметка о сделанном — ссылка
+   на настоящую тренировку в расписании: план отдельно, факт отдельно. */
+function normalizeRuns(raw, clientIds, sessionIds) {
+    const seen = {};
+    return (Array.isArray(raw) ? raw : []).map(function (r, i) {
+        if (!r || typeof r !== 'object' || Array.isArray(r)) return null;
+        if (!r.clientId || !clientIds[String(r.clientId)]) return null;   // клиента удалили
+
+        const days = (Array.isArray(r.days) ? r.days : []).map(function (d, k) {
+            if (!d || typeof d !== 'object' || Array.isArray(d)) return null;
+            return {
+                name: (typeof d.name === 'string' && d.name.trim())
+                    ? d.name.trim().slice(0, 60) : ('Тренировка ' + (k + 1)),
+                ex: normalizePlanEx(d.ex),
+                // ссылка живёт, только пока жива сама тренировка
+                sessionId: (typeof d.sessionId === 'string' && sessionIds[d.sessionId])
+                    ? d.sessionId : null
+            };
+        }).filter(Boolean);
+        if (!days.length) return null;
+
+        let id = r.id ? String(r.id) : uid('run');
+        while (seen[id]) id = uid('run');
+        seen[id] = true;
+
+        return {
+            id: id,
+            programId: typeof r.programId === 'string' ? r.programId : '',
+            clientId: String(r.clientId),
+            title: (typeof r.title === 'string' && r.title.trim())
+                ? r.title.trim().slice(0, 80) : ('Программа ' + (i + 1)),
+            hideWeights: r.hideWeights === true,
+            startedAt: num(r.startedAt, 0) || null,
             days: days
         };
     }).filter(Boolean);
@@ -9088,6 +9216,7 @@ function normalizeDB(raw) {
         v: 7, clients: clients, sessions: sessions, exercises: exercises,
         templates: normalizeTemplates(raw.templates),
         programs: normalizePrograms(raw.programs),
+        runs: normalizeRuns(raw.runs, clientIds, sessionIds),
         passOps: passOps, settings: settings
     };
     clients.forEach(function (c) {
@@ -10871,18 +11000,32 @@ function openWorkout(sessionId) {
     const c = getClient(s.clientId);
     if (!c) return;
 
+    wkProgram = null;               // это настоящая тренировка, а не программа
+    mountWorkout(s, c);
+    haptic('light');
+    showScreen('screen-workout', 'screen-schedule');
+}
+
+/* Подготовка зала к работе. Вынесена отдельно, потому что этим же редактором
+   правятся тренировки программы: там нет ни записи в расписании, ни клиента,
+   но всё остальное — выбор упражнения, подходы, круги — то же самое. */
+function mountWorkout(s, c) {
     // отмена удалённого в прошлой тренировке здесь уже не к месту
     settleToast();
     wkSession = s;
-    wkHistory = clientHistory(s.clientId).filter(function (h) { return h.id !== s.id; });
+    wkHistory = isProgramEdit() ? []
+        : clientHistory(s.clientId).filter(function (h) { return h.id !== s.id; });
 
     if (!s.bodyWeight) s.bodyWeight = c.bodyWeight;
 
     $('wk-client-name').innerText = c.name;
     $('wk-client-name').setAttribute('data-text', c.name);     // блик заголовка в Нео-Стекле
-    // У своей тренировки цели нет: «цель не задана» было бы придиркой к себе
-    $('wk-session-meta').innerText = humanDate(s.date) + ' · ' + s.time +
-        (isSelfClient(c.id) ? '' : ' · ' + (c.goal || 'цель не задана'));
+    // У своей тренировки цели нет: «цель не задана» было бы придиркой к себе.
+    // У программы нет ни даты, ни времени — вместо них название программы.
+    $('wk-session-meta').innerText = isProgramEdit()
+        ? c.goal
+        : humanDate(s.date) + ' · ' + s.time +
+          (isSelfClient(c.id) ? '' : ' · ' + (c.goal || 'цель не задана'));
     $('wk-well').value = s.well || 8;
     $('wk-bw').value = s.bodyWeight;
 
@@ -10932,9 +11075,111 @@ function openWorkout(sessionId) {
     renderExNote();
     renderSetRows();
     renderWorkoutExList();
+    applyProgramLook();
+    applyRunHead();
+}
 
+/* --- Тренировка программы в редакторе зала ---
+   Редактор зала — самая отлаженная часть приложения: выбор упражнения по
+   мышцам, круги, подстановка «как в прошлый раз». Писать второй такой же ради
+   программ было бы глупо, поэтому правим им же.
+
+   Разница в том, что в программе нечего отмечать: галочка значит «сделал», а
+   в программе ничего не сделано — это замысел. Поэтому галочки спрятаны, а
+   подход попадает в программу сразу, как только вписаны повторы.
+
+   Тренировка программы открывается призраком: запись с теми же полями, но её
+   нет ни в расписании, ни на сервере — туда уедет только сама программа. */
+let wkProgram = null;              // {id, day} — какую тренировку программы правим
+
+function isProgramEdit() { return !!wkProgram; }
+
+function openProgramDayEditor(index) {
+    const p = getProgram(pgOpenId);
+    const d = p && p.days[index];
+    if (!d) return;
+
+    closeSheet('sheet-pg-day');
+    wkProgram = { id: p.id, day: index };
+
+    const ghost = {
+        id: 'pg_edit', clientId: '', date: '', time: '',
+        status: 'planned', well: 8, bodyWeight: 80,
+        // правим копию: ушёл, не сохранив, — программа осталась прежней
+        ex: JSON.parse(JSON.stringify(d.ex || [])),
+        pending: null, savedAt: null, metrics: null
+    };
+    // Все подходы уже в программе: внутри редактора это «отмечено».
+    ghost.ex.forEach(function (e) {
+        (e.sets || []).forEach(function (st) { st.completed = true; st.fromPlan = false; });
+    });
+
+    mountWorkout(ghost, { id: '', name: d.name, goal: programTitle(p), bodyWeight: 80 });
     haptic('light');
-    showScreen('screen-workout', 'screen-schedule');
+    showScreen('screen-workout', 'screen-program');
+}
+
+/* Что в зале лишнее, когда правится программа: самочувствие с весом тела,
+   галочки и подсказка про них. И кнопка внизу значит другое. */
+function applyProgramLook() {
+    const on = isProgramEdit();
+    document.body.classList.toggle('prog-edit', on);
+
+    const line = $('wk-param-line');
+    if (line) line.style.display = on ? 'none' : '';
+
+    const btn = $('wk-save');
+    if (btn) {
+        btn.querySelector('.up').innerText = on ? 'Готово' : 'Сохранить тренировку';
+        btn.setAttribute('onclick', on ? 'saveProgramDay()' : 'saveWorkout()');
+        if (on) btn.disabled = false;
+    }
+    const note = $('wk-save-note');
+    if (note && on) {
+        note.innerText = 'Добавьте упражнения и впишите подходы — отмечать ничего не нужно, ' +
+                         'это план, а не сделанная тренировка.';
+    }
+}
+
+/* Подход попадает в программу, как только вписаны повторы: отмечать в плане
+   нечего. Внутри это та же галочка, что в зале, — чтобы круги, «повторить
+   круг» и список упражнений работали без единой правки. */
+function autoTickProgramRow(index) {
+    if (!isProgramEdit()) return;
+    const set = currentSetRows[index];
+    if (!set || set.completed || !selectedExercise) return;
+    if (!(num(set.r, 0) > 0)) return;
+    toggleSetDone(index);
+}
+
+function saveProgramDay() {
+    const p = wkProgram && getProgram(wkProgram.id);
+    const d = p && p.days[wkProgram.day];
+    if (!d) { wkProgram = null; showScreen('screen-programs'); return; }
+
+    if (wkEditingIndex !== null && wkSession.ex[wkEditingIndex]) {
+        wkSession.ex[wkEditingIndex].sets = JSON.parse(JSON.stringify(currentSetRows));
+    } else {
+        leaveCurrentExercise();     // набранное без галочек тоже в программу
+    }
+
+    // В программу идёт замысел, а не факт: отметки «сделано» тут не значат
+    // ничего и только путали бы при открытии в дневнике.
+    d.ex = normalizePlanEx(wkSession.ex.map(function (e) {
+        return Object.assign({}, e, {
+            sets: (e.sets || []).filter(function (st) {
+                return st.completed || st.fromPlan || !rowUntouched(st);
+            })
+        });
+    }));
+
+    wkSaved = true;                 // «черновик сохранён» тут ни к чему
+    wkProgram = null;
+    wkSession = null;
+    saveProgram(p);
+
+    showScreen('screen-program');
+    showToast('Тренировка сохранена');
 }
 
 /* Подсказки тренер может выключить навсегда. Флаг живёт в настройках, а не
@@ -11168,6 +11413,7 @@ function hasWorkoutDraft(s) {
 
 function onLeaveWorkout() {
     const s = wkSession;
+    if (isProgramEdit()) return;    // у программы свой выход — «Готово»
     if (!s || wkSaved || !getSession(s.id)) return;
     if (workoutState(s) === wkOpenedState) return;
     showToast(s.status === 'done' ? 'Изменения тренировки сохранены' : 'Черновик тренировки сохранён');
@@ -11590,6 +11836,7 @@ function removeSetRow(index) {
 function updateSetVal(index, field, value) {
     if (!currentSetRows[index]) return;
     currentSetRows[index][field] = value;
+    autoTickProgramRow(index);      // в программе отмечать нечего
     saveDraft();
 }
 
@@ -11764,6 +12011,13 @@ function editorDoneSets() {
    Зовётся и из renderSetRows: галочка сразу даёт право сохранить. */
 function updateSaveState() {
     if (!wkSession) return;
+
+    // В программе кнопка значит «Готово»: выйти можно и из пустой тренировки
+    if (isProgramEdit()) {
+        $('wk-save').disabled = false;
+        return;
+    }
+
     const ready = workoutHasDoneSets();
     $('wk-save').disabled = !ready;
     const saveNote = $('wk-save-note');
@@ -12018,6 +12272,7 @@ function openExFromWorkout(index) {
 
 async function saveWorkout() {
     if (!wkSession) return;
+    if (isProgramEdit()) { saveProgramDay(); return; }
 
     // Незакрытая правка тоже должна попасть в тренировку
     if (wkEditingIndex !== null && wkSession.ex[wkEditingIndex]) {
@@ -12126,7 +12381,17 @@ async function saveWorkout() {
 
     haptic('success');
     wkSaved = true;                  // уход с экрана — не черновик, а сохранение
-    showScreen('screen-schedule');
+
+    // Тренировка по программе возвращает в саму программу: тренер шёл по
+    // списку, и выбрасывать его в Ежедневник значило бы терять место.
+    // Тем более что в роли Программ Ежедневника на экране вовсе нет.
+    const поПрограмме = runOfSession(wkSession.id);
+    if (поПрограмме) {
+        rnOpenId = поПрограмме.run.id;
+        showScreen('screen-run');
+    } else {
+        showScreen('screen-schedule');
+    }
     renderCalendarStrip();
     renderDayFeed();
     renderMatrixRows();
@@ -12247,13 +12512,15 @@ function setClientTab(tab) {
 /* Упражнения тренировки или шаблона списком, как в журнале.
    bw — вес клиента для упражнений со своим весом; у шаблона клиента нет (null),
    и там показывается только довес. */
-function exListHtml(ex, bw) {
+/* hideW — программа, проданная без весов: покупателю видны только повторы,
+   свои веса подставятся из его же истории. */
+function exListHtml(ex, bw, hideW) {
     ex = ex || [];
     const exLine = function (name, sets) {
         const txt = sets.map(function (st) {
             const raw = num(st.w, 0);
-            const w = setWeightText(name, raw, bw);
-            return '<span class="' + (st.isWarmup ? 'warm' : '') + '">' + w + ' × ' + st.r + '</span>';
+            const w = hideW ? '×' : setWeightText(name, raw, bw) + ' ×';
+            return '<span class="' + (st.isWarmup ? 'warm' : '') + '">' + w + ' ' + st.r + '</span>';
         }).join('<span class="sep">·</span>');
         return '<div class="hist-ex"><div class="n">' + esc(name) + exBadge(name) + '</div>' +
                '<div class="set-list">' + txt + '</div></div>';
@@ -13889,7 +14156,9 @@ function renderTemplatesSection() {
    упражнение встречается в каждом круге: второй круг берёт второй подход
    из истории клиента, а не снова первый. В сплите и фулл-боди упражнение
    одно на шаблон, и счёт просто начинается с нуля. */
-function plannedSetsFor(exName, tplSets, cursor) {
+/* ignoreW — программа отдана без весов: цифры автора не подставляем, только
+   свои из истории. Чужие 80 кг новичку не ориентир. */
+function plannedSetsFor(exName, tplSets, cursor, ignoreW) {
     const past = lastPerformance(exName, wkHistory);
     const warm = past ? past.sets.filter(function (s) { return s.isWarmup; }) : [];
     const work = past ? past.sets.filter(function (s) { return !s.isWarmup; }) : [];
@@ -13901,8 +14170,9 @@ function plannedSetsFor(exName, tplSets, cursor) {
         const ref = pool[idx] || (pool.length ? pool[pool.length - 1] : null);
         // stampRow запоминает, с какими цифрами строка появилась: иначе
         // правку плана руками не отличить от нетронутого плана
+        const свой = ignoreW ? 0 : num(ts.w, 0);
         return stampRow({
-            w: ref ? num(ref.w, num(ts.w, 0)) : num(ts.w, 0),
+            w: ref ? num(ref.w, свой) : свой,
             r: ts.r,
             isWarmup: !!ts.isWarmup,
             completed: false,          // это план, а не результат
@@ -14510,6 +14780,7 @@ function renderProgramsScreen() {
     const total = $('pg-total');
     if (!box) return;
 
+    renderRunsPanel();
     const list = programs();
     total.style.display = list.length ? '' : 'none';
     total.innerHTML = 'Всего программ: <b>' + list.length + '</b>';
@@ -14549,6 +14820,30 @@ function renderProgramsScreen() {
     }).join('');
 }
 
+function renderRunsPanel() {
+    const panel = $('pg-runs-panel');
+    const box = $('pg-runs');
+    if (!panel || !box) return;
+
+    const list = runs();
+    panel.style.display = list.length ? '' : 'none';
+    if (!list.length) return;
+
+    box.innerHTML = list.map(function (r) {
+        const c = getClient(r.clientId);
+        const done = runProgress(r);
+        const кто = (c && !isSelfClient(c.id)) ? c.name : 'мой дневник';
+        return '<div class="client-row tpl-row" onclick="openRun(\'' + r.id + '\')">' +
+                   '<div style="min-width:0; flex:1;">' +
+                       '<div class="cr-name">' + esc(r.title) + '</div>' +
+                       '<div class="cr-sub">' + esc(кто) + '<span class="dot">·</span>' +
+                           done + ' из ' + r.days.length + '</div>' +
+                   '</div>' +
+                   '<span class="arrow-icon arr tpl-open"></span>' +
+               '</div>';
+    }).join('');
+}
+
 /* --- Одна программа --- */
 
 function openProgram(id) {
@@ -14575,14 +14870,16 @@ function renderProgramScreen() {
     $('pv-days').innerHTML = days.length
         ? days.map(function (d, i) {
             const мышцы = muscleSummary(d.ex);
+            const пусто = !(d.ex || []).length;
             return '<div class="client-row tpl-row" onclick="openProgramDay(' + i + ')">' +
                        '<span class="pg-day-no">' + (i + 1) + '</span>' +
                        '<div style="min-width:0; flex:1;">' +
                            '<div class="cr-name">' + esc(d.name) + '</div>' +
                            (мышцы ? '<div class="cr-meta">' + esc(мышцы) + '</div>' : '') +
                            '<div class="cr-sub">' +
-                               tplSummaryParts({ ex: d.ex }, false).map(esc)
-                                   .join('<span class="dot">·</span>') +
+                               (пусто ? 'пока пусто — нажмите, чтобы заполнить'
+                                      : tplSummaryParts({ ex: d.ex }, false).map(esc)
+                                            .join('<span class="dot">·</span>')) +
                            '</div>' +
                        '</div>' +
                        '<span class="arrow-icon arr tpl-open"></span>' +
@@ -14598,11 +14895,31 @@ function chipsHtml(list, current, fn) {
     }).join('');
 }
 
+const PROG_WEIGHTS = [
+    { v: 'own', name: 'Свои веса' },
+    { v: 'reps', name: 'Только повторы' }
+];
+
 function renderProgramChips() {
     const p = getProgram(pgOpenId);
     if (!p) return;
     $('pv-goal-chips').innerHTML = chipsHtml(PROG_GOALS, p.goal, 'pickProgramGoal');
     $('pv-level-chips').innerHTML = chipsHtml(PROG_LEVELS, p.level, 'pickProgramLevel');
+    $('pv-weight-chips').innerHTML = chipsHtml(
+        PROG_WEIGHTS, p.hideWeights ? 'reps' : 'own', 'pickProgramWeights');
+    $('pv-weight-note').innerText = p.hideWeights
+        ? 'Покупатель увидит только повторы. Веса подставятся из его истории.'
+        : 'Веса видны как есть. Для чужого человека они могут не подойти.';
+}
+
+/* Веса своего клиента — подсказка для своих и ловушка для чужих: жим 80 кг
+   новичку не ориентир. Сами цифры при этом не стираем: передумал — вернул. */
+function pickProgramWeights(v) {
+    const p = getProgram(pgOpenId);
+    if (!p) return;
+    p.hideWeights = (v === 'reps');
+    saveProgram(p);
+    renderProgramChips();
 }
 
 /* Повторный тап по выбранному снимает выбор — как у цели клиента */
@@ -14694,9 +15011,13 @@ function renderProgramDay() {
     const d = p && p.days[pgDayIndex];
     if (!d) return;
     $('pd-title').innerText = d.name;
-    $('pd-sub').innerText = [muscleSummary(d.ex)].filter(Boolean)
-        .concat(tplSummaryParts({ ex: d.ex }, false)).join(' · ');
-    $('pd-body').innerHTML = exListHtml(d.ex, null);
+    $('pd-sub').innerText = (d.ex || []).length
+        ? [muscleSummary(d.ex)].filter(Boolean)
+            .concat(tplSummaryParts({ ex: d.ex }, false)).join(' · ')
+        : 'пока пусто';
+    $('pd-body').innerHTML = (d.ex || []).length
+        ? exListHtml(d.ex, null, p.hideWeights)
+        : '<div class="empty-note">Упражнений пока нет.</div>';
     $('pd-up').disabled = pgDayIndex === 0;
     $('pd-down').disabled = pgDayIndex === p.days.length - 1;
 }
@@ -14737,6 +15058,32 @@ async function deleteProgramDay() {
     renderProgramScreen();
 }
 
+function addProgramDay() {
+    const p = getProgram(pgOpenId);
+    if (!p) return;
+    p.days.push({ name: '', ex: [] });
+    renumberProgramDays(p);
+    saveProgram(p);
+    renderProgramScreen();
+    openProgramDayEditor(p.days.length - 1);
+}
+
+/* Неделя 1 готова — недели 2–4 это она же с другими цифрами. Поэтому копия
+   встаёт сразу следующей, а не в конец: порядок прохождения важен. */
+function copyProgramDay() {
+    const p = getProgram(pgOpenId);
+    const d = p && p.days[pgDayIndex];
+    if (!d) return;
+
+    const копия = { name: '', ex: JSON.parse(JSON.stringify(d.ex || [])) };
+    p.days.splice(pgDayIndex + 1, 0, копия);
+    renumberProgramDays(p);
+    saveProgram(p);
+    closeSheet('sheet-pg-day');
+    renderProgramScreen();
+    showToast('Тренировка повторена');
+}
+
 /* --- Создание --- */
 
 /* Обезличенный слепок тренировки: берём ровно то же, что и шаблон — упражнения,
@@ -14760,9 +15107,20 @@ function openNewProgram() {
     pgFromClient = null;
     const list = programSources();
 
-    $('pn-title').innerText = 'Из чьей истории';
+    $('pn-title').innerText = 'С чего начать';
     $('pn-sub').innerText = list.length ? 'Имя клиента в программу не попадёт' : '';
-    $('pn-list').innerHTML = list.length
+    $('pn-list').innerHTML =
+        '<div class="client-row tpl-row" onclick="buildEmptyProgram()">' +
+            '<div style="min-width:0; flex:1;">' +
+                '<div class="cr-name">С нуля</div>' +
+                '<div class="cr-sub">Пустая программа — тренировки добавите сами</div>' +
+            '</div>' +
+            '<span class="arrow-icon arr tpl-open"></span>' +
+        '</div>' +
+        (list.length
+            ? '<div class="caps-label" style="margin: 14px 0 6px;">Из истории</div>'
+            : '') +
+        (list.length
         ? list.map(function (c) {
             const n = clientHistory(c.id).length;
             return '<div class="client-row tpl-row" onclick="pickProgramSource(\'' + c.id + '\')">' +
@@ -14774,8 +15132,7 @@ function openNewProgram() {
                        '<span class="arrow-icon arr tpl-open"></span>' +
                    '</div>';
           }).join('')
-        : '<div class="empty-note">Собирать пока не из чего: ни одной проведённой ' +
-          'тренировки нет. Проведите хотя бы одну — она и станет основой программы.</div>';
+        : '');
 
     haptic('light');
     openSheet('sheet-pg-new');
@@ -14805,6 +15162,22 @@ function pickProgramSource(clientId) {
     }).join('');
 }
 
+/* Программа с нуля: одна пустая тренировка, чтобы было с чего начать */
+function buildEmptyProgram() {
+    const p = {
+        id: uid('pg'), title: 'Новая программа', descr: '', goal: '', level: '',
+        price: 0, status: 'draft', hideWeights: false,
+        createdAt: Date.now(), days: [{ name: 'Тренировка 1', ex: [] }]
+    };
+    programs().push(p);
+    pgOpenId = p.id;
+    saveDB();
+    if (typeof cloudLater === 'function') cloudLater();
+    closeSheet('sheet-pg-new');
+    haptic('success');
+    showScreen('screen-program', 'screen-programs');
+}
+
 function buildProgram(count) {
     const hist = clientHistory(pgFromClient);
     if (!hist.length) return;
@@ -14824,6 +15197,7 @@ function buildProgram(count) {
         // ошибка, а это просто то, что тренер сейчас заменит
         title: 'Новая программа',
         descr: '', goal: '', level: '', price: 0, status: 'draft',
+        hideWeights: false,
         createdAt: Date.now(), days: days
     };
     renumberProgramDays(p);
@@ -14835,6 +15209,230 @@ function buildProgram(count) {
     closeSheet('sheet-pg-new');
     haptic('success');
     showScreen('screen-program', 'screen-programs');
+}
+
+/* ==========================================================================
+   ПРОХОЖДЕНИЕ ПРОГРАММЫ
+   ========================================================================== */
+
+function runs() { return DB.runs || (DB.runs = []); }
+
+function getRun(id) {
+    const list = runs();
+    for (let i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
+    return null;
+}
+
+let rnOpenId = null;
+
+/* Тренировка считается пройденной, когда настоящая запись в расписании
+   сохранена проведённой. План отдельно, факт отдельно. */
+function runDayDone(d) {
+    const sess = d.sessionId ? getSession(d.sessionId) : null;
+    return !!(sess && sess.status === 'done' && sess.ex.length);
+}
+
+function runProgress(r) {
+    return (r.days || []).filter(runDayDone).length;
+}
+
+/* Текущая — первая несделанная. Порядок не ограничение, а подсказка: тренер
+   может написать «не перескакивайте», но это его слова, а не запрет. */
+function runCurrentIndex(r) {
+    const days = r.days || [];
+    for (let i = 0; i < days.length; i++) if (!runDayDone(days[i])) return i;
+    return -1;
+}
+
+function runOfSession(sessionId) {
+    const list = runs();
+    for (let i = 0; i < list.length; i++) {
+        const days = list[i].days || [];
+        for (let k = 0; k < days.length; k++) {
+            if (days[k].sessionId === sessionId) return { run: list[i], day: k };
+        }
+    }
+    return null;
+}
+
+/* --- Запуск --- */
+
+function startRunFor(clientId) {
+    const p = getProgram(pgOpenId);
+    const c = getClient(clientId);
+    if (!p || !c) return;
+
+    if (!(p.days || []).some(function (d) { return (d.ex || []).length; })) {
+        showToast('В программе нет ни одной заполненной тренировки');
+        return;
+    }
+
+    // Снимок: автор потом поправит программу, а идущий останется с тем,
+    // с чем начал. Иначе программа менялась бы под ногами.
+    const r = {
+        id: uid('run'),
+        programId: p.id,
+        clientId: clientId,
+        title: programTitle(p),
+        hideWeights: !!p.hideWeights,
+        startedAt: Date.now(),
+        days: (p.days || []).filter(function (d) { return (d.ex || []).length; })
+            .map(function (d) {
+                return { name: d.name, ex: JSON.parse(JSON.stringify(d.ex)), sessionId: null };
+            })
+    };
+    runs().push(r);
+    rnOpenId = r.id;
+    saveProgram(r);
+    showScreen('screen-run', 'screen-program');
+    showToast(isSelfClient(clientId)
+        ? 'Программа открыта в дневнике'
+        : 'Программа отдана: ' + c.name);
+}
+
+function startRunForSelf() {
+    ensureSelfClient();
+    startRunFor(SELF_ID);
+}
+
+function openRunClientPick() {
+    const mine = trainerClients();
+    $('pn-title').innerText = 'Кому отдать программу';
+    $('pn-sub').innerText = mine.length ? 'Копия ляжет к нему в тренировки' : '';
+    $('pn-list').innerHTML = mine.length
+        ? mine.map(function (c) {
+            return '<div class="client-row tpl-row" onclick="startRunFor(\'' + c.id + '\')">' +
+                       '<div style="min-width:0; flex:1;">' +
+                           '<div class="cr-name">' + esc(c.name) + '</div>' +
+                           '<div class="cr-sub">' + esc(c.goal || 'цель не задана') + '</div>' +
+                       '</div>' +
+                       '<span class="arrow-icon arr tpl-open"></span>' +
+                   '</div>';
+          }).join('')
+        : '<div class="empty-note">Клиентов пока нет.</div>';
+    haptic('light');
+    openSheet('sheet-pg-new');
+}
+
+/* --- Экран прохождения --- */
+
+function openRun(id) {
+    if (!getRun(id)) return;
+    rnOpenId = id;
+    showScreen('screen-run', 'screen-programs');
+}
+
+function renderRunScreen() {
+    const r = getRun(rnOpenId);
+    if (!r) { showScreen('screen-programs'); return; }
+
+    const c = getClient(r.clientId);
+    const done = runProgress(r);
+    const now = runCurrentIndex(r);
+
+    $('rn-title').innerText = r.title;
+    $('rn-title').setAttribute('data-text', r.title);
+    $('rn-sub').innerText = (c && !isSelfClient(c.id) ? c.name + ' · ' : '') +
+        done + ' из ' + r.days.length + (r.hideWeights ? ' · без весов' : '');
+    $('rn-progress').innerHTML = now === -1
+        ? 'Программа пройдена: <b>' + r.days.length + '</b>'
+        : 'Сделано: <b>' + done + '</b> из ' + r.days.length;
+
+    $('rn-days').innerHTML = r.days.map(function (d, i) {
+        const сделано = runDayDone(d);
+        const текущая = i === now;
+        const мышцы = muscleSummary(d.ex);
+        const sess = d.sessionId ? getSession(d.sessionId) : null;
+        const когда = сделано && sess ? humanDate(sess.date)
+                    : (sess ? 'начата' : tplSummaryParts({ ex: d.ex }, false).join(' · '));
+
+        return '<div class="client-row tpl-row" onclick="startRunDay(' + i + ')">' +
+                   '<span class="rn-mark' + (сделано ? ' done' : (текущая ? ' now' : '')) + '">' +
+                       (сделано ? '✓' : (текущая ? '→' : (i + 1))) +
+                   '</span>' +
+                   '<div style="min-width:0; flex:1;">' +
+                       '<div class="cr-name">' + esc(d.name) + '</div>' +
+                       (мышцы ? '<div class="cr-meta">' + esc(мышцы) + '</div>' : '') +
+                       '<div class="cr-sub">' + esc(когда) + '</div>' +
+                   '</div>' +
+                   '<span class="arrow-icon arr tpl-open"></span>' +
+               '</div>';
+    }).join('');
+}
+
+/* --- Тренировка по плану --- */
+
+function startRunDay(index) {
+    const r = getRun(rnOpenId);
+    const d = r && r.days[index];
+    if (!d) return;
+
+    // уже начинали — продолжаем ту же запись, а не заводим вторую
+    let sess = d.sessionId ? getSession(d.sessionId) : null;
+    if (!sess) {
+        const z = zoneNow();
+        const c = getClient(r.clientId);
+        sess = {
+            id: uid('s'), clientId: r.clientId, date: z.iso,
+            time: pad2(z.hour) + ':' + pad2(z.min),
+            status: 'planned', well: 8, bodyWeight: c ? c.bodyWeight : 80,
+            ex: [], pending: null, savedAt: null, metrics: null
+        };
+        DB.sessions.push(sess);
+        d.sessionId = sess.id;
+        saveDB();
+    }
+
+    openWorkout(sess.id);
+    if (!wkSession || wkSession.id !== sess.id) return;
+
+    // план накатываем один раз: дальше тренер правит уже свою тренировку
+    if (!sess.ex.length) {
+        const cursor = {};
+        const ids = {};
+        const known = (d.ex || []).filter(function (e) { return !!allExercises()[e.n]; });
+        const legacy = legacyCircuit(known);
+        known.forEach(function (e, i) {
+            const block = { n: e.n, sets: plannedSetsFor(e.n, e.sets, cursor, r.hideWeights) };
+            const cid = legacy ? 'legacy' : e.circuit;
+            if (cid) {
+                block.circuit = ids[cid] || (ids[cid] = uid('circ'));
+                block.round = legacy ? legacy[i] : e.round;
+            }
+            sess.ex.push(block);
+        });
+        saveDB();
+        renderWorkoutExList();
+        if (sess.ex.length) openExFromWorkout(0);
+    }
+    applyRunHead();
+}
+
+/* В шапке тренировки видно, что это за программа и которая по счёту */
+function applyRunHead() {
+    if (!wkSession) return;
+    const found = runOfSession(wkSession.id);
+    if (!found) return;
+    const meta = $('wk-session-meta');
+    if (meta) {
+        meta.innerText = found.run.title + ' · ' + found.run.days[found.day].name +
+                         ' · ' + humanDate(wkSession.date);
+    }
+}
+
+async function deleteRun() {
+    const r = getRun(rnOpenId);
+    if (!r) return;
+    const ok = await showConfirm('Прекратить прохождение «' + r.title + '»?\n\n' +
+                                 'Сделанные тренировки останутся в истории.',
+                                 { ok: 'Прекратить', danger: true });
+    if (!ok) return;
+
+    DB.runs = runs().filter(function (x) { return x.id !== r.id; });
+    rnOpenId = null;
+    saveProgram(r);
+    showScreen('screen-programs');
+    showToast('Прохождение прекращено');
 }
 
 /* --- Роли ---
@@ -16186,19 +16784,35 @@ const CLOUD_TABLES = {
                      bwShare: num(r.bw_share, 1), custom: true };
         }
     },
+    program_runs: {
+        rows: function () { return DB.runs; },
+        key:  function (r) { return r.id; },
+        out:  function (r) {
+            return { id: r.id, trainer_id: cloudUid, program_id: r.programId || '',
+                     client_id: r.clientId, title: r.title,
+                     hide_weights: !!r.hideWeights,
+                     started_num: r.startedAt || null, days: r.days || [] };
+        },
+        in:   function (r) {
+            return { id: r.id, programId: r.program_id || '', clientId: r.client_id,
+                     title: r.title, hideWeights: r.hide_weights === true,
+                     startedAt: r.started_num || null, days: r.days || [] };
+        }
+    },
     programs: {
         rows: function () { return DB.programs; },
         key:  function (p) { return p.id; },
         out:  function (p) {
             return { id: p.id, trainer_id: cloudUid, title: p.title, descr: p.descr,
                      goal: p.goal, level: p.level, price: p.price, status: p.status,
+                     hide_weights: !!p.hideWeights,
                      created_num: p.createdAt || null, days: p.days || [] };
         },
         in:   function (r) {
             return { id: r.id, title: r.title, descr: r.descr || '',
                      goal: r.goal || '', level: r.level || '', price: num(r.price, 0),
-                     status: r.status || 'draft', createdAt: r.created_num || null,
-                     days: r.days || [] };
+                     status: r.status || 'draft', hideWeights: r.hide_weights === true,
+                     createdAt: r.created_num || null, days: r.days || [] };
         }
     },
     templates: {
@@ -16218,7 +16832,8 @@ const CLOUD_TABLES = {
     }
 };
 
-const CLOUD_ORDER = ['clients', 'sessions', 'pass_ops', 'exercises', 'templates', 'programs'];
+const CLOUD_ORDER = ['clients', 'sessions', 'pass_ops', 'exercises', 'templates',
+                     'programs', 'program_runs'];
 
 /* Таблицы, которой на сервере ещё нет, пропускаем. Без этого одна недостающая
    таблица останавливала бы всю синхронизацию — вместе с клиентами и
