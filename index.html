@@ -1698,6 +1698,42 @@ select.fld {
     background-size: 14px;
 }
 
+/* Описание программы — единственное место, где тренер пишет несколько строк.
+   Высота у .fld фиксированная, здесь она растёт. */
+textarea.fld {
+    height: auto;
+    min-height: 88px;
+    padding: 12px 14px;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.45;
+    resize: none;
+}
+
+/* Обложка программы. Тренер ничего не загружает: цвет выводится из названия,
+   поэтому у каждой программы он свой и всегда один и тот же. */
+.pg-cover {
+    width: 46px;
+    height: 46px;
+    flex: none;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    color: #fff;
+}
+
+.pg-day-no {
+    width: 28px;
+    flex: none;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-muted);
+}
+
 .field-pair { display: flex; gap: 10px; }
 .field-pair > * { flex: 1; min-width: 0; }
 
@@ -3082,6 +3118,9 @@ body.pad-open { padding-bottom: 62vh; }
 /* нижнего меню на тренировке нет — большой запас снизу не нужен,
    а сообщение встаёт над панелью сохранения */
 :root body[data-screen="screen-workout"]:not(.pad-open) { padding-bottom: calc(16px + var(--safe-bottom)); }
+/* У Программ нижнего меню пока нет — и места под него тоже не нужно */
+:root body[data-screen="screen-programs"]:not(.pad-open),
+:root body[data-screen="screen-program"]:not(.pad-open) { padding-bottom: calc(16px + var(--safe-bottom)); }
 :root body[data-screen="screen-workout"]:not(.pad-open) .toast { bottom: calc(118px + var(--safe-bottom)); }
 
 /* Заголовок и «Из шаблона» в одну строку: заголовок не переносится,
@@ -5196,6 +5235,12 @@ body.pad-open { padding-bottom: 62vh; }
 
 /* --- Чипсы-«таблетки». Лежат только на белых панелях и шторках, где белая
        чипса с тенью образца почти не видна, — поэтому серая подложка. --- */
+/* В Минимализме цвет значит «внимание». Обложке он не положен. */
+:root[data-style="minimal"] .pg-cover {
+    background: var(--m-input) !important;
+    color: var(--text-main);
+}
+
 :root[data-style="minimal"] .goal-chips { gap: 8px; }
 :root[data-style="minimal"] .goal-chip {
     height: 36px;
@@ -6448,6 +6493,43 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
 </div>
 
 <!-- Карточка клиента: создание и правка -->
+<!-- Создание программы: сначала чья история, потом сколько тренировок взять -->
+<div id="sheet-pg-new" class="glass-sheet-overlay" onclick="closeSheet('sheet-pg-new')">
+    <div class="glass-sheet-content" onclick="event.stopPropagation()">
+        <div class="sheet-notch"></div>
+        <div class="sheet-header">
+            <div>
+                <h2 id="pn-title">Из чьей истории</h2>
+                <span id="pn-sub" style="font-size: 13px; color: var(--text-muted);"></span>
+            </div>
+            <span class="sheet-close-txt" onclick="closeSheet('sheet-pg-new')">Отмена</span>
+        </div>
+        <div id="pn-list"></div>
+    </div>
+</div>
+
+<!-- Одна тренировка программы: что в ней и что с ней можно сделать -->
+<div id="sheet-pg-day" class="glass-sheet-overlay" onclick="closeSheet('sheet-pg-day')">
+    <div class="glass-sheet-content" onclick="event.stopPropagation()">
+        <div class="sheet-notch"></div>
+        <div class="sheet-header">
+            <div>
+                <h2 id="pd-title">Тренировка</h2>
+                <span id="pd-sub" style="font-size: 13px; color: var(--text-muted);"></span>
+            </div>
+            <span class="sheet-close-txt" onclick="closeSheet('sheet-pg-day')">Закрыть</span>
+        </div>
+        <div id="pd-body"></div>
+        <div class="field-pair" style="margin-top: 14px;">
+            <button class="btn-soft" id="pd-up" onclick="moveProgramDay(-1)">Выше</button>
+            <button class="btn-soft" id="pd-down" onclick="moveProgramDay(1)">Ниже</button>
+        </div>
+        <button class="btn-soft" style="width: 100%; margin-top: 10px;" onclick="deleteProgramDay()">
+            Убрать из программы
+        </button>
+    </div>
+</div>
+
 <div id="sheet-client-edit" class="glass-sheet-overlay" onclick="closeSheet('sheet-client-edit')">
     <div class="glass-sheet-content" onclick="event.stopPropagation()">
         <div class="sheet-notch"></div>
@@ -6890,6 +6972,81 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
     </div>
 </div>
 
+<!-- ==========================================================================
+     ЭКРАН — ПРОГРАММЫ
+     Программа — набор тренировок, который тренер отдаёт или продаёт. Пока
+     здесь только свои черновики: витрины и покупок ещё нет, поэтому и
+     нижнего меню у этой роли пока нет — выход через аватарку сверху.
+     ========================================================================== -->
+<div id="screen-programs" class="screen">
+
+    <div class="premium-header with-av">
+        <button class="trainer-av av-roles" onclick="openRoles()" aria-label="Куда перейти"></button>
+        <h1 data-text="Программы">Программы</h1>
+        <div class="header-icons">
+            <div class="icon-btn" onclick="openNewProgram()"><span class="only-neo">＋</span><svg class="mi only-min" aria-hidden="true"><use href="#i-plus"/></svg></div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="clients-total" id="pg-total"></div>
+        <div id="pg-list"></div>
+    </div>
+</div>
+
+
+<!-- ==========================================================================
+     ЭКРАН — ОДНА ПРОГРАММА
+     ========================================================================== -->
+<div id="screen-program" class="screen">
+
+    <div class="screen-head">
+        <div class="back-chip" onclick="goBack()"><span class="only-neo">❮</span><svg class="mi only-min" aria-hidden="true"><use href="#i-chev-left"/></svg></div>
+        <div class="head-titles">
+            <h2 id="pv-head">Программа</h2>
+            <span class="head-sub" id="pv-sub">Черновик</span>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="form-row">
+            <label class="caps-label" for="pv-name">Название</label>
+            <input class="fld" type="text" id="pv-name" autocomplete="off" maxlength="80"
+                   placeholder="Сила и масса" oninput="onProgramField()">
+        </div>
+
+        <div class="form-row">
+            <label class="caps-label" for="pv-descr">Для кого и зачем</label>
+            <textarea class="fld" id="pv-descr" maxlength="600"
+                      placeholder="Коротко: кому подойдёт и что даст" oninput="onProgramField()"></textarea>
+        </div>
+
+        <div class="form-row">
+            <label class="caps-label">Цель</label>
+            <div class="goal-chips" id="pv-goal-chips"></div>
+        </div>
+
+        <div class="form-row">
+            <label class="caps-label">Уровень</label>
+            <div class="goal-chips" id="pv-level-chips"></div>
+        </div>
+
+        <div class="form-row">
+            <label class="caps-label" for="pv-price">Цена, ₽</label>
+            <input class="fld" type="text" id="pv-price" placeholder="2990" readonly onclick="openProgramPricePad()">
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="clients-total" id="pv-days-total"></div>
+        <div id="pv-days"></div>
+        <button class="btn-soft" style="width: 100%; margin-top: 12px;" onclick="deleteProgram()">
+            Удалить программу
+        </button>
+    </div>
+</div>
+
+
 <div class="ios-navbar" id="navbar-trainer">
     <div class="nav-tab active" id="nav-schedule" onclick="showScreen('screen-schedule')">
         <svg class="nav-tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -6994,7 +7151,7 @@ function applyViewport() {
    день файл выкладывается не раз: по одной дате не понять, приехало ли
    обновление или Telegram показывает копию из кэша. Ставится при выкладке
    скриптом publish.py — руками не правится. */
-const BUILD = '03.10.2026, 23:31';
+const BUILD = '04.10.2026, 19:41';
 let fullReason = '';        // почему полного экрана нет — тоже видно в Профиле
 
 /* Полный экран: приложение занимает телефон целиком, а кнопки Telegram
@@ -7880,10 +8037,14 @@ const NAV_DIARY = {
 };
 
 function isDiaryMode() { return appMode === 'diary'; }
+function isProgramsMode() { return appMode === 'programs'; }
 
 /* Какую кнопку подсветить. В дневнике История и Аналитика — один экран
    с двумя вкладками, поэтому смотрим ещё и на вкладку. */
 function navIdFor(id) {
+    // У Программ один экран и меню пока нет. Отметка всё равно нужна: по ней
+    // приложение помнит, где человек был, и знает, что отсюда назад некуда.
+    if (isProgramsMode()) return id === 'screen-programs' ? 'nav-p-mine' : null;
     if (isDiaryMode()) {
         if (id === 'screen-client') return clTab === 'analytics' ? 'nav-d-an' : 'nav-d-hist';
         return NAV_DIARY[id] || null;
@@ -7904,7 +8065,9 @@ function applyNavActive(id) {
 
 function applyNavMode() {
     const trainer = $('navbar-trainer'), diary = $('navbar-diary');
-    if (trainer) trainer.style.display = isDiaryMode() ? 'none' : '';
+    // В Программах нижнего меню нет вовсе: экран там один, а меню из одной
+    // кнопки только мешает. Выход — через аватарку сверху.
+    if (trainer) trainer.style.display = (appMode === 'trainer') ? '' : 'none';
     if (diary) diary.style.display = isDiaryMode() ? '' : 'none';
     document.body.classList.toggle('diary-mode', isDiaryMode());
 }
@@ -7923,10 +8086,18 @@ function goBack() {
     if (sheetStack.length) { closeSheet(sheetStack[sheetStack.length - 1]); return; }
     if (currentScreen === 'screen-start') { if (tg) tg.close(); return; }
 
-    // В дневнике верхний уровень — его собственные вкладки
+    // В дневнике верхний уровень — его собственные вкладки. Уходить с них
+    // некуда, поэтому «назад» открывает список ролей — то же, что аватарка.
     if (isDiaryMode()) {
-        if (navIdFor(currentScreen)) { showStartScreen(); return; }
+        if (navIdFor(currentScreen)) { openRoles(); return; }
         diaryGym();
+        return;
+    }
+
+    // В Программах назад ведёт к списку, а со списка — в роли
+    if (isProgramsMode()) {
+        if (currentScreen === 'screen-programs') { openRoles(); return; }
+        showScreen('screen-programs');
         return;
     }
 
@@ -7973,6 +8144,8 @@ function showScreen(id, from) {
     if (typeof rememberLast === 'function') rememberLast();
 
     if (id === 'screen-clients') renderClientsScreen();
+    if (id === 'screen-programs') renderProgramsScreen();
+    if (id === 'screen-program') renderProgramScreen();
     if (id === 'screen-exercises') renderExercisesScreen();
     if (id === 'screen-profile') {
         renderProfileLine(); renderCloudLine(); renderInvitePanel(); renderRoleSwitch();
@@ -8517,7 +8690,7 @@ const STORE_BACKUP = 'silovoyAssistentV6:backup';
 function defaultDB() {
     return {
         v: 7, clients: [], sessions: [], exercises: [],
-        templates: [], passOps: [], settings: defaultSettings()
+        templates: [], programs: [], passOps: [], settings: defaultSettings()
     };
 }
 
@@ -8587,23 +8760,30 @@ function withCircuit(block, raw) {
 /* Шаблон тренировки. Хранит структуру, а не результат: упражнения, их порядок,
    число подходов и повторы. Вес — запасной: при применении он подставляется
    из истории того клиента, которому шаблон накатывают. */
+/* Упражнения замысла, а не результата: и у шаблона, и у дня программы это
+   одно и то же — упражнения, порядок, подходы, повторы и запасные веса.
+   Общая проверка, чтобы два места не разошлись со временем. */
+function normalizePlanEx(raw) {
+    return (Array.isArray(raw) ? raw : []).map(function (e) {
+        if (!e || typeof e !== 'object' || Array.isArray(e)) return null;
+        const n = (typeof e.n === 'string' && e.n.trim()) ? e.n.trim() : null;
+        if (!n) return null;
+        const sets = (Array.isArray(e.sets) ? e.sets : []).map(function (st) {
+            if (!st || typeof st !== 'object' || Array.isArray(st)) return null;
+            const r = parseReps(st.r);
+            if (r === null) return null;      // подход без повторов бессмыслен
+            return { r: r, w: parseWeight(st.w), isWarmup: normBool(st.isWarmup, false) };
+        }).filter(Boolean);
+        return sets.length ? withCircuit({ n: n, sets: sets }, e) : null;
+    }).filter(Boolean);
+}
+
 function normalizeTemplates(raw) {
     const seen = {};
     return (Array.isArray(raw) ? raw : []).map(function (t, i) {
         if (!t || typeof t !== 'object' || Array.isArray(t)) return null;
 
-        const ex = (Array.isArray(t.ex) ? t.ex : []).map(function (e) {
-            if (!e || typeof e !== 'object' || Array.isArray(e)) return null;
-            const n = (typeof e.n === 'string' && e.n.trim()) ? e.n.trim() : null;
-            if (!n) return null;
-            const sets = (Array.isArray(e.sets) ? e.sets : []).map(function (st) {
-                if (!st || typeof st !== 'object' || Array.isArray(st)) return null;
-                const r = parseReps(st.r);
-                if (r === null) return null;      // подход без повторов бессмыслен
-                return { r: r, w: parseWeight(st.w), isWarmup: normBool(st.isWarmup, false) };
-            }).filter(Boolean);
-            return sets.length ? withCircuit({ n: n, sets: sets }, e) : null;
-        }).filter(Boolean);
+        const ex = normalizePlanEx(t.ex);
 
         if (!ex.length) return null;              // пустой шаблон применять не к чему
 
@@ -8624,6 +8804,70 @@ function normalizeTemplates(raw) {
             fromDate: (typeof t.fromDate === 'string') ? t.fromDate.trim().slice(0, 10) : '',
             createdAt: num(t.createdAt, 0) || null,
             ex: ex
+        };
+    }).filter(Boolean);
+}
+
+/* --- Программы ---
+   Программа — набор тренировок, который тренер отдаёт клиенту или продаёт.
+   От шаблона отличается тем, что тренировок в ней несколько и порядок важен:
+   не «накатить на занятие», а «пройти с первой по последнюю».
+
+   Главное правило: внутри только упражнения, подходы, повторы и веса. Имя
+   клиента, по чьей истории её собрали, его даты, вес и заметки в программу
+   не попадают — иначе тренер отдавал бы чужие личные данные. */
+
+const PROG_GOALS = [
+    { v: 'mass', name: 'Набор массы' },
+    { v: 'strength', name: 'Сила' },
+    { v: 'loss', name: 'Похудение' },
+    { v: 'form', name: 'Общая форма' }
+];
+
+const PROG_LEVELS = [
+    { v: 'beginner', name: 'Новичок' },
+    { v: 'mid', name: 'Средний' },
+    { v: 'pro', name: 'Продвинутый' }
+];
+
+function listName(list, v) {
+    for (let i = 0; i < list.length; i++) if (list[i].v === v) return list[i].name;
+    return '';
+}
+
+function normalizePrograms(raw) {
+    const seen = {};
+    return (Array.isArray(raw) ? raw : []).map(function (p, i) {
+        if (!p || typeof p !== 'object' || Array.isArray(p)) return null;
+
+        const days = (Array.isArray(p.days) ? p.days : []).map(function (d, k) {
+            if (!d || typeof d !== 'object' || Array.isArray(d)) return null;
+            const ex = normalizePlanEx(d.ex);
+            if (!ex.length) return null;          // пустой день проходить нечем
+            return {
+                name: (typeof d.name === 'string' && d.name.trim())
+                    ? d.name.trim().slice(0, 60) : ('Тренировка ' + (k + 1)),
+                ex: ex
+            };
+        }).filter(Boolean);
+
+        let id = p.id ? String(p.id) : uid('pg');
+        while (seen[id]) id = uid('pg');
+        seen[id] = true;
+
+        return {
+            id: id,
+            title: (typeof p.title === 'string' && p.title.trim())
+                ? p.title.trim().slice(0, 80) : ('Программа ' + (i + 1)),
+            descr: (typeof p.descr === 'string') ? p.descr.trim().slice(0, 600) : '',
+            goal: PROG_GOALS.some(function (g) { return g.v === p.goal; }) ? p.goal : '',
+            level: PROG_LEVELS.some(function (l) { return l.v === p.level; }) ? p.level : '',
+            price: Math.max(0, Math.round(num(p.price, 0))),
+            // Опубликовать пока нечем — витрины нет. Поле заведено заранее,
+            // чтобы при её появлении не переписывать уже сохранённые программы.
+            status: p.status === 'published' ? 'published' : 'draft',
+            createdAt: num(p.createdAt, 0) || null,
+            days: days
         };
     }).filter(Boolean);
 }
@@ -8829,7 +9073,9 @@ function normalizeDB(raw) {
 
     const db = {
         v: 7, clients: clients, sessions: sessions, exercises: exercises,
-        templates: normalizeTemplates(raw.templates), passOps: passOps, settings: settings
+        templates: normalizeTemplates(raw.templates),
+        programs: normalizePrograms(raw.programs),
+        passOps: passOps, settings: settings
     };
     clients.forEach(function (c) {
         recomputeClientMetrics(db, c.id);
@@ -8926,8 +9172,13 @@ function getSession(id) {
     return null;
 }
 
+/* Расписание тренера за день. Свои тренировки из дневника сюда не входят:
+   себе на приём не записываются, и в чужом расписании им не место. Отсюда
+   их берут все виды дня разом — лента, счётчик, календарь, сетка часов. */
 function sessionsOnDate(date) {
-    return DB.sessions.filter(function (s) { return s.date === date; })
+    return DB.sessions.filter(function (s) {
+                          return s.date === date && !isSelfClient(s.clientId);
+                      })
                       .sort(function (a, b) { return a.time.localeCompare(b.time); });
 }
 
@@ -9139,7 +9390,9 @@ function isUnmarked(s) {
 }
 
 function unmarkedSessions() {
-    return DB.sessions.filter(isUnmarked)
+    return DB.sessions.filter(function (s) {
+            return isUnmarked(s) && !isSelfClient(s.clientId);
+        })
         .sort(function (a, b) { return (a.date + a.time).localeCompare(b.date + b.time); });
 }
 
@@ -9865,7 +10118,7 @@ function nextBookingOf(clientId) {
 
 function daySearchHtml(query) {
     const q = query.toLowerCase();
-    const found = DB.clients.filter(function (c) { return c.name.toLowerCase().indexOf(q) !== -1; })
+    const found = trainerClients().filter(function (c) { return c.name.toLowerCase().indexOf(q) !== -1; })
         .sort(function (a, b) { return a.name.localeCompare(b.name, 'ru'); });
 
     if (!found.length) return '<div class="empty-note">Клиентов с таким именем нет.</div>';
@@ -9975,7 +10228,7 @@ function renderDayFeed() {
     renderDayHero();
 
     const query = $('day-search-input') ? $('day-search-input').value.trim() : '';
-    if (query && DB.clients.length) {
+    if (query && trainerClients().length) {
         feed.innerHTML = daySearchHtml(query);
         return;
     }
@@ -9988,7 +10241,7 @@ function renderDayFeed() {
         if (c) html += sessionCardHtml(s, c);
     });
 
-    if (!DB.clients.length) {
+    if (!trainerClients().length) {
         // Первый запуск: расписание пустое, потому что заводить некого
         // Карточку шагов здесь не показываем: её первый шаг — ровно та же
         // «Завести клиента», что кнопкой ниже, а лишний блок утапливает
@@ -10601,6 +10854,10 @@ function openWorkout(sessionId) {
         const id = uid('circ');
         s.ex.forEach(function (e, i) { e.circuit = id; e.round = legacy[i]; });
     }
+
+    // в дневнике у зала вместо «назад» аватарка — решается здесь, потому что
+    // чья это тренировка, известно только сейчас
+    if (typeof applyHeadMode === 'function') applyHeadMode();
 
     // с чем открыли: при уходе сравним и скажем, что черновик сохранён
     wkOpenedState = workoutState(s);
@@ -11849,7 +12106,7 @@ function openClient(clientId, tab, from) {
     haptic('light');
     showScreen('screen-client', from || 'screen-schedule');
     setClientTab(tab || 'history');
-    if (typeof applyClientHeadMode === 'function') applyClientHeadMode();
+    if (typeof applyHeadMode === 'function') applyHeadMode();
 }
 
 /* Остаток в шапке меняется от пополнений и списаний, поэтому строка
@@ -14095,8 +14352,9 @@ function renderTrainerAvatar() {
             : '');
     // аватарка стоит в шапке каждого верхнего экрана — через неё меняют роль
     document.querySelectorAll('.trainer-av').forEach(function (el) { el.innerHTML = html; });
-    const chip = document.querySelector('.back-chip.as-av');
-    if (chip) chip.innerHTML = esc(initials || 'Т');
+    document.querySelectorAll('.back-chip.as-av').forEach(function (el) {
+        el.innerHTML = esc(initials || 'Т');
+    });
 }
 
 /* Короткая справка о том, что за версия открыта и как она себя чувствует.
@@ -14111,6 +14369,386 @@ function buildLineHtml() {
         parts.push('открыто вне Telegram');
     }
     return '<div class="build-line">' + esc(parts.join(' · ')) + '</div>';
+}
+
+/* ==========================================================================
+   ПРОГРАММЫ
+   Пока это только свои черновики: собрать набор тренировок и отдать клиенту.
+   Витрина, покупка и прохождение — следующими шагами.
+   ========================================================================== */
+
+function programs() { return DB.programs || (DB.programs = []); }
+
+function getProgram(id) {
+    const list = programs();
+    for (let i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
+    return null;
+}
+
+let pgOpenId = null;        // какая программа открыта
+let pgDayIndex = null;      // какая её тренировка открыта
+let pgFromClient = null;    // чью историю берём при создании
+let pgSaveTimer = null;     // запись на диск не на каждую букву
+
+/* Цвет обложки выводится из названия: тренер ничего не выбирает и не
+   загружает, а у каждой программы цвет свой и не меняется между запусками. */
+function programHue(title) {
+    const t = String(title || '');
+    let h = 0;
+    for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) % 360;
+    return h;
+}
+
+function programCoverHtml(p) {
+    const h = programHue(p.title);
+    const letters = String(p.title || 'П').trim().split(/\s+/)
+        .map(function (w) { return w.charAt(0); }).join('').slice(0, 2).toUpperCase();
+    return '<div class="pg-cover" style="background: linear-gradient(135deg, ' +
+           'hsl(' + h + ', 60%, 52%), hsl(' + ((h + 40) % 360) + ', 60%, 42%));">' +
+           esc(letters || 'П') + '</div>';
+}
+
+function programSummary(p) {
+    const n = (p.days || []).length;
+    const parts = [n + ' ' + plural(n, 'тренировка', 'тренировки', 'тренировок')];
+    const g = listName(PROG_GOALS, p.goal);
+    const l = listName(PROG_LEVELS, p.level);
+    if (g) parts.push(g);
+    if (l) parts.push(l);
+    return parts;
+}
+
+function programTitle(p) { return (p.title || '').trim() || 'Без названия'; }
+
+/* --- Список --- */
+
+function renderProgramsScreen() {
+    const box = $('pg-list');
+    const total = $('pg-total');
+    if (!box) return;
+
+    const list = programs();
+    total.style.display = list.length ? '' : 'none';
+    total.innerHTML = 'Всего программ: <b>' + list.length + '</b>';
+
+    if (!list.length) {
+        box.innerHTML =
+            '<div class="empty-note">' +
+                '<div class="empty-ic" style="font-size:34px; margin-bottom:8px;">' +
+                    emo('📦') + ico('box') + '</div>' +
+                '<b style="color:var(--text-main); font-size:15px;">Программ пока нет</b><br>' +
+                'Программа — это набор тренировок, который можно отдать клиенту одним ' +
+                'куском. Проще всего собрать её из истории того, с кем вы уже работали.' +
+            '</div>' +
+            '<div style="padding: 0 16px;">' +
+                '<button class="btn-soft filled" style="width:100%;" onclick="openNewProgram()">' +
+                    '＋ Создать программу' +
+                '</button>' +
+            '</div>';
+        return;
+    }
+
+    box.innerHTML = list.map(function (p) {
+        return '<div class="client-row cl-card" onclick="openProgram(\'' + p.id + '\')">' +
+                   programCoverHtml(p) +
+                   '<div class="cr-info">' +
+                       '<div class="cr-name">' + esc(programTitle(p)) + '</div>' +
+                       '<div class="cr-meta">' +
+                           programSummary(p).map(esc).join('<span class="dot">·</span>') +
+                       '</div>' +
+                   '</div>' +
+                   (p.price
+                       ? '<div class="cr-stats"><div class="cr-stat"><b>' + p.price +
+                         '</b><span>₽</span></div></div>'
+                       : '') +
+                   '<span class="arrow-icon arr"></span>' +
+               '</div>';
+    }).join('');
+}
+
+/* --- Одна программа --- */
+
+function openProgram(id) {
+    if (!getProgram(id)) return;
+    pgOpenId = id;
+    showScreen('screen-program', 'screen-programs');
+}
+
+function renderProgramScreen() {
+    const p = getProgram(pgOpenId);
+    if (!p) { showScreen('screen-programs'); return; }
+
+    const name = programTitle(p);
+    $('pv-head').innerText = name;
+    $('pv-head').setAttribute('data-text', name);
+    $('pv-sub').innerText = programSummary(p).join(' · ');
+    $('pv-name').value = p.title;
+    $('pv-descr').value = p.descr;
+    $('pv-price').value = p.price ? String(p.price) : '';
+    renderProgramChips();
+
+    const days = p.days || [];
+    $('pv-days-total').innerHTML = 'Тренировок: <b>' + days.length + '</b>';
+    $('pv-days').innerHTML = days.length
+        ? days.map(function (d, i) {
+            return '<div class="client-row tpl-row" onclick="openProgramDay(' + i + ')">' +
+                       '<span class="pg-day-no">' + (i + 1) + '</span>' +
+                       '<div style="min-width:0; flex:1;">' +
+                           '<div class="cr-name">' + esc(d.name) + '</div>' +
+                           '<div class="cr-sub">' +
+                               tplSummaryParts({ ex: d.ex }, false).map(esc)
+                                   .join('<span class="dot">·</span>') +
+                           '</div>' +
+                       '</div>' +
+                       '<span class="arrow-icon arr tpl-open"></span>' +
+                   '</div>';
+          }).join('')
+        : '<div class="empty-note">В программе не осталось тренировок.</div>';
+}
+
+function chipsHtml(list, current, fn) {
+    return list.map(function (o) {
+        return '<button type="button" class="goal-chip' + (o.v === current ? ' on' : '') + '" ' +
+               'onclick="' + fn + '(\'' + o.v + '\')">' + esc(o.name) + '</button>';
+    }).join('');
+}
+
+function renderProgramChips() {
+    const p = getProgram(pgOpenId);
+    if (!p) return;
+    $('pv-goal-chips').innerHTML = chipsHtml(PROG_GOALS, p.goal, 'pickProgramGoal');
+    $('pv-level-chips').innerHTML = chipsHtml(PROG_LEVELS, p.level, 'pickProgramLevel');
+}
+
+/* Повторный тап по выбранному снимает выбор — как у цели клиента */
+function pickProgramGoal(v) {
+    const p = getProgram(pgOpenId);
+    if (!p) return;
+    p.goal = (p.goal === v) ? '' : v;
+    saveProgram(p);
+    renderProgramChips();
+    $('pv-sub').innerText = programSummary(p).join(' · ');
+}
+
+function pickProgramLevel(v) {
+    const p = getProgram(pgOpenId);
+    if (!p) return;
+    p.level = (p.level === v) ? '' : v;
+    saveProgram(p);
+    renderProgramChips();
+    $('pv-sub').innerText = programSummary(p).join(' · ');
+}
+
+function saveProgram(p) {
+    saveDB();
+    haptic('light');
+    if (typeof cloudLater === 'function') cloudLater();
+}
+
+/* Название и описание пишут буквами, и запись на диск на каждую букву — это
+   перекладывание всей базы по сотне раз. Ждём, пока тренер остановится. */
+function onProgramField() {
+    const p = getProgram(pgOpenId);
+    if (!p) return;
+    p.title = $('pv-name').value.slice(0, 80);
+    p.descr = $('pv-descr').value.slice(0, 600);
+
+    const name = programTitle(p);
+    $('pv-head').innerText = name;
+    $('pv-head').setAttribute('data-text', name);
+
+    clearTimeout(pgSaveTimer);
+    pgSaveTimer = setTimeout(function () {
+        saveDB();
+        if (typeof cloudLater === 'function') cloudLater();
+    }, 500);
+}
+
+function openProgramPricePad() {
+    padForInput('pv-price', {
+        label: 'Цена, ₽', steps: [-500, 500], remember: 'money', max: 999999,
+        after: onProgramPrice
+    });
+}
+
+function onProgramPrice() {
+    const p = getProgram(pgOpenId);
+    if (!p) return;
+    p.price = Math.max(0, Math.round(num($('pv-price').value, 0)));
+    saveProgram(p);
+    renderProgramsScreen();
+}
+
+async function deleteProgram() {
+    const p = getProgram(pgOpenId);
+    if (!p) return;
+    const ok = await showConfirm('Удалить программу «' + programTitle(p) + '»?',
+                                 { ok: 'Удалить', danger: true });
+    if (!ok) return;
+
+    DB.programs = programs().filter(function (x) { return x.id !== p.id; });
+    pgOpenId = null;
+    saveProgram(null);
+    showScreen('screen-programs');
+    showToast('Программа удалена');
+}
+
+/* --- Одна тренировка внутри программы --- */
+
+function openProgramDay(i) {
+    const p = getProgram(pgOpenId);
+    if (!p || !p.days[i]) return;
+    pgDayIndex = i;
+    renderProgramDay();
+    haptic('light');
+    openSheet('sheet-pg-day');
+}
+
+function renderProgramDay() {
+    const p = getProgram(pgOpenId);
+    const d = p && p.days[pgDayIndex];
+    if (!d) return;
+    $('pd-title').innerText = d.name;
+    $('pd-sub').innerText = tplSummaryParts({ ex: d.ex }, false).join(' · ');
+    $('pd-body').innerHTML = exListHtml(d.ex, null);
+    $('pd-up').disabled = pgDayIndex === 0;
+    $('pd-down').disabled = pgDayIndex === p.days.length - 1;
+}
+
+/* Номера идут по порядку прохождения. Убрали одну — остальные сдвинулись,
+   иначе в программе второй по счёту стояла бы «Тренировка 5». */
+function renumberProgramDays(p) {
+    (p.days || []).forEach(function (d, i) { d.name = 'Тренировка ' + (i + 1); });
+}
+
+function moveProgramDay(step) {
+    const p = getProgram(pgOpenId);
+    if (!p) return;
+    const to = pgDayIndex + step;
+    if (to < 0 || to >= p.days.length) return;
+
+    p.days.splice(to, 0, p.days.splice(pgDayIndex, 1)[0]);
+    renumberProgramDays(p);
+    pgDayIndex = to;
+    saveProgram(p);
+    renderProgramDay();
+    renderProgramScreen();
+}
+
+async function deleteProgramDay() {
+    const p = getProgram(pgOpenId);
+    const d = p && p.days[pgDayIndex];
+    if (!d) return;
+    const ok = await showConfirm('Убрать «' + d.name + '» из программы?',
+                                 { ok: 'Убрать', danger: true });
+    if (!ok) return;
+
+    p.days.splice(pgDayIndex, 1);
+    renumberProgramDays(p);
+    pgDayIndex = null;
+    saveProgram(p);
+    closeSheet('sheet-pg-day');
+    renderProgramScreen();
+}
+
+/* --- Создание --- */
+
+/* Обезличенный слепок тренировки: берём ровно то же, что и шаблон — упражнения,
+   порядок, подходы, повторы и веса. Имя клиента, дата, его вес и самочувствие
+   остаются в карточке и в программу не попадают. */
+function programDayFromSession(session) {
+    return templateFromSession(session, '').ex;
+}
+
+function programSources() {
+    const out = [];
+    const self = selfClient();
+    if (self && clientHistory(SELF_ID).length) out.push(self);
+    trainerClients().forEach(function (c) {
+        if (clientHistory(c.id).length) out.push(c);
+    });
+    return out;
+}
+
+function openNewProgram() {
+    pgFromClient = null;
+    const list = programSources();
+
+    $('pn-title').innerText = 'Из чьей истории';
+    $('pn-sub').innerText = list.length ? 'Имя клиента в программу не попадёт' : '';
+    $('pn-list').innerHTML = list.length
+        ? list.map(function (c) {
+            const n = clientHistory(c.id).length;
+            return '<div class="client-row tpl-row" onclick="pickProgramSource(\'' + c.id + '\')">' +
+                       '<div style="min-width:0; flex:1;">' +
+                           '<div class="cr-name">' + esc(c.name) + '</div>' +
+                           '<div class="cr-sub">' + n + ' ' +
+                               plural(n, 'тренировка', 'тренировки', 'тренировок') + '</div>' +
+                       '</div>' +
+                       '<span class="arrow-icon arr tpl-open"></span>' +
+                   '</div>';
+          }).join('')
+        : '<div class="empty-note">Собирать пока не из чего: ни одной проведённой ' +
+          'тренировки нет. Проведите хотя бы одну — она и станет основой программы.</div>';
+
+    haptic('light');
+    openSheet('sheet-pg-new');
+}
+
+function pickProgramSource(clientId) {
+    const hist = clientHistory(clientId);
+    if (!hist.length) return;
+    pgFromClient = clientId;
+
+    const counts = [4, 8, 12].filter(function (n) { return n < hist.length; });
+    counts.push(hist.length);
+
+    $('pn-title').innerText = 'Сколько тренировок взять';
+    $('pn-sub').innerText = 'Берём последние по порядку';
+    $('pn-list').innerHTML = counts.map(function (n) {
+        const all = n === hist.length;
+        return '<div class="client-row tpl-row" onclick="buildProgram(' + n + ')">' +
+                   '<div style="min-width:0; flex:1;">' +
+                       '<div class="cr-name">' + (all ? 'Все ' : 'Последние ') + n + '</div>' +
+                       '<div class="cr-sub">' + n + ' ' +
+                           plural(n, 'тренировка', 'тренировки', 'тренировок') +
+                           ' в программе</div>' +
+                   '</div>' +
+                   '<span class="arrow-icon arr tpl-open"></span>' +
+               '</div>';
+    }).join('');
+}
+
+function buildProgram(count) {
+    const hist = clientHistory(pgFromClient);
+    if (!hist.length) return;
+
+    const days = hist.slice(Math.max(0, hist.length - count)).map(function (sess) {
+        return { name: '', ex: programDayFromSession(sess) };
+    }).filter(function (d) { return d.ex.length; });
+
+    if (!days.length) {
+        showToast('В этих тренировках нет засчитанных подходов');
+        return;
+    }
+
+    const p = {
+        id: uid('pg'),
+        // Название подставляем своё: пустое поле на новом экране выглядит как
+        // ошибка, а это просто то, что тренер сейчас заменит
+        title: 'Новая программа',
+        descr: '', goal: '', level: '', price: 0, status: 'draft',
+        createdAt: Date.now(), days: days
+    };
+    renumberProgramDays(p);
+    programs().push(p);
+
+    pgOpenId = p.id;
+    saveDB();
+    if (typeof cloudLater === 'function') cloudLater();
+    closeSheet('sheet-pg-new');
+    haptic('success');
+    showScreen('screen-program', 'screen-programs');
 }
 
 /* --- Роли ---
@@ -14141,16 +14779,27 @@ function hasCabinetRole() {
 
 /* Дневник есть у всех — так решено: иначе про него никто не узнает.
    Первый вход в него его и заводит. */
+/* Программы: тренеру — всегда, ему там создавать. Клиенту чужого тренера —
+   никогда: чтобы он не сравнивал чужие программы со своим тренером. Всем
+   остальным — когда появится витрина или купленное. */
+function hasProgramsRole() {
+    if (isTrainerRole()) return true;
+    if (hasCabinetRole()) return false;
+    return programs().length > 0;
+}
+
 function availableRoles() {
     const out = ['diary'];
     if (isTrainerRole()) out.push('trainer');
+    if (hasProgramsRole()) out.push('programs');
     if (hasCabinetRole()) out.push('cabinet');
     return out;
 }
 
 const ROLE_TABS = {
     trainer: ['nav-schedule', 'nav-clients', 'nav-exercises', 'nav-settings'],
-    diary: ['nav-d-gym', 'nav-d-hist', 'nav-d-an', 'nav-d-set']
+    diary: ['nav-d-gym', 'nav-d-hist', 'nav-d-an', 'nav-d-set'],
+    programs: ['nav-p-mine']
 };
 
 const TAB_ACTION = {
@@ -14161,7 +14810,8 @@ const TAB_ACTION = {
     'nav-d-gym': function () { diaryGym(); },
     'nav-d-hist': function () { diaryHistory(); },
     'nav-d-an': function () { diaryAnalytics(); },
-    'nav-d-set': function () { showScreen('screen-settings'); }
+    'nav-d-set': function () { showScreen('screen-settings'); },
+    'nav-p-mine': function () { showScreen('screen-programs'); }
 };
 
 function rememberLast() {
@@ -14183,6 +14833,8 @@ function enterRole(role, tab) {
     if (role === 'diary') {
         ensureSelfClient();
         appMode = 'diary';
+    } else if (role === 'programs') {
+        appMode = 'programs';
     } else {
         appMode = 'trainer';
     }
@@ -14200,6 +14852,8 @@ const ROLE_INFO = {
              sub: 'Свои тренировки: зал, история, аналитика' },
     trainer: { icon: '👥', mi: 'users', name: 'Тренер',
                sub: 'Расписание, клиенты, абонементы' },
+    programs: { icon: '📦', mi: 'box', name: 'Программы',
+                sub: 'Соберите программу и отдайте клиенту' },
     cabinet: { icon: '🏅', mi: 'award', name: 'Мои тренировки',
                sub: 'Занятия у тренера' }
 };
@@ -14217,7 +14871,7 @@ function renderRolesSheet(roles) {
     const box = $('roles-list');
     if (!box) return;
 
-    const here = { diary: 'diary', trainer: 'trainer' }[appMode];
+    const here = { diary: 'diary', trainer: 'trainer', programs: 'programs' }[appMode];
     const html = roles.map(function (r) {
         const i = ROLE_INFO[r];
         let sub = i.sub;
@@ -14227,6 +14881,9 @@ function renderRolesSheet(roles) {
         } else if (r === 'trainer') {
             const n = trainerClients().length;
             if (n) sub = 'Клиентов: ' + n;
+        } else if (r === 'programs') {
+            const n = programs().length;
+            if (n) sub = 'Программ: ' + n;
         } else if (r === 'cabinet') {
             const t = (cloudRoles() || {}).cabinetTrainer;
             if (t) sub = 'Тренер: ' + t;
@@ -14368,26 +15025,38 @@ function diaryGym() {
 
 function diaryHistory() {
     openClient(SELF_ID, 'history', 'screen-start');
-    applyClientHeadMode();
+    applyHeadMode();
 }
 
 function diaryAnalytics() {
     openClient(SELF_ID, 'analytics', 'screen-start');
-    applyClientHeadMode();
+    applyHeadMode();
 }
 
-/* В дневнике История и Аналитика — верхние вкладки, и «назад» с них вести
-   некуда. На месте кнопки «назад» встаёт аватарка: тот же круг слева
-   сверху, что и на других экранах, и ведёт она туда же — в список ролей. */
-function applyClientHeadMode() {
-    const chip = document.querySelector('#screen-client .back-chip');
-    if (!chip) return;
-    const top = isDiaryMode() && clClientId === SELF_ID;
-    chip.classList.toggle('as-av', top);
-    chip.setAttribute('onclick', top ? 'openRoles()' : 'goBack()');
-    if (top) renderTrainerAvatar();
-    else chip.innerHTML = '<span class="only-neo">❮</span>' +
-        '<svg class="mi only-min" aria-hidden="true"><use href="#i-chev-left"/></svg>';
+/* В дневнике Зал, История и Аналитика — верхние вкладки, и «назад» с них
+   вести некуда. На месте кнопки «назад» встаёт аватарка: тот же круг слева
+   сверху, что и на других экранах, и ведёт она туда же — в список ролей.
+   У тренера на тех же экранах остаётся стрелка: там назад есть куда. */
+function applyHeadMode() {
+    const spots = [
+        ['#screen-client .back-chip', isDiaryMode() && clClientId === SELF_ID],
+        ['#screen-workout .back-chip',
+         isDiaryMode() && !!wkSession && wkSession.clientId === SELF_ID]
+    ];
+
+    spots.forEach(function (pair) {
+        const chip = document.querySelector(pair[0]);
+        if (!chip) return;
+        const top = pair[1];
+        chip.classList.toggle('as-av', top);
+        chip.setAttribute('onclick', top ? 'openRoles()' : 'goBack()');
+        if (!top) {
+            chip.innerHTML = '<span class="only-neo">❮</span>' +
+                '<svg class="mi only-min" aria-hidden="true"><use href="#i-chev-left"/></svg>';
+        }
+    });
+
+    renderTrainerAvatar();      // заполнит инициалами те, что стали аватарками
 }
 
 /* Своя тренировка заводится без записи в расписание: себе на приём
@@ -15431,6 +16100,21 @@ const CLOUD_TABLES = {
                      bwShare: num(r.bw_share, 1), custom: true };
         }
     },
+    programs: {
+        rows: function () { return DB.programs; },
+        key:  function (p) { return p.id; },
+        out:  function (p) {
+            return { id: p.id, trainer_id: cloudUid, title: p.title, descr: p.descr,
+                     goal: p.goal, level: p.level, price: p.price, status: p.status,
+                     created_num: p.createdAt || null, days: p.days || [] };
+        },
+        in:   function (r) {
+            return { id: r.id, title: r.title, descr: r.descr || '',
+                     goal: r.goal || '', level: r.level || '', price: num(r.price, 0),
+                     status: r.status || 'draft', createdAt: r.created_num || null,
+                     days: r.days || [] };
+        }
+    },
     templates: {
         rows: function () { return DB.templates; },
         key:  function (t) { return t.id; },
@@ -15448,7 +16132,21 @@ const CLOUD_TABLES = {
     }
 };
 
-const CLOUD_ORDER = ['clients', 'sessions', 'pass_ops', 'exercises', 'templates'];
+const CLOUD_ORDER = ['clients', 'sessions', 'pass_ops', 'exercises', 'templates', 'programs'];
+
+/* Таблицы, которой на сервере ещё нет, пропускаем. Без этого одна недостающая
+   таблица останавливала бы всю синхронизацию — вместе с клиентами и
+   тренировками, которые ни при чём. Программы тогда просто живут на телефоне,
+   пока таблицу не заведут. */
+let cloudMissing = {};
+
+function cloudNoTable(err) {
+    const code = String((err && err.code) || '');
+    if (code === '42P01' || code === 'PGRST205' || code === 'PGRST106') return true;
+    const msg = String((err && err.message) || '').toLowerCase();
+    return (msg.indexOf('relation') !== -1 && msg.indexOf('does not exist') !== -1) ||
+           msg.indexOf('could not find the table') !== -1;
+}
 
 /* Отпечаток строки — короткое число вместо всей строки данных. Раньше снимок
    хранил полные копии, и это была третья копия базы в памяти телефона, где на
@@ -15716,6 +16414,7 @@ async function cloudPush() {
         const now = serverNowISO();
 
         for (const t of CLOUD_ORDER) {
+            if (cloudMissing[t]) continue;
             const meta = CLOUD_TABLES[t];
             const was = snap.rows[t];
             const fresh = {};
@@ -15738,7 +16437,16 @@ async function cloudPush() {
             if (send.length) {
                 // updated_at ставит сам сервер — заодно узнаём его часы
                 const res = await sb.from(t).upsert(send).select('updated_at');
-                if (res.error) throw res.error;
+                if (res.error) {
+                    if (cloudNoTable(res.error)) {
+                        // снимок не трогаем: иначе строки сочтутся уехавшими
+                        cloudMissing[t] = true;
+                        snap.rows[t] = was;
+                        cloudSnapSave(snap);
+                        continue;
+                    }
+                    throw res.error;
+                }
                 noteServerClock(res.data);
                 send.forEach(function (row) {
                     const k = String(t === 'exercises' ? row.name : row.id);
@@ -15753,7 +16461,10 @@ async function cloudPush() {
                           .eq('trainer_id', cloudUid);
                 q = (t === 'exercises') ? q.eq('name', k) : q.eq('id', k);
                 const res = await q;
-                if (res.error) throw res.error;
+                if (res.error) {
+                    if (cloudNoTable(res.error)) { cloudMissing[t] = true; break; }
+                    throw res.error;
+                }
             }
         }
 
@@ -15789,9 +16500,13 @@ async function cloudPull() {
         let changed = false;
 
         for (const t of CLOUD_ORDER) {
+            if (cloudMissing[t]) continue;
             const meta = CLOUD_TABLES[t];
             const res = await sb.from(t).select('*').gt('updated_at', since);
-            if (res.error) throw res.error;
+            if (res.error) {
+                if (cloudNoTable(res.error)) { cloudMissing[t] = true; continue; }
+                throw res.error;
+            }
             const was = snap.rows[t];
 
             // Строки, чья местная правка почему-то не уехала, спрашиваем
@@ -15857,6 +16572,7 @@ async function cloudPull() {
 async function cloudResync() {
     if (!sb || !cloudUid) { showToast('Сначала нужно подключение к серверу'); return; }
     try { localStorage.removeItem(CLOUD_SNAP); } catch (e) {}
+    cloudMissing = {};            // таблицу могли завести — пробуем снова
     cloudSet('wait');
     await cloudPull();
     await cloudPush();
