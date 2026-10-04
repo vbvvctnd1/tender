@@ -2981,6 +2981,12 @@ body.kb-open .ios-navbar { display: none; }
 /* На тренировке нижнее меню убрано: случайный тап не уводит с занятия,
    а выпадающий список упражнений не прячется под панель */
 body[data-screen="screen-workout"] .ios-navbar { display: none; }
+/* В дневнике «Зал» — обычная вкладка, а не занятие с клиентом: меню нужно,
+   иначе из тренировки некуда выйти, кроме кнопки «назад». */
+body.diary-mode[data-screen="screen-workout"] .ios-navbar { display: flex; }
+body.diary-mode[data-screen="screen-workout"] #wk-save-bar {
+    bottom: calc(100px + var(--safe-bottom));
+}
 
 /* Месяц в шапке расписания открывает календарь на месяц */
 .sched-header h1 { cursor: pointer; }
@@ -5646,6 +5652,147 @@ body.pad-open { padding-bottom: 62vh; }
 /* панель сохранения лежит поверх списка — тень вверх отделяет её от карточек */
 :root[data-style="minimal"] #wk-save-bar { box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.08), var(--m-sh-1); }
 
+/* Полоска «вы ещё и клиент» на Ежедневнике. Сделана как строка привязки
+   Telegram в карточке клиента — та же роль: короткое предложение с переходом. */
+.role-hint {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 16px 12px;
+    padding: 12px 14px;
+    background: rgba(var(--ch-blue), 0.08);
+    border: 0.5px solid rgba(var(--ch-blue), 0.25);
+    border-radius: 16px;
+    cursor: pointer;
+}
+.role-hint .rh-text { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 600; }
+.role-hint .rh-sub {
+    display: block;
+    margin-top: 2px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+}
+.role-hint .rh-close {
+    flex: 0 0 auto;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    font-size: 15px;
+    cursor: pointer;
+}
+:root[data-style="minimal"] .role-hint {
+    background: var(--m-card);
+    border: none;
+    box-shadow: var(--m-sh-1), 0 0 0 1px rgba(var(--ch-hairline), 0.12);
+}
+
+/* Аватарка слева в шапке: отсюда переключаются роли. Шапка перестаёт
+   растягивать заголовок на всю ширину и становится «аватар · заголовок · кнопки». */
+.premium-header.with-av { justify-content: flex-start; gap: 12px; }
+.premium-header.with-av h1 { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.premium-header.with-av .header-icons { flex: 0 0 auto; }
+
+/* В дневнике История и Аналитика — верхние вкладки, назад идти некуда:
+   на месте «назад» стоит та же аватарка. */
+.screen-head .back-chip.as-av {
+    border: none;
+    border-radius: 50%;
+    background: var(--grad-avatar);
+    color: var(--on-accent);
+    font-size: 13px;
+    font-weight: 700;
+}
+:root[data-style="neo"] .screen-head .back-chip.as-av {
+    background: var(--grad-neo);
+    box-shadow: var(--neo-glow);
+}
+:root[data-style="minimal"] .screen-head .back-chip.as-av {
+    background: var(--m-act);
+    color: var(--m-act-text);
+    border-radius: 50%;
+    box-shadow: none;
+}
+
+/* --- Экран входа ---
+   Показывается всегда: иначе про дневник никто не узнает. Три крупные
+   кнопки, между которыми не надо думать. Нижнего меню тут нет — выбор
+   ещё не сделан. */
+body[data-screen="screen-start"] .ios-navbar { display: none; }
+
+.start-wrap {
+    min-height: calc(var(--vvh, 100vh) - var(--head-top));
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: calc(24px + var(--head-top)) 20px calc(24px + var(--safe-bottom));
+}
+.start-hello { margin-bottom: 22px; }
+.start-hello h1 {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.8px;
+    line-height: 1.2;
+    background: var(--grad-heading);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.start-hello p {
+    margin-top: 8px;
+    font-size: 13.5px;
+    line-height: 1.45;
+    color: var(--text-muted);
+}
+.start-list { display: flex; flex-direction: column; gap: 10px; }
+.start-btn {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    padding: 18px 16px;
+    border: 0.5px solid var(--card-border);
+    border-radius: 20px;
+    background: var(--surface);
+    color: var(--text-main);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: transform 0.12s ease;
+}
+.start-btn:active { transform: scale(0.98); }
+.start-btn .sb-ic {
+    flex: 0 0 auto;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 15px;
+    background: rgba(var(--ch-fill), 0.12);
+    font-size: 21px;
+}
+.start-btn .sb-ic .mi { width: 22px; height: 22px; }
+.start-btn .sb-txt { flex: 1; min-width: 0; }
+.start-btn .sb-name { display: block; font-size: 16px; font-weight: 700; letter-spacing: -0.2px; }
+.start-btn .sb-sub { display: block; margin-top: 3px; font-size: 12.5px; line-height: 1.35; color: var(--text-muted); }
+
+:root[data-style="neo"] .start-btn {
+    background: var(--neo-glass);
+    border: 1px solid var(--neo-glass-border);
+    box-shadow: var(--neo-glass-shadow);
+    border-radius: 24px;
+}
+:root[data-style="neo"] .start-btn .sb-ic { background: rgba(255, 255, 255, 0.07); }
+:root[data-style="minimal"] .start-btn {
+    background: var(--m-card);
+    border: none;
+    box-shadow: var(--m-sh-1), var(--m-sh-2);
+}
+:root[data-style="minimal"] .start-btn .sb-ic { background: var(--m-input); }
+
 /* --- Одна высота шапки на всех экранах ---
    Образец — Ежедневник: при переключении вкладок заголовок не должен
    прыгать. Раньше разброс доходил до пятидесяти точек, и вот почему:
@@ -5741,8 +5888,8 @@ body.pad-open { padding-bottom: 62vh; }
          Тап по месяцу открывает календарь на месяц — так же, как повторный
          тап по уже выбранному дню в полосе недели. -->
     <div class="premium-header sched-header">
-        <button class="trainer-av" id="cal-trainer" onclick="showScreen('screen-profile', 'screen-schedule')"
-                aria-label="Профиль"></button>
+        <button class="trainer-av" id="cal-trainer" onclick="openRoles()"
+                aria-label="Куда перейти"></button>
         <h1 id="cal-month" onclick="openWeeksSheet()">—</h1>
         <button class="sched-add" onclick="openAddModal(null)" aria-label="Записать клиента">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round">
@@ -5750,6 +5897,12 @@ body.pad-open { padding-bottom: 62vh; }
             </svg>
         </button>
     </div>
+
+    <!-- «Вы ещё и клиент»: переход был только в Профиле, а Профиль
+         открывается тапом по аватарке — догадаться туда заглянуть нельзя.
+         Полоска уходит сама, как только человек один раз побывал в своих
+         тренировках: дальше он уже знает дорогу. -->
+    <div id="role-hint"></div>
 
     <!-- Сколько тренировок в выбранном дне -->
     <div class="day-hero" id="day-hero"></div>
@@ -5784,7 +5937,8 @@ body.pad-open { padding-bottom: 62vh; }
      ========================================================================== -->
 <div id="screen-clients" class="screen">
 
-    <div class="premium-header">
+    <div class="premium-header with-av">
+        <button class="trainer-av av-roles" onclick="openRoles()" aria-label="Куда перейти"></button>
         <h1 data-text="Клиенты">Клиенты</h1>
         <div class="header-icons">
             <div class="icon-btn" onclick="openClientEdit(null)"><span class="only-neo">＋</span><svg class="mi only-min" aria-hidden="true"><use href="#i-plus"/></svg></div>
@@ -5934,6 +6088,8 @@ body.pad-open { padding-bottom: 62vh; }
             <div class="fold-body" id="fold-prog-body" style="display: none;">
                 <select class="fld" id="cl-prog-select" onchange="renderProgression()"></select>
                 <div id="cl-prog-detail" style="margin-top: 10px;"></div>
+                <canvas id="chart-prog"></canvas>
+                <div id="chart-prog-off" class="chart-off" style="display: none;"><span class="only-neo">📉 </span>График недоступен без подключения к интернету</div>
             </div>
         </div>
 
@@ -5990,7 +6146,8 @@ body.pad-open { padding-bottom: 62vh; }
      ========================================================================== -->
 <div id="screen-exercises" class="screen">
 
-    <div class="premium-header">
+    <div class="premium-header with-av">
+        <button class="trainer-av av-roles" onclick="openRoles()" aria-label="Куда перейти"></button>
         <h1 data-text="Упражнения">Упражнения</h1>
         <div class="header-icons">
             <div class="icon-btn" onclick="openExerciseEditor(null)"><span class="only-neo">＋</span><svg class="mi only-min" aria-hidden="true"><use href="#i-plus"/></svg></div>
@@ -6056,6 +6213,9 @@ body.pad-open { padding-bottom: 62vh; }
         <div id="set-profile" class="panel-note" style="margin: 0;"></div>
     </div>
 
+    <!-- Выбор режима живёт на экране входа, а не здесь: два места для
+         одного и того же путали. -->
+
     <!-- Если человек ещё и клиент другого тренера — отсюда открывается кабинет -->
     <div id="role-switch"></div>
 
@@ -6110,7 +6270,8 @@ body.pad-open { padding-bottom: 62vh; }
      ========================================================================== -->
 <div id="screen-settings" class="screen">
 
-    <div class="premium-header">
+    <div class="premium-header with-av">
+        <button class="trainer-av av-roles" onclick="openRoles()" aria-label="Куда перейти"></button>
         <h1 data-text="Настройки">Настройки</h1>
     </div>
 
@@ -6699,7 +6860,37 @@ body.pad-open { padding-bottom: 62vh; }
 
 <!-- Таб-бар: линейные значки в «парящей» панели, у каждого стиля свой вид.
      Подписи выключаются в настройках. -->
-<div class="ios-navbar">
+<!-- Куда перейти: роли человека. Открывается тапом по аватарке в шапке. -->
+<div id="sheet-roles" class="glass-sheet-overlay" onclick="closeSheet('sheet-roles')">
+    <div class="glass-sheet-content" onclick="event.stopPropagation()">
+        <div class="sheet-notch"></div>
+        <div class="sheet-header">
+            <div>
+                <h2>Куда перейти</h2>
+                <span style="font-size: 13px; color: var(--text-muted);">Можно и то, и другое</span>
+            </div>
+            <span class="sheet-close-txt" onclick="closeSheet('sheet-roles')">Закрыть</span>
+        </div>
+        <div id="roles-list" class="premium-menu-list"></div>
+    </div>
+</div>
+
+<!-- Знакомство. Показывается один раз в жизни: дальше роли переключаются
+     списком под аватаркой. -->
+<div id="screen-start" class="screen">
+    <div class="start-wrap">
+        <div class="start-hello">
+            <h1 id="start-hi">Дневник тренировок и работа с клиентами — в одном месте</h1>
+            <p id="start-sub">Дневник бесплатный. Остальное — когда понадобится.</p>
+        </div>
+        <div class="start-list" id="start-list"></div>
+        <button class="btn-primary" style="margin-top: 18px;" onclick="finishOnboarding('diary')">
+            <span class="up">Начать</span>
+        </button>
+    </div>
+</div>
+
+<div class="ios-navbar" id="navbar-trainer">
     <div class="nav-tab active" id="nav-schedule" onclick="showScreen('screen-schedule')">
         <svg class="nav-tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="4" width="18" height="18" rx="4"/>
@@ -6721,6 +6912,36 @@ body.pad-open { padding-bottom: 62vh; }
         <span class="nav-tab-label">Упражнения</span>
     </div>
     <div class="nav-tab" id="nav-settings" onclick="showScreen('screen-settings')">
+        <svg class="nav-tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+        <span class="nav-tab-label">Настройки</span>
+    </div>
+</div>
+
+<!-- Нижнее меню дневника: клиентов тут нет -->
+<div class="ios-navbar" id="navbar-diary" style="display: none;">
+    <div class="nav-tab active" id="nav-d-gym" onclick="diaryGym()">
+        <svg class="nav-tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 7v10M18 7v10M3 12h18M6 9H3v6h3M18 9h3v6h-3"/>
+        </svg>
+        <span class="nav-tab-label">Зал</span>
+    </div>
+    <div class="nav-tab" id="nav-d-hist" onclick="diaryHistory()">
+        <svg class="nav-tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="8" y="3" width="8" height="4" rx="1"/>
+            <path d="M16 5h2a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/>
+        </svg>
+        <span class="nav-tab-label">История</span>
+    </div>
+    <div class="nav-tab" id="nav-d-an" onclick="diaryAnalytics()">
+        <svg class="nav-tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 20V10M12 20V4M19 20v-6"/>
+        </svg>
+        <span class="nav-tab-label">Аналитика</span>
+    </div>
+    <div class="nav-tab" id="nav-d-set" onclick="showScreen('screen-settings')">
         <svg class="nav-tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="3"/>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
@@ -6773,7 +6994,7 @@ function applyViewport() {
    день файл выкладывается не раз: по одной дате не понять, приехало ли
    обновление или Telegram показывает копию из кэша. Ставится при выкладке
    скриптом publish.py — руками не правится. */
-const BUILD = '29.09.2026, 23:45';
+const BUILD = '03.10.2026, 23:31';
 let fullReason = '';        // почему полного экрана нет — тоже видно в Профиле
 
 /* Полный экран: приложение занимает телефон целиком, а кнопки Telegram
@@ -7646,16 +7867,69 @@ const NAV_FOR_SCREEN = {
     'screen-settings': 'nav-settings'
 };
 
+/* --- Режим приложения ---
+   Что человек выбрал на входе: вести клиентов или свой дневник. Нарочно
+   НЕ запоминается: сменить режим — значит выйти и зайти снова, и там опять
+   будет выбор. Так проще объяснить и нечему залипнуть. */
+let appMode = 'trainer';
+
+const NAV_DIARY = {
+    'screen-workout': 'nav-d-gym',
+    'screen-client': 'nav-d-hist',          // уточняется по открытой вкладке
+    'screen-settings': 'nav-d-set'
+};
+
+function isDiaryMode() { return appMode === 'diary'; }
+
+/* Какую кнопку подсветить. В дневнике История и Аналитика — один экран
+   с двумя вкладками, поэтому смотрим ещё и на вкладку. */
+function navIdFor(id) {
+    if (isDiaryMode()) {
+        if (id === 'screen-client') return clTab === 'analytics' ? 'nav-d-an' : 'nav-d-hist';
+        return NAV_DIARY[id] || null;
+    }
+    return NAV_FOR_SCREEN[id] ||
+        (id === 'screen-client' ? NAV_FOR_SCREEN[backFrom[id]] : null) || null;
+}
+
+/* Подсветка кнопки нижнего меню. Вынесена отдельно, потому что в дневнике
+   она зависит не только от экрана, но и от вкладки карточки, а вкладка
+   выбирается уже ПОСЛЕ показа экрана. */
+function applyNavActive(id) {
+    const active = navIdFor(id || currentScreen);
+    document.querySelectorAll('.ios-navbar .nav-tab').forEach(function (t) {
+        t.classList.toggle('active', !!active && t.id === active);
+    });
+}
+
+function applyNavMode() {
+    const trainer = $('navbar-trainer'), diary = $('navbar-diary');
+    if (trainer) trainer.style.display = isDiaryMode() ? 'none' : '';
+    if (diary) diary.style.display = isDiaryMode() ? '' : 'none';
+    document.body.classList.toggle('diary-mode', isDiaryMode());
+}
+
 /* Вкладки нижнего меню — верхний уровень, «назад» с них вести некуда.
    Кнопка Telegram видна только на внутренних экранах и над шторками. */
 function syncBackButton() {
     if (!tg || !tg.BackButton) return;
-    if (sheetStack.length || !NAV_FOR_SCREEN[currentScreen]) tg.BackButton.show();
+    // На экране входа назад некуда: это и есть начало
+    if (sheetStack.length ||
+        (currentScreen !== 'screen-start' && !navIdFor(currentScreen))) tg.BackButton.show();
     else tg.BackButton.hide();
 }
 
 function goBack() {
     if (sheetStack.length) { closeSheet(sheetStack[sheetStack.length - 1]); return; }
+    if (currentScreen === 'screen-start') { if (tg) tg.close(); return; }
+
+    // В дневнике верхний уровень — его собственные вкладки
+    if (isDiaryMode()) {
+        if (navIdFor(currentScreen)) { showStartScreen(); return; }
+        diaryGym();
+        return;
+    }
+
     if (currentScreen !== 'screen-schedule') {
         showScreen(backFrom[currentScreen] || 'screen-schedule');
         return;
@@ -7695,11 +7969,8 @@ function showScreen(id, from) {
     if (leaving === 'screen-workout' && id !== 'screen-workout') onLeaveWorkout();
 
     // карточка клиента подсвечивает вкладку, из которой в неё пришли
-    const activeNav = NAV_FOR_SCREEN[id] ||
-        (id === 'screen-client' ? NAV_FOR_SCREEN[backFrom[id]] : null) || null;
-    document.querySelectorAll('.ios-navbar .nav-tab').forEach(function (t) {
-        t.classList.toggle('active', !!activeNav && t.id === activeNav);
-    });
+    applyNavActive(id);
+    if (typeof rememberLast === 'function') rememberLast();
 
     if (id === 'screen-clients') renderClientsScreen();
     if (id === 'screen-exercises') renderExercisesScreen();
@@ -8607,6 +8878,47 @@ function saveDB() {
 function getClient(id) {
     for (let i = 0; i < DB.clients.length; i++) if (DB.clients[i].id === id) return DB.clients[i];
     return null;
+}
+
+/* --- Мой дневник ---
+   Тренер ведёт не только клиентов, но и себя. Отдельной сущности для этого
+   заводить не нужно: он заводит карточку клиента НА СЕБЯ, и дальше работает
+   всё уже написанное — зал, история, аналитика и синхронизация с сервером.
+   Ни одной новой таблицы, ни одной новой строки в облачной выгрузке.
+
+   Номер карточки закреплён, чтобы на втором телефоне она узнавалась как
+   своя, а не превращалась во второго клиента. */
+const SELF_ID = 'c_self';
+
+function isSelfClient(id) { return id === SELF_ID; }
+function selfClient() { return getClient(SELF_ID); }
+
+/* Клиенты, которых тренер ведёт. Себя в списке быть не должно: он там
+   не клиент, а хозяин приложения. */
+function trainerClients() {
+    return DB.clients.filter(function (c) { return !isSelfClient(c.id); });
+}
+
+/* Заводится один раз — по нажатию «Завести дневник». Абонемента и цены у
+   этой карточки нет: платить себе не за что. */
+function ensureSelfClient() {
+    let c = selfClient();
+    if (c) return c;
+    c = {
+        id: SELF_ID,
+        name: 'Мои тренировки',
+        goal: '',
+        bodyWeight: 80,
+        passBase: 0,
+        passLeft: 0,
+        lessonPrice: 0,
+        totalDebt: 0,
+        weighIns: [],
+        createdAt: Date.now()
+    };
+    DB.clients.push(c);
+    saveDB();
+    return c;
 }
 
 function getSession(id) {
@@ -9980,7 +10292,7 @@ function openAddModal(time) {
 
     // Клиентов ещё нет — незачем показывать пустой список выбора,
     // сразу открываем форму создания и продолжаем запись после неё.
-    if (!DB.clients.length) {
+    if (!trainerClients().length) {
         openClientEdit(null, true);
         return;
     }
@@ -10001,11 +10313,12 @@ function renderPickList() {
             '<span class="arrow-icon arr"></span>' +
         '</button>';
 
-    if (!DB.clients.length) {
+    const mine = trainerClients();
+    if (!mine.length) {
         html += '<div class="empty-note">Клиентов пока нет.</div>';
     } else {
         const date = pendingSlot ? pendingSlot.date : currentDate;
-        html += DB.clients.map(function (c) {
+        html += mine.map(function (c) {
             const booked = clientBookedOn(c.id, date, null);
             if (booked) {
                 // уже записан в этот день — показываем, но записать второй раз нельзя
@@ -10253,7 +10566,9 @@ function openWorkout(sessionId) {
 
     $('wk-client-name').innerText = c.name;
     $('wk-client-name').setAttribute('data-text', c.name);     // блик заголовка в Нео-Стекле
-    $('wk-session-meta').innerText = humanDate(s.date) + ' · ' + s.time + ' · ' + (c.goal || 'цель не задана');
+    // У своей тренировки цели нет: «цель не задана» было бы придиркой к себе
+    $('wk-session-meta').innerText = humanDate(s.date) + ' · ' + s.time +
+        (isSelfClient(c.id) ? '' : ' · ' + (c.goal || 'цель не задана'));
     $('wk-well').value = s.well || 8;
     $('wk-bw').value = s.bodyWeight;
 
@@ -11506,6 +11821,7 @@ let clClientId = null;
 let clTab = 'history';
 let period = 30;
 let chWeight = null;
+let chProg = null;
 
 function openClientScreen(tab) {
     const s = getSession(activeSessionId);
@@ -11533,6 +11849,7 @@ function openClient(clientId, tab, from) {
     haptic('light');
     showScreen('screen-client', from || 'screen-schedule');
     setClientTab(tab || 'history');
+    if (typeof applyClientHeadMode === 'function') applyClientHeadMode();
 }
 
 /* Остаток в шапке меняется от пополнений и списаний, поэтому строка
@@ -11540,6 +11857,17 @@ function openClient(clientId, tab, from) {
 function renderClientSub() {
     const c = getClient(clClientId);
     if (!c) return;
+
+    // Своя карточка: абонемента и долга нет, платить себе не за что
+    if (isSelfClient(c.id)) {
+        const done = clientHistory(c.id).length;
+        $('cl-sub').innerText = c.bodyWeight + ' кг · ' +
+            (done ? done + ' ' + plural(done, 'тренировка', 'тренировки', 'тренировок')
+                  : 'тренировок пока нет');
+        if (typeof renderClientTg === 'function') renderClientTg();
+        return;
+    }
+
     const debt = num(c.totalDebt, 0);
     // Коротко, чтобы строка не обрезалась: число тренировок видно в истории.
     // Остаток тот же, что в балансе: висящее списание уже видно на экране.
@@ -11551,6 +11879,12 @@ function renderClientSub() {
 }
 
 function setClientTab(tab) {
+    // У своей карточки абонемента нет: вкладку прячем, а если на неё
+    // попали из памяти прошлого открытия — уводим в историю.
+    const self = isSelfClient(clClientId);
+    $('cl-tab-pass').style.display = self ? 'none' : '';
+    if (self && tab === 'pass') tab = 'history';
+
     clTab = tab;
     ['history', 'analytics', 'pass'].forEach(function (t) {
         $('cl-tab-' + t).classList.toggle('active', t === tab);
@@ -11560,6 +11894,14 @@ function setClientTab(tab) {
     if (tab === 'history') renderHistory();
     else if (tab === 'pass') renderPassTab();
     else renderAnalytics();
+
+    // В дневнике История и Аналитика — разные кнопки меню, а экран один.
+    // Запоминаем тоже здесь: экран показывается раньше, чем выбрана вкладка,
+    // и без этого приложение возвращалось бы всегда в Историю.
+    if (typeof isDiaryMode === 'function' && isDiaryMode()) {
+        applyNavActive();
+        if (typeof rememberLast === 'function') rememberLast();
+    }
 }
 
 /* --- История --- */
@@ -11983,6 +12325,25 @@ function keyExercisesHtml(moves) {
 
 /* Мышцы списком: название и сколько рабочих подходов на неё пришлось. Доли
    подходов из справочника суммируются и округляются только на показе. */
+/* --- Расчётный максимум (1RM), формула Эпли ---
+   Сколько человек поднял бы один раз на пределе. Нужен, чтобы сравнивать
+   подходы с разным числом повторов: 60 × 10 и 80 × 3 — где он сильнее,
+   на глаз не скажешь, а 1RM отвечает одним числом.
+   За пятнадцатью повторами формула врёт вверх, поэтому там она
+   притормаживается логарифмом. */
+function calculate1RM(weight, reps) {
+    const w = num(weight, 0);
+    const r = num(reps, 0);
+    if (w <= 0 || r <= 0) return 0;
+    if (r === 1) return Math.round(w * 10) / 10;
+    const effReps = r > 15 ? 15 + Math.log2(r - 14) * 2 : r;
+    return Math.round(w * (1 + effReps / 30) * 10) / 10;
+}
+
+/* Мышцы списком: название и сколько рабочих подходов на неё пришлось за
+   период, по убыванию. Зоны объёма (MV / MEV / MAV / MRV) убраны нарочно:
+   это чужая методика, и она работает, только если тренер в ней живёт.
+   Тренер и так увидит, что ноги загружены, а плечи отстают. */
 function muscleListHtml(musSets) {
     const rows = Object.keys(musSets).map(function (m) {
         return { name: m, sets: Math.round(musSets[m]) };
@@ -12000,6 +12361,51 @@ function muscleListHtml(musSets) {
         return '<div class="stat-row"><span>' + esc(r.name) + '</span><b>' +
                r.sets + ' ' + plural(r.sets, 'подход', 'подхода', 'подходов') + '</b></div>';
     }).join('');
+}
+
+/* График прогрессии: рабочий вес и расчётный максимум рядом. Две линии
+   отвечают на то, чего не видно по одной: вес стоит, а максимум растёт —
+   значит человек стал сильнее, просто прибавились повторы.
+   Максимум нарисован пунктиром: в Минимализме обе линии чёрные, и
+   различать их цветом там нечем. */
+function renderProgChart(points) {
+    chProg = destroyChart(chProg, 'chart-prog');
+    const hasChart = typeof Chart !== 'undefined';
+    const off = $('chart-prog-off'), box = $('chart-prog');
+    if (!off || !box) return;
+
+    off.style.display = hasChart ? 'none' : 'block';
+    box.style.display = (hasChart && points.length >= 2) ? '' : 'none';
+    if (!hasChart || points.length < 2) return;
+
+    try {
+        const text = cssVar('--text-main', '#1c1c1e');
+        const tint = cssVar('--neon-blue', '#007aff');
+        const green = cssVar('--neon-green', '#34c759');
+        chProg = new Chart(box, {
+            type: 'line',
+            data: {
+                labels: points.map(function (p) { return tinyDate(p.date); }),
+                datasets: [
+                    { label: 'Рабочий вес, кг',
+                      data: points.map(function (p) { return p.w; }),
+                      borderColor: tint,
+                      backgroundColor: cssRgba('--ch-blue', 0.1, 'rgba(0,122,255,0.1)'),
+                      fill: true, tension: 0.25, pointRadius: 3, pointBackgroundColor: tint },
+                    { label: 'Расчётный максимум, кг',
+                      data: points.map(function (p) { return p.rm; }),
+                      borderColor: green, borderDash: [5, 4],
+                      tension: 0.25, pointRadius: 2, spanGaps: true }
+                ]
+            },
+            options: {
+                plugins: { legend: { labels: { color: text, font: { weight: 'bold' } } } },
+                scales: { x: { ticks: { color: text } }, y: { ticks: { color: text } } }
+            }
+        });
+    } catch (e) {
+        console.warn('График прогрессии пропущен:', e);
+    }
 }
 
 /* Вес тела: линия по тренировкам периода плюс отдельные взвешивания.
@@ -12086,6 +12492,7 @@ function renderProgression() {
 
     if (!name) {
         $('cl-prog-detail').innerHTML = '<div class="empty-note">Упражнение не выбрано.</div>';
+        renderProgChart([]);
         return;
     }
 
@@ -12098,7 +12505,9 @@ function renderProgression() {
     /* Два лучших подхода за всю историю: больше всего повторений (при равных
        берём тот, что тяжелее) и самый тяжёлый (при равном весе — тот, где
        повторений меньше: это и есть силовой подход, вплоть до одного повторения). */
-    let bestReps = null, bestWeight = null;
+    let bestReps = null, bestWeight = null, best1RM = null;
+    const rms = [];                   // лучший 1RM каждой тренировки, по датам
+    const points = [];                // то же для графика: дата, вес и максимум
     let totalTonnage = 0, totalSets = 0, totalReps = 0;
     const repsByWeight = {};
 
@@ -12107,7 +12516,7 @@ function renderProgression() {
         const matched = (s.ex || []).filter(function (e) { return e.n === name; });
         if (!matched.length) return;
 
-        let dayMaxEff = 0, dayMaxRaw = 0, dayTonnage = 0, dayWorking = 0;
+        let dayMaxEff = 0, dayMaxRaw = 0, dayTonnage = 0, dayWorking = 0, day1RM = 0;
 
         matched.forEach(function (e) {
             (e.sets || []).forEach(function (st) {
@@ -12116,6 +12525,12 @@ function renderProgression() {
                 const r = num(st.r, 0);
                 if (r <= 0) return;
                 const ew = effWeight(name, raw, bw);
+
+                const rm = calculate1RM(ew, r);
+                if (rm > day1RM) day1RM = rm;
+                if (!best1RM || rm > best1RM.rm) {
+                    best1RM = { rm: rm, w: isBW ? Math.round(ew) : raw, r: r };
+                }
 
                 dayWorking++;
                 totalSets++;
@@ -12137,11 +12552,19 @@ function renderProgression() {
 
         totalTonnage += dayTonnage;
 
-        if (dayWorking > 0) weights.push(isBW ? Math.round(dayMaxEff) : dayMaxRaw);
+        if (dayWorking > 0) {
+            const dayW = isBW ? Math.round(dayMaxEff) : dayMaxRaw;
+            weights.push(dayW);
+            // у противовеса максимум может выйти нулём — на графике это разрыв,
+            // а не ноль по оси
+            points.push({ date: s.date, w: dayW, rm: day1RM > 0 ? day1RM : null });
+        }
+        if (day1RM > 0) rms.push(day1RM);
     });
 
     if (!weights.length) {
         $('cl-prog-detail').innerHTML = '<div class="empty-note">По этому упражнению рабочих подходов нет.</div>';
+        renderProgChart([]);
         return;
     }
 
@@ -12151,6 +12574,19 @@ function renderProgression() {
         dynamics = d === 0
             ? 'С прошлой тренировки вес <b>не изменился</b>'
             : 'С прошлой тренировки: <b>' + (d > 0 ? '+' : '') + fmtKg(d) + ' кг</b>';
+    }
+
+    // Вес мог не измениться, а повторы вырасти — тогда сила выросла, и
+    // видно это только по расчётному максимуму.
+    let rmLine = '';
+    if (best1RM) {
+        rmLine = '<b>' + fmtKg(best1RM.rm) + ' кг</b> · лучший подход ' +
+                 fmtKg(best1RM.w) + ' × ' + best1RM.r;
+        if (rms.length >= 2) {
+            const d = Math.round((rms[rms.length - 1] - rms[rms.length - 2]) * 10) / 10;
+            rmLine += d === 0 ? ' · с прошлой тренировки без изменений'
+                              : ' · с прошлой ' + (d > 0 ? '+' : '') + fmtKg(d) + ' кг';
+        }
     }
 
     const topWeights = Object.keys(repsByWeight).map(Number).sort(function (a, b) { return b - a; }).slice(0, 3);
@@ -12179,8 +12615,12 @@ function renderProgression() {
         '</div>' +
         '<div class="prog-note" style="margin-top:10px; padding:11px; background:rgba(var(--ch-fill), 0.06); border-radius:14px; line-height:1.45;">' +
             '<div>' + emo('🏅 ') + ico('award') + '<b>Рекорды по весу:</b> ' + (prText || '—') + '</div>' +
+            (rmLine ? '<div class="pn-sub">' + emo('🥇 ') + ico('target') +
+                      'Расчётный максимум: ' + rmLine + '</div>' : '') +
             '<div class="pn-sub">' + emo('📈 ') + ico('trend-up') + dynamics + '</div>' +
         '</div>';
+
+    renderProgChart(points);
 }
 
 
@@ -13198,11 +13638,12 @@ function clearClientsSearch() {
 
 function renderClientsScreen() {
     const box = $('clients-list');
-    const n = DB.clients.length;
+    const mine = trainerClients();          // себя тут быть не должно
+    const n = mine.length;
     const query = n ? $('cl-search-input').value.trim().toLowerCase() : '';
     const shown = query
-        ? DB.clients.filter(function (c) { return c.name.toLowerCase().indexOf(query) !== -1; })
-        : DB.clients;
+        ? mine.filter(function (c) { return c.name.toLowerCase().indexOf(query) !== -1; })
+        : mine;
 
     $('cl-search').style.display = n ? '' : 'none';
     const total = $('clients-total');
@@ -13643,17 +14084,19 @@ async function uiSoon(feature) {
 /* Аватар тренера в шапке расписания: фото из Telegram поверх инициалов.
    Вне Telegram профиля нет — показываем «Т». */
 function renderTrainerAvatar() {
-    const el = $('cal-trainer');
-    if (!el) return;
     const user = (tg && tg.initDataUnsafe) ? tg.initDataUnsafe.user : null;
     const initials = user
         ? [user.first_name, user.last_name].filter(Boolean)
               .map(function (p) { return String(p).trim().charAt(0); }).join('').slice(0, 2).toUpperCase()
         : 'Т';
-    el.innerHTML = esc(initials || 'Т') +
+    const html = esc(initials || 'Т') +
         (user && user.photo_url
             ? '<img class="avatar-photo" src="' + esc(user.photo_url) + '" alt="" onerror="this.remove()">'
             : '');
+    // аватарка стоит в шапке каждого верхнего экрана — через неё меняют роль
+    document.querySelectorAll('.trainer-av').forEach(function (el) { el.innerHTML = html; });
+    const chip = document.querySelector('.back-chip.as-av');
+    if (chip) chip.innerHTML = esc(initials || 'Т');
 }
 
 /* Короткая справка о том, что за версия открыта и как она себя чувствует.
@@ -13668,6 +14111,309 @@ function buildLineHtml() {
         parts.push('открыто вне Telegram');
     }
     return '<div class="build-line">' + esc(parts.join(' · ')) + '</div>';
+}
+
+/* --- Роли ---
+   Человек может быть всем сразу: вести клиентов, вести себя и быть чьим-то
+   клиентом. Поэтому роли не исключают друг друга, а переключаются списком
+   под аватаркой. Нижнее меню при этом показывает ЭКРАНЫ выбранной роли —
+   иначе «Тренер» пришлось бы уместить в одну вкладку, а внутри него три. */
+
+const LAST_KEY = 'silovoyAssistentV6:last';        // последняя роль и вкладка
+const ONBOARD_KEY = 'silovoyAssistentV6:onboard';  // знакомство уже было
+
+/* Тренером человек становится по кнопке или по факту: есть клиенты — значит
+   тренер. Записи на сервере это не меняет, она заводится всем и остаётся
+   внутренней. */
+function isTrainerRole() {
+    return trainerClients().length > 0 || !!(DB.settings && DB.settings.trainerOn);
+}
+
+function markTrainerRole() {
+    const set = ensureSettings();
+    if (!set.trainerOn) { set.trainerOn = true; saveDB(); }
+}
+
+function hasCabinetRole() {
+    const r = (typeof cloudRoles === 'function') ? cloudRoles() : {};
+    return !!(r && r.cabinet);
+}
+
+/* Дневник есть у всех — так решено: иначе про него никто не узнает.
+   Первый вход в него его и заводит. */
+function availableRoles() {
+    const out = ['diary'];
+    if (isTrainerRole()) out.push('trainer');
+    if (hasCabinetRole()) out.push('cabinet');
+    return out;
+}
+
+const ROLE_TABS = {
+    trainer: ['nav-schedule', 'nav-clients', 'nav-exercises', 'nav-settings'],
+    diary: ['nav-d-gym', 'nav-d-hist', 'nav-d-an', 'nav-d-set']
+};
+
+const TAB_ACTION = {
+    'nav-schedule': function () { showScreen('screen-schedule'); },
+    'nav-clients': function () { showScreen('screen-clients'); },
+    'nav-exercises': function () { showScreen('screen-exercises'); },
+    'nav-settings': function () { showScreen('screen-settings'); },
+    'nav-d-gym': function () { diaryGym(); },
+    'nav-d-hist': function () { diaryHistory(); },
+    'nav-d-an': function () { diaryAnalytics(); },
+    'nav-d-set': function () { showScreen('screen-settings'); }
+};
+
+function rememberLast() {
+    const tab = navIdFor(currentScreen);
+    if (!tab) return;                       // внутренний экран — не запоминаем
+    try {
+        localStorage.setItem(LAST_KEY, JSON.stringify({ mode: appMode, tab: tab }));
+    } catch (e) {}
+}
+
+function lastPlace() {
+    try { return JSON.parse(localStorage.getItem(LAST_KEY)) || null; } catch (e) { return null; }
+}
+
+/* Переход в роль. Экран берём запомненный, если он этой роли и принадлежит. */
+function enterRole(role, tab) {
+    if (role === 'cabinet') { enterCabinet(); return; }
+
+    if (role === 'diary') {
+        ensureSelfClient();
+        appMode = 'diary';
+    } else {
+        appMode = 'trainer';
+    }
+    applyNavMode();
+
+    const tabs = ROLE_TABS[appMode];
+    const go = TAB_ACTION[(tabs.indexOf(tab) !== -1) ? tab : tabs[0]];
+    go();
+}
+
+/* --- Список ролей под аватаркой --- */
+
+const ROLE_INFO = {
+    diary: { icon: '📔', mi: 'clipboard', name: 'Мой дневник',
+             sub: 'Свои тренировки: зал, история, аналитика' },
+    trainer: { icon: '👥', mi: 'users', name: 'Тренер',
+               sub: 'Расписание, клиенты, абонементы' },
+    cabinet: { icon: '🏅', mi: 'award', name: 'Мои тренировки',
+               sub: 'Занятия у тренера' }
+};
+
+function openRoles() {
+    const roles = availableRoles();
+    // Роль одна — выбирать не из чего, аватарка ведёт в Профиль, как раньше
+    if (roles.length < 2) { showScreen('screen-profile', currentScreen); return; }
+    renderRolesSheet(roles);
+    haptic('light');
+    openSheet('sheet-roles');
+}
+
+function renderRolesSheet(roles) {
+    const box = $('roles-list');
+    if (!box) return;
+
+    const here = { diary: 'diary', trainer: 'trainer' }[appMode];
+    const html = roles.map(function (r) {
+        const i = ROLE_INFO[r];
+        let sub = i.sub;
+        if (r === 'diary') {
+            const n = selfClient() ? clientHistory(SELF_ID).length : 0;
+            if (n) sub = 'Тренировок: ' + n;
+        } else if (r === 'trainer') {
+            const n = trainerClients().length;
+            if (n) sub = 'Клиентов: ' + n;
+        } else if (r === 'cabinet') {
+            const t = (cloudRoles() || {}).cabinetTrainer;
+            if (t) sub = 'Тренер: ' + t;
+        }
+        return '<button class="premium-menu-btn' + (r === here ? ' primary' : '') +
+                   '" onclick="pickRole(\'' + r + '\')">' +
+                   '<span class="ttl">' + emo(i.icon + ' ') + ico(i.mi) + esc(i.name) +
+                       '<span style="display:block; margin-top:3px; font-size:12px; font-weight:500; opacity:0.7;">' +
+                           esc(sub) + '</span>' +
+                   '</span>' +
+                   '<span class="arrow-icon arr"></span>' +
+               '</button>';
+    }).join('');
+
+    box.innerHTML = html +
+        '<div class="menu-sep" style="margin: 6px 0; border-top: 0.5px solid rgba(var(--ch-hairline), 0.1);"></div>' +
+        '<button class="premium-menu-btn" onclick="closeSheet(\'sheet-roles\'); showScreen(\'screen-profile\', currentScreen)">' +
+            '<span class="ttl">' + emo('⚙️ ') + ico('user') + 'Профиль</span>' +
+            '<span class="arrow-icon arr"></span>' +
+        '</button>';
+}
+
+/* Вход. Приложение не ждёт сервер: открывается то, что известно из памяти
+   телефона, а сервер догоняет в фоне. */
+function bootEntry() {
+    const param = (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) || '';
+    // Пришёл по приглашению клиента — кабинет откроет вход в облако,
+    // знакомство ему не показываем
+    if (/^inv_/i.test(param)) { enterRole('trainer'); return; }
+
+    if (!onboardingDone()) {
+        if (isExistingUser()) {
+            // обновился давний пользователь: знакомство ему ни к чему,
+            // и тренером он уже является
+            markOnboarded();
+            markTrainerRole();
+        } else {
+            showOnboarding();
+            return;
+        }
+    }
+
+    const last = lastPlace();
+    const roles = availableRoles();
+    let role = (last && roles.indexOf(last.mode) !== -1) ? last.mode
+             : (roles.indexOf('trainer') !== -1 ? 'trainer' : 'diary');
+    enterRole(role, last ? last.tab : null);
+}
+
+function pickRole(role) {
+    closeSheet('sheet-roles');
+    haptic('select');
+    const last = lastPlace();
+    enterRole(role, (last && last.mode === role) ? last.tab : null);
+}
+
+/* --- Знакомство ---
+   Один раз в жизни. Про программы здесь нарочно ни слова: обещать на первом
+   экране то, чего ещё нет, — худшее, что можно сделать. */
+
+function onboardingDone() {
+    try { if (localStorage.getItem(ONBOARD_KEY) === '1') return true; } catch (e) {}
+    return !!(DB.settings && DB.settings.onboarded);
+}
+
+function markOnboarded() {
+    try { localStorage.setItem(ONBOARD_KEY, '1'); } catch (e) {}
+    const set = ensureSettings();
+    if (!set.onboarded) { set.onboarded = true; saveDB(); }
+}
+
+/* Старый пользователь — тот, у кого уже есть данные. Ему знакомство не нужно,
+   и тренером он считается сразу: иначе при обновлении у него пропала бы
+   половина приложения. */
+function isExistingUser() {
+    return !!(DB.clients.length || DB.sessions.length ||
+              (DB.exercises || []).length || (DB.templates || []).length);
+}
+function renderStartScreen() {
+    const box = $('start-list');
+    if (!box) return;
+
+    // Пришёл по приглашению тренера — подсвечиваем карточку «Я тренер».
+    // Имя пригласившего не пишем: оно приходит с сервера позже, а вход
+    // не ждёт сервер.
+    const param = (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) || '';
+    const byRef = /^ref_/i.test(param);
+
+    const card = function (icon, mi, name, sub, handler, accent) {
+        return '<button class="start-btn' + (accent ? ' accent' : '') + '" onclick="' + handler + '">' +
+                   '<span class="sb-ic">' + emo(icon) + ico(mi) + '</span>' +
+                   '<span class="sb-txt">' +
+                       '<span class="sb-name">' + esc(name) + '</span>' +
+                       '<span class="sb-sub">' + esc(sub) + '</span>' +
+                   '</span>' +
+                   '<span class="arrow-icon arr"></span>' +
+               '</button>';
+    };
+
+    box.innerHTML =
+        card('📔', 'clipboard', 'Мой дневник',
+             'Записывайте тренировки, смотрите прогресс. Бесплатно навсегда',
+             'finishOnboarding(\'diary\')') +
+        card('👥', 'users', 'Я тренер',
+             byRef ? 'Вас пригласил тренер · клиенты, расписание, абонементы'
+                   : 'Клиенты, расписание, абонементы. Дневник для себя входит',
+             'finishOnboarding(\'trainer\')', byRef);
+}
+
+function showOnboarding() {
+    appMode = 'trainer';
+    applyNavMode();
+    renderStartScreen();
+    showScreen('screen-start');
+}
+
+/* Любая карточка и «Начать» делают одно: закрывают знакомство навсегда.
+   Разница только в том, куда попадёшь. */
+function finishOnboarding(role) {
+    markOnboarded();
+    if (role === 'trainer') markTrainerRole();
+    haptic('light');
+    enterRole(role);
+}
+
+function enterTrainerMode() {
+    enterRole('trainer');
+}
+
+function enterDiaryMode() {
+    enterRole('diary');
+}
+
+/* --- Вкладки дневника --- */
+
+function diaryGym() {
+    startSelfWorkout();
+}
+
+function diaryHistory() {
+    openClient(SELF_ID, 'history', 'screen-start');
+    applyClientHeadMode();
+}
+
+function diaryAnalytics() {
+    openClient(SELF_ID, 'analytics', 'screen-start');
+    applyClientHeadMode();
+}
+
+/* В дневнике История и Аналитика — верхние вкладки, и «назад» с них вести
+   некуда. На месте кнопки «назад» встаёт аватарка: тот же круг слева
+   сверху, что и на других экранах, и ведёт она туда же — в список ролей. */
+function applyClientHeadMode() {
+    const chip = document.querySelector('#screen-client .back-chip');
+    if (!chip) return;
+    const top = isDiaryMode() && clClientId === SELF_ID;
+    chip.classList.toggle('as-av', top);
+    chip.setAttribute('onclick', top ? 'openRoles()' : 'goBack()');
+    if (top) renderTrainerAvatar();
+    else chip.innerHTML = '<span class="only-neo">❮</span>' +
+        '<svg class="mi only-min" aria-hidden="true"><use href="#i-chev-left"/></svg>';
+}
+
+/* Своя тренировка заводится без записи в расписание: себе на приём
+   не записываются. Сразу открываем зал. */
+function startSelfWorkout() {
+    const c = ensureSelfClient();
+    const z = zoneNow();
+
+    // уже начатая сегодня тренировка — продолжаем её, а не заводим вторую
+    let s = DB.sessions.filter(function (x) {
+        return x.clientId === SELF_ID && x.status === 'planned' && x.date === z.iso;
+    })[0];
+
+    if (!s) {
+        s = {
+            id: uid('s'), clientId: SELF_ID, date: z.iso,
+            time: pad2(z.hour) + ':' + pad2(z.min),
+            status: 'planned', well: 8, bodyWeight: c.bodyWeight,
+            ex: [], pending: null, savedAt: null, metrics: null
+        };
+        DB.sessions.push(s);
+        saveDB();
+    }
+
+    haptic('success');
+    openWorkout(s.id);
 }
 
 function renderProfileLine() {
@@ -13709,7 +14455,7 @@ window.addEventListener('DOMContentLoaded', function () {
     initWeeksSheet();
     renderMatrixRows();
     renderClientsScreen();
-    showScreen('screen-schedule');   // сам отрисует календарь и ленту дня
+    bootEntry();
 
     setTimeout(function () {
         const splash = $('splash-screen');
@@ -15477,6 +16223,9 @@ function renderClientTg() {
     const c = getClient(clClientId);
     if (!c) { box.innerHTML = ''; return; }
 
+    // Себе приглашение не отправляют
+    if (isSelfClient(c.id)) { box.innerHTML = ''; return; }
+
     // Привязан — и молчим: полоска сообщала о том, что уже случилось, и
     // занимала место на каждой вкладке карточки. Отвязать можно в правке
     // клиента, там же где удалить.
@@ -15727,6 +16476,40 @@ function cloudRoles() {
 function setCloudRoles(roles) {
     try { localStorage.setItem(CLOUD_ROLES, JSON.stringify(roles || {})); } catch (e) {}
     if (typeof renderRoleSwitch === 'function') renderRoleSwitch();
+    if (typeof renderRoleHint === 'function') renderRoleHint();
+}
+
+const CAB_HINT_KEY = 'silovoyAssistentV6:cabhint';   // полоску уже закрыли
+
+function cabHintDone() {
+    try { return localStorage.getItem(CAB_HINT_KEY) === '1'; } catch (e) { return true; }
+}
+
+function hideRoleHint() {
+    try { localStorage.setItem(CAB_HINT_KEY, '1'); } catch (e) {}
+    renderRoleHint();
+}
+
+/* Полоска на Ежедневнике. Показывается, пока человек ни разу не был в своих
+   тренировках: переход в Профиле остаётся навсегда, а это — только чтобы
+   про него узнали. */
+function renderRoleHint() {
+    const box = $('role-hint');
+    if (!box) return;
+
+    const roles = cloudRoles();
+    if (!roles.cabinet || cabHintDone() || cabinetOn) { box.innerHTML = ''; return; }
+
+    box.innerHTML =
+        '<div class="role-hint" onclick="enterCabinet()">' +
+            '<span class="rh-text">Вы ещё и клиент' +
+                (roles.cabinetTrainer ? ': тренер ' + esc(roles.cabinetTrainer) : '') +
+                '<span class="rh-sub">Посмотреть свои тренировки и прогресс</span>' +
+            '</span>' +
+            '<span class="tg-go arr"></span>' +
+            '<button class="rh-close" onclick="event.stopPropagation(); hideRoleHint()" ' +
+                    'aria-label="Скрыть">✕</button>' +
+        '</div>';
 }
 
 /* Строка в профиле: «Мои тренировки у Олега» — если человек ещё и клиент */
@@ -15754,6 +16537,7 @@ function renderRoleSwitch() {
 async function leaveCabinet() {
     cabinetOn = false;
     setCloudRole('trainer');
+    renderRoleHint();
     showScreen('screen-schedule');
 
     if (!cloudUid && sb) {
@@ -15773,6 +16557,8 @@ async function leaveCabinet() {
 /* Вход в кабинет: приложение тренера клиенту не показываем вовсе */
 async function enterCabinet() {
     cabinetOn = true;
+    // дорогу узнал — больше не подсказываем
+    try { localStorage.setItem(CAB_HINT_KEY, '1'); } catch (e) {}
     setCloudRole('client');
     cloudSet('ok');
     hideLinkPlate();
