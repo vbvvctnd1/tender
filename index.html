@@ -716,6 +716,10 @@ body {
 }
 
 /* --- Подсказка про галочки: рядом с самими галочками, а не внизу экрана --- */
+/* hidden сам по себе ставит display:none, но наш display:flex его
+   перебивает — и подсказка, «спрятанная» в коде, оставалась на экране. */
+.tick-hint[hidden] { display: none; }
+
 .tick-hint {
     display: flex;
     align-items: center;
@@ -2038,7 +2042,10 @@ textarea.fld {
 /* --- Строка подхода --- */
 .set-row {
     display: grid;
-    grid-template-columns: 18px 62px 1fr 1fr 38px 24px;
+    /* Вес шире повторов: там бывает «132.5», а в повторах максимум «15».
+       Поровну они делились до тех пор, пока на узком телефоне вес с
+       десятыми не начал обрезаться. */
+    grid-template-columns: 18px 58px 1.3fr 0.7fr 38px 24px;
     align-items: center;
     gap: 6px;
     margin-bottom: 8px;
@@ -2312,6 +2319,10 @@ textarea.fld {
 }
 .hist-date { font-size: 15.5px; font-weight: 800; }
 .hist-meta { display: block; margin-top: 2px; font-size: 12px; color: var(--text-muted); }
+
+/* На что была тренировка — рядом с датой: в списке за месяц глазами ищут
+   именно это, а не время и не тоннаж. */
+.hist-mus { margin-left: 7px; font-size: 13px; font-weight: 600; color: var(--text-caps); }
 
 /* Метрики тренировки: число тёмным, подпись серой — как время и абонемент
    на карточке расписания. Никаких цветных плашек. */
@@ -4346,7 +4357,7 @@ body.pad-open { padding-bottom: 62vh; }
 :root[data-style="neo"] .set-row {
     position: relative;
     overflow: hidden;
-    grid-template-columns: 22px 76px 1fr 1fr 40px 30px;
+    grid-template-columns: 22px 70px 1.3fr 0.7fr 38px 26px;
     gap: 6px;
     padding: 8px;
     border-radius: 20px;
@@ -4457,7 +4468,8 @@ body.pad-open { padding-bottom: 62vh; }
 
 /* узкий телефон: сетка строки компактнее, чтобы вес и повторы не сжались */
 @media (max-width: 380px) {
-    :root[data-style="neo"] .set-row { grid-template-columns: 18px 64px 1fr 1fr 36px 26px; gap: 5px; padding: 7px; }
+    :root[data-style="neo"] .set-row { grid-template-columns: 16px 56px 1.35fr 0.65fr 34px 22px; gap: 4px; padding: 7px; }
+    :root[data-style="neo"] .set-row .fld { font-size: 15px; padding: 0 2px; }
     :root[data-style="neo"] .set-check { width: 34px; height: 34px; }
 }
 
@@ -5522,7 +5534,7 @@ body.pad-open { padding-bottom: 62vh; }
 
 /* --- Тренировка --- */
 :root[data-style="minimal"] .set-row {
-    grid-template-columns: 22px 66px 1fr 1fr 38px 26px;
+    grid-template-columns: 22px 62px 1.3fr 0.7fr 36px 24px;
     gap: 6px;
     padding: 8px;
     background: var(--m-card);
@@ -5550,7 +5562,8 @@ body.pad-open { padding-bottom: 62vh; }
 :root[data-style="minimal"] .set-check.on { background: var(--m-act); border-color: var(--m-act); color: var(--m-act-text); }
 :root[data-style="minimal"] .set-del { width: 26px; font-size: 15px; color: var(--m-muted-2); }
 @media (max-width: 380px) {
-    :root[data-style="minimal"] .set-row { grid-template-columns: 18px 60px 1fr 1fr 34px 22px; gap: 5px; padding: 7px; }
+    :root[data-style="minimal"] .set-row { grid-template-columns: 16px 56px 1.35fr 0.65fr 32px 20px; gap: 4px; padding: 7px; }
+    :root[data-style="minimal"] .set-row .fld { font-size: 15px; padding: 0 3px; }
     :root[data-style="minimal"] .set-check { width: 32px; height: 32px; }
 }
 
@@ -7151,7 +7164,7 @@ function applyViewport() {
    день файл выкладывается не раз: по одной дате не понять, приехало ли
    обновление или Telegram показывает копию из кэша. Ставится при выкладке
    скриптом publish.py — руками не правится. */
-const BUILD = '04.10.2026, 19:41';
+const BUILD = '04.10.2026, 20:52';
 let fullReason = '';        // почему полного экрана нет — тоже видно в Профиле
 
 /* Полный экран: приложение занимает телефон целиком, а кнопки Telegram
@@ -9638,6 +9651,48 @@ function evaluateSetTypes(rows, exName, pastMax, bodyWeight) {
     });
 }
 
+/* Чем была тренировка: «Грудь», «Грудь · Руки» или «Фуллбоди». Отвечает на
+   вопрос, который в списке задают первым: это что было — верх, низ или всё.
+
+   Считаем по основной группе упражнения, а не по всем задействованным мышцам.
+   Иначе жим лёжа тянул бы за собой плечи и трицепс, и у чистого дня груди в
+   заголовке стояло бы «Грудь · Плечи · Руки» — формально верно, а по сути
+   шум. Тренер думает «сегодня грудь», а не «грудь с долей 0,5 трицепса». */
+function muscleSummary(ex) {
+    const byCat = {};
+    let all = 0;
+
+    (ex || []).forEach(function (e) {
+        const cat = exData(e.n).category || 'Другое';
+        (e.sets || []).forEach(function (st) {
+            if (st.isWarmup || st.completed === false) return;   // разминка не в счёт
+            byCat[cat] = (byCat[cat] || 0) + 1;
+            all += 1;
+        });
+    });
+    if (!all) return '';
+
+    // порядок как в справочнике: грудь, спина, ноги, плечи, руки, пресс
+    const order = CATEGORY_ORDER.filter(function (c) { return byCat[c]; })
+        .concat(Object.keys(byCat).filter(function (c) {
+            return CATEGORY_ORDER.indexOf(c) === -1;
+        }));
+
+    const main = order.slice().sort(function (a, b) { return byCat[b] - byCat[a]; })[0];
+    if (byCat[main] / all >= 0.6) return main;      // одна группа тянет большинство
+
+    // Мелочь в заголовок не пускаем: один подход из двадцати тренировку не называет
+    let big = order.filter(function (c) { return byCat[c] / all >= 0.15; });
+    if (!big.length) big = [main];
+
+    // Верх и низ вместе, да ещё и групп много — перечислять нечего, это фуллбоди
+    const низ = big.indexOf('Ноги') !== -1;
+    const верх = big.some(function (c) { return c !== 'Ноги' && c !== 'Пресс'; });
+    if (big.length >= 3 && низ && верх) return 'Фуллбоди';
+
+    return big.slice(0, 3).join(' · ');
+}
+
 /* --- Объём по мышцам --- */
 
 function muscleStats(session) {
@@ -10779,6 +10834,12 @@ let wkSession = null;      // сессия, которую ведём
 let wkHistory = [];        // проведённые тренировки этого клиента
 let wkPastMax = null;      // прошлый рабочий максимум по выбранному упражнению
 let selectedExercise = '';  // '' — упражнение ещё не выбрано: поле пустое, подходов нет
+
+/* Строки редактора ещё не стали блоком тренировки: упражнение выбрано, цифры
+   вписаны, а галочки нет. Отдельный признак нужен потому, что wkEditingIndex
+   обнуляется и ПОСЛЕ того, как строки уже записаны в блок, — по нему одному
+   их записало бы второй раз, и «Повторить круг» задваивал упражнение. */
+let wkLooseRows = false;
 let exNamesCache = [];
 let currentSetRows = [];
 /* Индекс упражнения из плана, которое сейчас в редакторе, либо null,
@@ -10835,6 +10896,9 @@ function openWorkout(sessionId) {
         selectedExercise = '';
         currentSetRows = blankRows();
     }
+
+    // черновик мог остаться на «ничьих» строках — признак восстанавливаем тоже
+    wkLooseRows = !!selectedExercise;
 
     const savedEditing = s.pending ? s.pending.editing : null;
     wkEditingIndex = (Number.isInteger(savedEditing) && savedEditing >= 0 && savedEditing < s.ex.length)
@@ -11278,6 +11342,7 @@ function selectExerciseByName(name) {
     settleToastOf('set');           // строки подходов меняются целиком
     leaveCurrentExercise();
     selectedExercise = name;
+    wkLooseRows = true;             // в тренировку блок встанет позже
 
     // упражнение уже было в этой тренировке — новый блок начинается с его цифр
     const prev = lastBlockOf(name);
@@ -11308,7 +11373,20 @@ function lastBlockOf(name) {
 /* Уходим с открытого упражнения: отмеченное, план и вписанное руками
    остаются, нетронутые пустые строки убираются. Блок без строк исчезает. */
 function leaveCurrentExercise() {
-    if (wkEditingIndex === null) return;
+    // Упражнение выбрано, цифры вписаны, а галочки нет — значит, в тренировку
+    // оно ещё не попало. Раньше при сворачивании набранное просто исчезало:
+    // тренер вводил веса, сворачивал и оставался ни с чем, хотя приложение
+    // писало «черновик сохранён». Теперь оно встаёт в тренировку как замысел:
+    // строки видны, а в зачёт пойдут после галочки — предохранитель при
+    // сохранении про них всё равно спросит.
+    if (wkEditingIndex === null) {
+        if (!wkSession || !selectedExercise || !wkLooseRows) return;
+        wkLooseRows = false;        // второй раз эти же строки не запишем
+        const набрано = JSON.parse(JSON.stringify(currentSetRows))
+            .filter(function (row) { return !rowUntouched(row); });
+        if (набрано.length) wkSession.ex.push({ n: selectedExercise, sets: набрано });
+        return;
+    }
     const e = wkSession.ex[wkEditingIndex];
     if (e) {
         const before = JSON.parse(JSON.stringify(wkSession.ex));
@@ -11549,6 +11627,7 @@ function toggleSetDone(index) {
     if (wkEditingIndex === null && currentSetRows.some(function (s) { return s.completed; })) {
         wkSession.ex.push({ n: selectedExercise, sets: [] });
         wkEditingIndex = wkSession.ex.length - 1;
+        wkLooseRows = false;
     }
 
     renderSetRows();
@@ -11892,6 +11971,7 @@ function collapseWorkoutEditor() {
     leaveCurrentExercise();
     selectedExercise = '';
     currentSetRows = [];
+    wkLooseRows = false;
     $('wk-ex-search').value = '';
 
     refreshPastMax();
@@ -11921,6 +12001,7 @@ function openExFromWorkout(index) {
     currentSetRows = JSON.parse(JSON.stringify(e.sets || []));
     if (!currentSetRows.length) currentSetRows = blankRows();
     wkEditingIndex = index;
+    wkLooseRows = false;            // строки принадлежат этому блоку
 
     refreshPastMax();
     renderExNote();
@@ -12266,12 +12347,14 @@ function histEntryHtml(s) {
                  (m.warmupSets ? ' + ' + m.warmupSets + ' разм.' : '');
     const meta = esc(s.time) + ' · ' + sets +
                  (m.tonnage ? ' · ' + m.tonnage.toLocaleString('ru') + ' кг' : '');
+    const мышцы = muscleSummary(s.ex);
 
     return '<div class="hist-entry' + (histOpen[s.id] ? ' open' : '') + '" id="hist-' + s.id + '">' +
                '<div class="hist-head" onclick="toggleHistEntry(\'' + s.id + '\')">' +
                    '<span class="hist-chev">›</span>' +
                    '<div style="flex:1 1 auto; min-width:0;">' +
                        '<span class="hist-date">' + esc(humanDate(s.date)) + '</span>' +
+                       (мышцы ? '<span class="hist-mus">' + esc(мышцы) + '</span>' : '') +
                        '<span class="hist-meta">' + meta + '</span>' +
                    '</div>' +
                    '<div class="hist-actions">' +
@@ -14491,10 +14574,12 @@ function renderProgramScreen() {
     $('pv-days-total').innerHTML = 'Тренировок: <b>' + days.length + '</b>';
     $('pv-days').innerHTML = days.length
         ? days.map(function (d, i) {
+            const мышцы = muscleSummary(d.ex);
             return '<div class="client-row tpl-row" onclick="openProgramDay(' + i + ')">' +
                        '<span class="pg-day-no">' + (i + 1) + '</span>' +
                        '<div style="min-width:0; flex:1;">' +
                            '<div class="cr-name">' + esc(d.name) + '</div>' +
+                           (мышцы ? '<div class="cr-meta">' + esc(мышцы) + '</div>' : '') +
                            '<div class="cr-sub">' +
                                tplSummaryParts({ ex: d.ex }, false).map(esc)
                                    .join('<span class="dot">·</span>') +
@@ -14609,7 +14694,8 @@ function renderProgramDay() {
     const d = p && p.days[pgDayIndex];
     if (!d) return;
     $('pd-title').innerText = d.name;
-    $('pd-sub').innerText = tplSummaryParts({ ex: d.ex }, false).join(' · ');
+    $('pd-sub').innerText = [muscleSummary(d.ex)].filter(Boolean)
+        .concat(tplSummaryParts({ ex: d.ex }, false)).join(' · ');
     $('pd-body').innerHTML = exListHtml(d.ex, null);
     $('pd-up').disabled = pgDayIndex === 0;
     $('pd-down').disabled = pgDayIndex === p.days.length - 1;
