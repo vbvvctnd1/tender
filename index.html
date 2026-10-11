@@ -7119,6 +7119,9 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
             <button class="btn-soft filled" onclick="startRunForSelf()">Открыть в дневнике</button>
             <button class="btn-soft" onclick="openRunClientPick()">Отдать клиенту</button>
         </div>
+        <button class="btn-soft" style="width: 100%; margin-top: 12px;" onclick="openProgramShare()">
+            Поделиться: текст или PDF
+        </button>
         <button class="btn-soft filled" style="width: 100%; margin-top: 12px;" onclick="addProgramDay()">
             ＋ Тренировка
         </button>
@@ -7233,7 +7236,7 @@ function applyViewport() {
    день файл выкладывается не раз: по одной дате не понять, приехало ли
    обновление или Telegram показывает копию из кэша. Ставится при выкладке
    скриптом publish.py — руками не правится. */
-const BUILD = '04.10.2026, 22:06';
+const BUILD = '11.10.2026, 07:14';
 let fullReason = '';        // почему полного экрана нет — тоже видно в Профиле
 
 /* Полный экран: приложение занимает телефон целиком, а кнопки Telegram
@@ -15026,6 +15029,196 @@ function renderProgramDay() {
    иначе в программе второй по счёту стояла бы «Тренировка 5». */
 function renumberProgramDays(p) {
     (p.days || []).forEach(function (d, i) { d.name = 'Тренировка ' + (i + 1); });
+}
+
+/* --- Поделиться программой: текстом или PDF через бота ---
+   Программу продают и мимо витрины: тренер кидает её покупателю в чат.
+   Строки собираются здесь один раз, и из них же сервер верстает PDF, —
+   поэтому текст и файл всегда совпадают. */
+
+/* Вес одного подхода словами; '' — когда показывать нечего */
+function shareWeight(name, w, hideW) {
+    w = num(w, 0);
+    if (hideW) return '';
+    if (isAssisted(name)) return w > 0 ? 'противовес ' + fmtKg(w) + ' кг' : '';
+    if (isBodyweight(name)) return w > 0 ? '+' + fmtKg(w) + ' кг' : '';
+    return w > 0 ? fmtKg(w) + ' кг' : '';
+}
+
+/* Подходы одной строкой: одинаковые — «4 × 8, 80 кг», разные — по одному */
+function shareSetsText(name, sets, hideW) {
+    const one = function (list) {
+        if (!list.length) return '';
+        const same = list.every(function (s) {
+            return s.r === list[0].r && shareWeight(name, s.w, hideW) === shareWeight(name, list[0].w, hideW);
+        });
+        if (same && list.length > 1) {
+            const wl = shareWeight(name, list[0].w, hideW);
+            return list.length + ' × ' + list[0].r + (wl ? ', ' + wl : '');
+        }
+        return list.map(function (s) {
+            const wl = shareWeight(name, s.w, hideW).replace(' кг', '').replace('противовес ', '−');
+            return wl ? wl + '×' + s.r : s.r + ' повт.';
+        }).join(' · ');
+    };
+    const warm = (sets || []).filter(function (s) { return s.isWarmup; });
+    const work = (sets || []).filter(function (s) { return !s.isWarmup; });
+    const w = one(work);
+    return warm.length ? 'разминка: ' + one(warm) + (w ? '; рабочие: ' + w : '') : w;
+}
+
+/* Строки одной тренировки: [{ h: 'Круговая · 3 круга' }, { n: 'Жим лёжа', s: '4 × 8, 80 кг' }] */
+function shareDayRows(ex, hideW) {
+    ex = ex || [];
+    const rows = [];
+    const parts = workoutParts(ex);
+    const hasCircuit = parts.some(function (p) { return p.circuit; });
+    let prevOrdinary = false;
+    parts.forEach(function (p) {
+        if (!p.circuit) {
+            if (hasCircuit && !prevOrdinary) rows.push({ h: 'По подходам' });
+            prevOrdinary = true;
+            const e = ex[p.idx];
+            rows.push({ n: e.n, s: shareSetsText(e.n, e.sets, hideW) });
+            return;
+        }
+        prevOrdinary = false;
+        const blocks = [];
+        p.rounds.forEach(function (r) { r.idx.forEach(function (i) { blocks.push(ex[i]); }); });
+        const n = p.rounds.length;
+        rows.push({ h: 'Круговая · ' + n + ' ' + plural(n, 'круг', 'круга', 'кругов') });
+        distinctNames(blocks).forEach(function (name) {
+            const sets = [];
+            blocks.forEach(function (b) { if (b.n === name) sets.push.apply(sets, b.sets || []); });
+            rows.push({ n: name, s: shareSetsText(name, sets, hideW) });
+        });
+    });
+    return rows;
+}
+
+/* Вся программа для отправки: шапка и заполненные тренировки */
+function shareProgramData(p) {
+    const user = (tg && tg.initDataUnsafe) ? tg.initDataUnsafe.user : null;
+    const days = (p.days || []).filter(function (d) { return (d.ex || []).length; });
+    const meta = [listName(PROG_GOALS, p.goal), listName(PROG_LEVELS, p.level),
+                  days.length + ' ' + plural(days.length, 'тренировка', 'тренировки', 'тренировок')]
+        .filter(Boolean);
+    meta.push(p.hideWeights ? 'веса подбираются под себя' : 'подходы: кг × повторы');
+    return {
+        title: programTitle(p),
+        author: user ? [user.first_name, user.last_name].filter(Boolean).join(' ') : '',
+        contact: user && user.username ? '@' + user.username : '',
+        meta: meta.join(' · '),
+        descr: (p.descr || '').trim(),
+        days: days.map(function (d) {
+            return { name: d.name, sub: muscleSummary(d.ex) || '', rows: shareDayRows(d.ex, p.hideWeights) };
+        })
+    };
+}
+
+function shareProgramText(data) {
+    const out = [data.title];
+    const who = [data.author, data.contact].filter(Boolean).join(' · ');
+    if (who) out.push('Автор: ' + who);
+    if (data.meta) out.push(data.meta);
+    if (data.descr) out.push('', data.descr);
+    data.days.forEach(function (d) {
+        out.push('', d.name + (d.sub ? ' · ' + d.sub : ''));
+        d.rows.forEach(function (r) {
+            out.push(r.h ? r.h + ':' : '• ' + r.n + (r.s ? ' — ' + r.s : ''));
+        });
+    });
+    out.push('', '—', 'Составлено в Simple Fit · t.me/' + BOT_NAME);
+    return out.join('\n');
+}
+
+function openProgramShare() {
+    const p = getProgram(pgOpenId);
+    if (!p) return;
+    if (!(p.days || []).some(function (d) { return (d.ex || []).length; })) {
+        showToast('В программе нет ни одной заполненной тренировки');
+        return;
+    }
+    const row = function (fn, name, sub) {
+        return '<div class="client-row tpl-row" onclick="' + fn + '()">' +
+                   '<div style="min-width:0; flex:1;">' +
+                       '<div class="cr-name">' + name + '</div>' +
+                       '<div class="cr-sub">' + sub + '</div>' +
+                   '</div>' +
+                   '<span class="arrow-icon arr tpl-open"></span>' +
+               '</div>';
+    };
+    $('pn-title').innerText = 'Поделиться программой';
+    $('pn-sub').innerText = p.hideWeights ? 'Без весов — только повторы' : '';
+    $('pn-list').innerHTML =
+        row('copyProgramText', 'Скопировать текстом', 'Вставите в любой чат') +
+        row('sendProgramPdf', 'Прислать PDF в чат', 'Бот пришлёт файл вам — перешлёте покупателю');
+    haptic('light');
+    openSheet('sheet-pg-new');
+}
+
+async function copyProgramText() {
+    const p = getProgram(pgOpenId);
+    if (!p) return;
+    closeSheet('sheet-pg-new');
+    const text = shareProgramText(shareProgramData(p));
+    try {
+        await navigator.clipboard.writeText(text);
+        haptic('success');
+        showToast('Программа скопирована');
+        return;
+    } catch (e) {}
+    // разрешение на буфер дают не везде — запасной путь через скрытое поле
+    try {
+        const box = document.createElement('textarea');
+        box.value = text;
+        box.style.cssText = 'position: fixed; opacity: 0;';
+        document.body.appendChild(box);
+        box.select();
+        const ok = document.execCommand('copy');
+        box.remove();
+        if (ok) { haptic('success'); showToast('Программа скопирована'); return; }
+    } catch (e) {}
+    showToast('Не удалось скопировать');
+}
+
+/* Файл собирает сервер, а присылает бот приложения: скачать файл прямо из
+   мини-приложения Telegram не даёт. Кому прислать, сервер берёт из подписи
+   Telegram — чужому файл не уйдёт. */
+let pgPdfBusy = false;
+
+async function sendProgramPdf() {
+    const p = getProgram(pgOpenId);
+    if (!p || pgPdfBusy) return;
+    closeSheet('sheet-pg-new');
+    if (!tg || !tg.initData) {
+        showToast('PDF присылает бот — откройте приложение в Telegram');
+        return;
+    }
+    pgPdfBusy = true;
+    showToast('Готовлю PDF…');
+    try {
+        const r = await cloudFetch(CLOUD_URL + '/functions/v1/tg-welcome', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', apikey: CLOUD_KEY },
+            body: JSON.stringify({ initData: tg.initData, action: 'program_pdf', program: shareProgramData(p) })
+        });
+        const out = await r.json().catch(function () { return {}; });
+        if (out && out.sent) {
+            haptic('success');
+            showToast('PDF отправлен вам в чат с ботом');
+        } else if (r.status === 401) {
+            showToast('Закройте и откройте приложение заново, потом повторите');
+        } else if (/blocked|chat not found|initiate/i.test(String(out && out.error))) {
+            showToast('Бот не может вам написать: откройте чат с ботом и нажмите «Старт»');
+        } else {
+            showToast('Не получилось отправить PDF, попробуйте ещё раз');
+        }
+    } catch (e) {
+        showToast('Нет связи. Повторите, когда появится интернет');
+    } finally {
+        pgPdfBusy = false;
+    }
 }
 
 function moveProgramDay(step) {
