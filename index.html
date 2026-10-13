@@ -1753,6 +1753,33 @@ textarea.fld {
     color: var(--text-muted);
 }
 
+/* Продажа программ: метка «в продаже», пояснение в панели продажи, фото на «Моей странице» */
+.pg-badge {
+    display: inline-block;
+    padding: 1px 7px;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--neon-green);
+    vertical-align: 1px;
+}
+:root[data-style="minimal"] .pg-badge { color: var(--text-main); }
+.mk-note { font-size: 13.5px; line-height: 1.45; color: var(--text-muted); }
+.mk-note b { color: var(--text-main); }
+.mp-who { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.mp-photo {
+    position: relative;
+    width: 56px; height: 56px; flex: none;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 20px;
+    color: var(--text-main);
+    background: rgba(127, 127, 127, 0.18);
+}
+.mp-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
 .field-pair { display: flex; gap: 10px; }
 .field-pair > * { flex: 1; min-width: 0; }
 
@@ -4133,14 +4160,13 @@ body.pad-open { padding-bottom: 62vh; }
     inherits: false;
 }
 @keyframes neoRingDraw { from { --ring-deg: 0deg; } }
-@keyframes neoRingPulse {
-    0%, 100% { filter: drop-shadow(0 0 5px var(--ring-glow)) drop-shadow(0 0 12px var(--ring-glow-soft)); }
-    50%      { filter: drop-shadow(0 0 9px var(--ring-glow)) drop-shadow(0 0 22px var(--ring-glow-soft)); }
-}
-@keyframes neoPhotoPulse {
-    0%, 100% { box-shadow: 0 0 16px rgba(226, 53, 53, 0.55) inset; }
-    50%      { box-shadow: 0 0 26px rgba(226, 53, 53, 0.9) inset; }
-}
+/* Пульс и проявление — только прозрачностью. Свечение (drop-shadow, тени)
+   телефон рисует один раз, а прозрачность меняет видеокарта почти даром.
+   Раньше пульсировало само свечение, и при четырёх клиентах с нулём вкладка
+   «Клиенты» перерисовывалась каждый кадр — отсюда фризы (13 октября 2026). */
+@keyframes neoGlowIn    { from { opacity: 0; } }
+@keyframes neoRingPulse { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; } }
+@keyframes neoPhotoPulse { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
 
 /* тёмный зазор между фото и кольцом */
 :root[data-style="neo"] .avatar-wrap::before {
@@ -4211,9 +4237,37 @@ body.pad-open { padding-bottom: 62vh; }
     -webkit-mask-composite: xor;
     mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     mask-composite: exclude;
-    filter: drop-shadow(0 0 5px var(--ring-glow)) drop-shadow(0 0 12px var(--ring-glow-soft));
     animation: neoRingDraw 1.2s cubic-bezier(0.34, 1.15, 0.64, 1) 0.15s backwards;
 }
+
+/* Свечение кольца — отдельный слой с той же дугой, но сразу целой и не
+   анимированной: свечение рисуется один раз. Проявляется, когда кольцо
+   дорисовано, а у нулевого абонемента пульсирует прозрачностью. */
+:root[data-style="neo"] .avatar-wrap::after {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    z-index: 2;
+    padding: 3px;
+    border-radius: 50%;
+    pointer-events: none;
+    background: conic-gradient(
+        from 0deg,
+        var(--c-dark) 0deg,
+        var(--c-base) calc(var(--ring-to, 0deg) * 0.30),
+        var(--c-light) calc(var(--ring-to, 0deg) * 0.72),
+        var(--c-base) var(--ring-to, 0deg),
+        transparent var(--ring-to, 0deg)
+    );
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    filter: drop-shadow(0 0 5px var(--ring-glow)) drop-shadow(0 0 12px var(--ring-glow-soft));
+    will-change: opacity;
+    animation: neoGlowIn 0.5s ease 1.2s backwards;
+}
+:root[data-style="neo"] .avatar-wrap .avatar-ring { z-index: 3; }
 
 /* --- Состояния: 6+ норма, 3–5 мало, 1–2 критично, 0 — ноль --- */
 :root[data-style="neo"] .ring-ok {
@@ -4253,13 +4307,19 @@ body.pad-open { padding-bottom: 62vh; }
 :root[data-style="neo"] .ring-zero .avatar-photo { filter: brightness(0.55) saturate(0.5) contrast(1.1); }
 :root[data-style="neo"] .ring-zero .photo-overlay {
     background: radial-gradient(circle at 50% 38%, transparent 25%, rgba(15, 0, 0, 0.45) 60%, rgba(40, 0, 0, 0.78) 100%);
-    box-shadow: 0 0 20px rgba(226, 53, 53, 0.7) inset;
+    box-shadow: 0 0 18px rgba(226, 53, 53, 0.6) inset;
+}
+:root[data-style="neo"] .ring-zero .photo-overlay::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    box-shadow: 0 0 26px rgba(226, 53, 53, 0.9) inset;
+    will-change: opacity;
     animation: neoPhotoPulse 2s ease-in-out infinite;
 }
-:root[data-style="neo"] .ring-zero .avatar-ring {
-    animation:
-        neoRingDraw 1.2s cubic-bezier(0.34, 1.15, 0.64, 1) 0.15s backwards,
-        neoRingPulse 1.8s ease-in-out infinite;
+:root[data-style="neo"] .ring-zero.avatar-wrap::after {
+    animation: neoGlowIn 0.5s ease 1.2s backwards, neoRingPulse 1.8s ease-in-out 1.7s infinite;
 }
 
 /* ==========================================================================
@@ -4655,6 +4715,16 @@ body.pad-open { padding-bottom: 62vh; }
 /* --- Пустые состояния --- */
 :root[data-style="neo"] .empty-note,
 :root[data-style="neo"] .tpl-empty { color: rgba(255, 255, 255, 0.42); }
+
+/* Украшения пульсируют несколько раз и замирают: бесконечная пульсация
+   свечением (filter, тени) перерисовывает элемент каждый кадр. Точка
+   «сейчас» и кольцо нулевого абонемента — смысловые, они продолжают. */
+:root[data-style="neo"] .btn-primary,
+:root[data-style="neo"] .sched-add,
+:root[data-style="neo"] .calendar-capsule.active,
+:root[data-style="neo"] .us-ic,
+:root[data-style="neo"] .set-check.on,
+:root[data-style="neo"] .screen-head h2[data-text]::after { animation-iteration-count: 3; }
 
 /* Экономия анимаций в системе или слабый телефон: пульсации, блики и
    вращение проигрываются один раз и замирают — остаётся только появление */
@@ -6540,6 +6610,28 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
     </div>
 </div>
 
+<!-- Программа в продаже глазами покупателя: описание, скелет, кнопка покупки -->
+<div id="sheet-offer" class="glass-sheet-overlay" onclick="closeSheet('sheet-offer')">
+    <div class="glass-sheet-content" onclick="event.stopPropagation()">
+        <div class="sheet-notch"></div>
+        <div class="sheet-header">
+            <div>
+                <h2 id="of-title">Программа</h2>
+                <span id="of-sub" style="font-size: 13px; color: var(--text-muted);"></span>
+            </div>
+            <span class="sheet-close-txt" onclick="closeSheet('sheet-offer')">Закрыть</span>
+        </div>
+        <div id="of-body"></div>
+        <button class="btn-soft filled" id="of-buy" style="width: 100%; margin-top: 14px;" onclick="buyOffer()">Купить</button>
+        <div class="price-hint dim" id="of-pay-note">
+            Оплата и возврат — напрямую с тренером, приложение в оплате не участвует.
+        </div>
+        <button class="btn-soft" id="of-report" style="width: 100%; margin-top: 10px;" onclick="reportOffer()">
+            Пожаловаться
+        </button>
+    </div>
+</div>
+
 <!-- Одна тренировка программы: что в ней и что с ней можно сделать -->
 <div id="sheet-pg-day" class="glass-sheet-overlay" onclick="closeSheet('sheet-pg-day')">
     <div class="glass-sheet-content" onclick="event.stopPropagation()">
@@ -6552,6 +6644,10 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
             <span class="sheet-close-txt" onclick="closeSheet('sheet-pg-day')">Закрыть</span>
         </div>
         <div id="pd-body"></div>
+        <div class="mk-note" id="pd-locked" style="margin-top: 12px; display: none;">
+            Программа в продаже — менять её нельзя.
+        </div>
+        <div id="pd-actions">
         <button class="btn-soft filled" style="width: 100%; margin-top: 14px;"
                 onclick="openProgramDayEditor(pgDayIndex)">
             Изменить упражнения
@@ -6566,6 +6662,7 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
         <button class="btn-soft" style="width: 100%; margin-top: 10px;" onclick="deleteProgramDay()">
             Убрать из программы
         </button>
+        </div>
     </div>
 </div>
 
@@ -7027,6 +7124,15 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
         </div>
     </div>
 
+    <div class="panel" id="pg-page-panel">
+        <div id="pg-page"></div>
+    </div>
+
+    <div class="panel" id="pg-req-panel" style="display: none;">
+        <div class="clients-total" id="pg-req-total"></div>
+        <div id="pg-req"></div>
+    </div>
+
     <div class="panel" id="pg-runs-panel" style="display: none;">
         <div class="clients-total">Иду по программе</div>
         <div id="pg-runs"></div>
@@ -7077,6 +7183,9 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
         </div>
     </div>
 
+    <!-- Продажа: опубликовать / в продаже (правка закрыта) / снять, копия -->
+    <div class="panel" id="pv-market"></div>
+
     <div class="panel">
         <div class="form-row">
             <label class="caps-label" for="pv-name">Название</label>
@@ -7122,12 +7231,112 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
         <button class="btn-soft" style="width: 100%; margin-top: 12px;" onclick="openProgramShare()">
             Поделиться: текст или PDF
         </button>
-        <button class="btn-soft filled" style="width: 100%; margin-top: 12px;" onclick="addProgramDay()">
+        <button class="btn-soft filled" id="pv-add-day" style="width: 100%; margin-top: 12px;" onclick="addProgramDay()">
             ＋ Тренировка
         </button>
-        <button class="btn-soft" style="width: 100%; margin-top: 10px;" onclick="deleteProgram()">
+        <button class="btn-soft" id="pv-delete" style="width: 100%; margin-top: 10px;" onclick="deleteProgram()">
             Удалить программу
         </button>
+    </div>
+</div>
+
+
+<!-- ==========================================================================
+     ЭКРАН — МОЯ СТРАНИЦА
+     То, что увидит покупатель: имя, пара строк о себе, фото из Telegram и
+     контакт. Сохраняется на сервере (функция market), там же проверка текста.
+     ========================================================================== -->
+<div id="screen-mypage" class="screen">
+
+    <div class="screen-head">
+        <div class="back-chip" onclick="goBack()"><span class="only-neo">❮</span><svg class="mi only-min" aria-hidden="true"><use href="#i-chev-left"/></svg></div>
+        <div class="head-titles">
+            <h2 data-text="Моя страница">Моя страница</h2>
+            <span class="head-sub" id="mp-sub">Её увидят покупатели программ</span>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="mp-who">
+            <div class="mp-photo" id="mp-photo"></div>
+            <div class="price-hint dim" style="margin: 0;">Фото берётся из Telegram</div>
+        </div>
+
+        <div class="form-row">
+            <label class="caps-label" for="mp-name">Имя для покупателей</label>
+            <input class="fld" type="text" id="mp-name" autocomplete="off" maxlength="60" placeholder="Олег Иванов" oninput="mpDirty = true">
+        </div>
+
+        <div class="form-row">
+            <label class="caps-label" for="mp-about">О себе</label>
+            <textarea class="fld" id="mp-about" maxlength="400"
+                      placeholder="Пара строк: опыт, с кем работаете, чем поможете" oninput="mpDirty = true"></textarea>
+        </div>
+
+        <div class="form-row">
+            <label class="caps-label" for="mp-contact">Контакт</label>
+            <input class="fld" type="text" id="mp-contact" autocomplete="off" maxlength="40" placeholder="@ник в Telegram" oninput="mpDirty = true">
+            <div class="price-hint dim">По нему покупатель напишет вам, чтобы оплатить программу</div>
+        </div>
+
+        <button class="btn-soft filled" style="width: 100%; margin-top: 6px;" onclick="saveMyPage()">
+            Сохранить
+        </button>
+    </div>
+
+    <div class="panel" id="mp-link-panel" style="display: none;">
+        <div class="clients-total">Ссылка на страницу</div>
+        <div class="mk-note" id="mp-link" style="word-break: break-all; margin-bottom: 12px;"></div>
+        <div class="field-pair">
+            <button class="btn-soft" onclick="shareMyPage()">Поделиться</button>
+            <button class="btn-soft" onclick="copyMyPageLink()">Скопировать</button>
+        </div>
+        <div class="field-pair" style="margin-top: 10px;">
+            <button class="btn-soft" onclick="showQrFor(myPageLink())">QR-код</button>
+            <button class="btn-soft" onclick="openShop(mk.page.code)">Как видят</button>
+        </div>
+        <div class="price-hint dim">Ссылку кидайте в свой канал, Инстаграм, ВК — по ней откроется ваша страница с программами.</div>
+    </div>
+
+    <div class="panel">
+        <div class="clients-total" id="mp-live-total"></div>
+        <div id="mp-live"></div>
+    </div>
+</div>
+
+
+<!-- ==========================================================================
+     ЭКРАН — СТРАНИЦА ТРЕНЕРА ДЛЯ ПОКУПАТЕЛЯ
+     Открывается по ссылке t.me/бот?start=t_код. До покупки видно только
+     превью (сервер полную программу не отдаёт). Оплата — напрямую тренеру.
+     ========================================================================== -->
+<div id="screen-shop" class="screen">
+
+    <div class="screen-head">
+        <div class="back-chip" onclick="goBack()"><span class="only-neo">❮</span><svg class="mi only-min" aria-hidden="true"><use href="#i-chev-left"/></svg></div>
+        <div class="head-titles">
+            <h2 id="sh-head" data-text="Программы тренера">Программы тренера</h2>
+            <span class="head-sub" id="sh-sub"></span>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="mp-who">
+            <div class="mp-photo" id="sh-photo"></div>
+            <div style="min-width: 0;">
+                <div class="cr-name" id="sh-name"></div>
+                <div class="cr-sub" id="sh-contact"></div>
+            </div>
+        </div>
+        <div class="mk-note" id="sh-about"></div>
+        <div class="mk-note" id="sh-own" style="display: none; margin-top: 10px;">
+            <b>Так вашу страницу видят покупатели.</b>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="clients-total" id="sh-total"></div>
+        <div id="sh-list"></div>
     </div>
 </div>
 
@@ -7236,7 +7445,7 @@ function applyViewport() {
    день файл выкладывается не раз: по одной дате не понять, приехало ли
    обновление или Telegram показывает копию из кэша. Ставится при выкладке
    скриптом publish.py — руками не правится. */
-const BUILD = '11.10.2026, 07:14';
+const BUILD = '13.10.2026, 12:30';
 let fullReason = '';        // почему полного экрана нет — тоже видно в Профиле
 
 /* Полный экран: приложение занимает телефон целиком, а кнопки Telegram
@@ -8192,7 +8401,10 @@ function goBack() {
             showScreen('screen-run');
             return;
         }
-        showScreen(backFrom[currentScreen] === 'screen-run' ? 'screen-run' : 'screen-programs');
+        // к прохождению и к «Моей странице» (с неё смотрят «как видят») — туда же, откуда пришли
+        const prev = backFrom[currentScreen];
+        showScreen((prev === 'screen-run' || prev === 'screen-mypage') && prev !== currentScreen
+            ? prev : 'screen-programs');
         return;
     }
 
@@ -8241,6 +8453,8 @@ function showScreen(id, from) {
     if (id === 'screen-clients') renderClientsScreen();
     if (id === 'screen-programs') renderProgramsScreen();
     if (id === 'screen-program') renderProgramScreen();
+    if (id === 'screen-mypage') renderMyPage();
+    if (id === 'screen-shop') renderShop();
     if (id === 'screen-run') renderRunScreen();
     if (id === 'screen-exercises') renderExercisesScreen();
     if (id === 'screen-profile') {
@@ -11101,6 +11315,7 @@ function openProgramDayEditor(index) {
     const p = getProgram(pgOpenId);
     const d = p && p.days[index];
     if (!d) return;
+    if (programLockedToast(p)) return;
 
     closeSheet('sheet-pg-day');
     wkProgram = { id: p.id, day: index };
@@ -14784,7 +14999,15 @@ function renderProgramsScreen() {
     if (!box) return;
 
     renderRunsPanel();
+    renderPageRow();
+    renderRequests();
+    mkRefreshSoon();
     const list = programs();
+    // Покупатель (не тренер) приходит сюда за купленным: своих программ у
+    // него нет, и «Создать программу» и «Моя страница» ему ни к чему
+    const buyerOnly = !isTrainerRole() && !list.length;
+    $('pg-page-panel').style.display = isTrainerRole() ? '' : 'none';
+    box.parentNode.style.display = buyerOnly ? 'none' : '';
     total.style.display = list.length ? '' : 'none';
     total.innerHTML = 'Всего программ: <b>' + list.length + '</b>';
 
@@ -14811,6 +15034,7 @@ function renderProgramsScreen() {
                    '<div class="cr-info">' +
                        '<div class="cr-name">' + esc(programTitle(p)) + '</div>' +
                        '<div class="cr-meta">' +
+                           (programLive(p) ? '<span class="pg-badge">в продаже</span> ' : '') +
                            programSummary(p).map(esc).join('<span class="dot">·</span>') +
                        '</div>' +
                    '</div>' +
@@ -14867,6 +15091,7 @@ function renderProgramScreen() {
     $('pv-descr').value = p.descr;
     $('pv-price').value = p.price ? String(p.price) : '';
     renderProgramChips();
+    renderProgramMarket(p);
 
     const days = p.days || [];
     $('pv-days-total').innerHTML = 'Тренировок: <b>' + days.length + '</b>';
@@ -14920,6 +15145,7 @@ function renderProgramChips() {
 function pickProgramWeights(v) {
     const p = getProgram(pgOpenId);
     if (!p) return;
+    if (programLockedToast(p)) return;
     p.hideWeights = (v === 'reps');
     saveProgram(p);
     renderProgramChips();
@@ -14929,6 +15155,7 @@ function pickProgramWeights(v) {
 function pickProgramGoal(v) {
     const p = getProgram(pgOpenId);
     if (!p) return;
+    if (programLockedToast(p)) return;
     p.goal = (p.goal === v) ? '' : v;
     saveProgram(p);
     renderProgramChips();
@@ -14938,6 +15165,7 @@ function pickProgramGoal(v) {
 function pickProgramLevel(v) {
     const p = getProgram(pgOpenId);
     if (!p) return;
+    if (programLockedToast(p)) return;
     p.level = (p.level === v) ? '' : v;
     saveProgram(p);
     renderProgramChips();
@@ -14955,6 +15183,7 @@ function saveProgram(p) {
 function onProgramField() {
     const p = getProgram(pgOpenId);
     if (!p) return;
+    if (programLive(p)) return;              // поля и так закрыты — на всякий случай
     p.title = $('pv-name').value.slice(0, 80);
     p.descr = $('pv-descr').value.slice(0, 600);
 
@@ -14970,6 +15199,7 @@ function onProgramField() {
 }
 
 function openProgramPricePad() {
+    if (programLockedToast(getProgram(pgOpenId))) return;
     padForInput('pv-price', {
         label: 'Цена, ₽', steps: [-500, 500], remember: 'money', max: 999999,
         after: onProgramPrice
@@ -14987,6 +15217,10 @@ function onProgramPrice() {
 async function deleteProgram() {
     const p = getProgram(pgOpenId);
     if (!p) return;
+    if (programLive(p)) {
+        await showAlert('Программа в продаже\nСначала снимите её с продажи — потом её можно будет удалить.');
+        return;
+    }
     const ok = await showConfirm('Удалить программу «' + programTitle(p) + '»?',
                                  { ok: 'Удалить', danger: true });
     if (!ok) return;
@@ -15023,6 +15257,9 @@ function renderProgramDay() {
         : '<div class="empty-note">Упражнений пока нет.</div>';
     $('pd-up').disabled = pgDayIndex === 0;
     $('pd-down').disabled = pgDayIndex === p.days.length - 1;
+    const live = !!programLive(p);
+    $('pd-actions').style.display = live ? 'none' : '';
+    $('pd-locked').style.display = live ? '' : 'none';
 }
 
 /* Номера идут по порядку прохождения. Убрали одну — остальные сдвинулись,
@@ -15221,9 +15458,726 @@ async function sendProgramPdf() {
     }
 }
 
+/* --- Продажа программ: «Моя страница», публикация, снятие ---
+   Всё идёт через серверную функцию market: там проверка текста (мат, ссылки,
+   пустое описание), лимиты и снимок программы. Опубликованная программа —
+   готовый товар, её не правят (решение владельца 13 октября): чтобы что-то
+   поменять, делают копию, а эту снимают с продажи.
+
+   Что в продаже, знает сервер. Телефон держит последний ответ в памяти, чтобы
+   замок на программе стоял и без связи. */
+
+const MK_KEY = 'silovoyAssistentV6:market';
+
+function loadMk() {
+    try {
+        const j = JSON.parse(localStorage.getItem(MK_KEY) || 'null');
+        if (j && Array.isArray(j.listings)) {
+            return { page: j.page || null, listings: j.listings, uid: j.uid || null, at: 0 };
+        }
+    } catch (e) {}
+    return { page: null, listings: [], uid: null, at: 0 };
+}
+
+let mk = loadMk();
+mk.requests = [];
+let mkBusy = false;
+let mpDirty = false;              // на «Моей странице» начали печатать — ответ сервера поля не трогает
+
+function saveMk() {
+    try {
+        localStorage.setItem(MK_KEY, JSON.stringify({ page: mk.page, listings: mk.listings, uid: mk.uid }));
+    } catch (e) {}
+}
+
+function mkReady() { return !!(sb && cloudUid); }
+
+async function mkCall(action, payload) {
+    if (!mkReady()) return { error: 'offline' };
+    try {
+        const r = await sb.functions.invoke('market', { body: Object.assign({ action: action }, payload || {}) });
+        if (r.error) {
+            const st = r.error.context && r.error.context.status;
+            return { error: st === 401 ? 'auth' : 'net' };
+        }
+        return r.data || {};
+    } catch (e) {
+        return { error: 'net' };
+    }
+}
+
+function mkApply(res) {
+    if (!res) return;
+    // вошли другим человеком на этом телефоне — чужое не показываем
+    if (cloudUid && mk.uid && mk.uid !== cloudUid) mk = { page: null, listings: [], uid: cloudUid, at: 0 };
+    if (Array.isArray(res.listings)) mk.listings = res.listings;
+    if (res.page) mk.page = res.page;
+    if (cloudUid) mk.uid = cloudUid;
+    saveMk();
+}
+
+function mkListings() {
+    return (cloudUid && mk.uid && mk.uid !== cloudUid) ? [] : mk.listings;
+}
+
+async function mkRefresh() {
+    const res = await mkCall('me', { trainer: isTrainerRole() });
+    if (res && res.ok) {
+        mkApply(res);
+        mk.at = Date.now();
+        mk.requests = Array.isArray(res.requests) ? res.requests : [];
+        importGrants(res.grants || []);
+        if (currentScreen === 'screen-programs') renderProgramsScreen();
+        if (currentScreen === 'screen-program') renderProgramScreen();
+        if (currentScreen === 'screen-mypage') renderMyPage();
+    }
+    return res;
+}
+
+/* Не чаще раза в минуту: экран списка перерисовывается часто */
+function mkRefreshSoon() {
+    if (!mkReady() || mkBusy || Date.now() - mk.at < 60000) return;
+    mkBusy = true;
+    mkRefresh().finally(function () { mkBusy = false; });
+}
+
+function programLive(p) {
+    if (!p) return null;
+    const list = mkListings();
+    for (let i = 0; i < list.length; i++) {
+        if (list[i].program_id === p.id && list[i].status === 'live') return list[i];
+    }
+    return null;
+}
+
+function programLockedToast(p) {
+    if (!programLive(p)) return false;
+    showToast('Программа в продаже — менять её нельзя. Сделайте копию');
+    return true;
+}
+
+function mkPrice(v) {
+    v = num(v, 0);
+    return v ? v.toLocaleString('ru') + ' ₽' : 'бесплатно';
+}
+
+function mkDate(iso) {
+    return iso ? humanDate(String(iso).slice(0, 10)) : '';
+}
+
+/* Строка «Моя страница» над списком программ */
+function renderPageRow() {
+    const box = $('pg-page');
+    if (!box) return;
+    const n = mkListings().filter(function (l) { return l.status === 'live'; }).length;
+    box.innerHTML =
+        '<div class="client-row tpl-row" onclick="openMyPage()">' +
+            '<div style="min-width:0; flex:1;">' +
+                '<div class="cr-name">Моя страница</div>' +
+                '<div class="cr-sub">' + (n
+                    ? 'В продаже: ' + n + ' ' + plural(n, 'программа', 'программы', 'программ')
+                    : 'Имя, о себе и контакт — для покупателей программ') + '</div>' +
+            '</div>' +
+            '<span class="arrow-icon arr tpl-open"></span>' +
+        '</div>';
+}
+
+/* --- Панель продажи на экране программы --- */
+
+function renderProgramMarket(p) {
+    const box = $('pv-market');
+    if (!box) return;
+    const live = programLive(p);
+
+    $('pv-name').readOnly = !!live;
+    $('pv-descr').readOnly = !!live;
+    $('pv-add-day').style.display = live ? 'none' : '';
+    $('pv-delete').style.display = live ? 'none' : '';
+    // запертое не должно выглядеть нажимаемым
+    ['pv-goal-chips', 'pv-level-chips', 'pv-weight-chips', 'pv-price'].forEach(function (id) {
+        $(id).style.opacity = live ? '0.5' : '';
+    });
+
+    if (live) {
+        box.innerHTML =
+            '<div class="mk-note"><span class="pg-badge">в продаже</span> с ' + esc(mkDate(live.created_at)) +
+                ' · <b>' + esc(mkPrice(live.price)) + '</b><br>' +
+                'Опубликованную программу не меняют — это готовый товар. Чтобы что-то поправить, ' +
+                'сделайте копию, а эту снимите с продажи.</div>' +
+            '<div class="field-pair" style="margin-top: 12px;">' +
+                '<button class="btn-soft" onclick="copyProgram()">Сделать копию</button>' +
+                '<button class="btn-soft" onclick="unpublishProgram()">Снять с продажи</button>' +
+            '</div>';
+        return;
+    }
+
+    const byOwner = mkListings().some(function (l) {
+        return l.program_id === p.id && l.status === 'removed' && l.removed_by === 'owner';
+    });
+    box.innerHTML =
+        '<div class="mk-note">' +
+            (byOwner ? '<b>Снята с продажи администратором приложения.</b><br>' : '') +
+            'Опубликуйте — и программа появится на <b>вашей странице</b> для покупателей. ' +
+            'После публикации менять её будет нельзя.</div>' +
+        '<button class="btn-soft filled" style="width: 100%; margin-top: 12px;" onclick="publishProgram()">' +
+            'Опубликовать</button>';
+}
+
+let mkPublishing = false;
+
+async function publishProgram() {
+    const p = getProgram(pgOpenId);
+    if (!p || programLive(p) || mkPublishing) return;
+    if (!mkReady()) {
+        await showAlert('Нужен интернет\nОпубликовать можно, когда приложение подключено к серверу ' +
+                        '(открыто в Telegram, есть связь).');
+        return;
+    }
+    const filled = (p.days || []).filter(function (d) { return (d.ex || []).length; });
+    if (!filled.length) {
+        showToast('В программе нет ни одной заполненной тренировки');
+        return;
+    }
+    const ok = await showConfirm('Опубликовать «' + programTitle(p) + '»?\n' +
+        'Цена: ' + mkPrice(p.price) + ' · ' + filled.length + ' ' +
+        plural(filled.length, 'тренировка', 'тренировки', 'тренировок') + '.\n\n' +
+        'После публикации менять программу будет нельзя — только снять с продажи или сделать копию.',
+        { ok: 'Опубликовать' });
+    if (!ok) return;
+
+    // то, что ещё не записалось после последней буквы, — записываем
+    clearTimeout(pgSaveTimer);
+    saveDB();
+
+    mkPublishing = true;
+    showToast('Публикую…');
+    let res;
+    try {
+        res = await mkCall('publish', {
+            program_id: p.id, title: p.title, descr: p.descr, goal: p.goal, level: p.level,
+            price: Math.max(0, Math.round(num(p.price, 0))), hide_weights: !!p.hideWeights,
+            days: filled.map(function (d) { return { name: d.name, ex: d.ex }; }),
+            subs: filled.map(function (d) { return muscleSummary(d.ex) || ''; })
+        });
+    } finally {
+        mkPublishing = false;
+    }
+
+    if (res.error) {
+        haptic('error');
+        await showAlert('Не получилось\n' + (res.error === 'auth'
+            ? 'Закройте и откройте приложение заново, потом повторите.'
+            : 'Нет связи с сервером. Попробуйте ещё раз.'));
+        return;
+    }
+    if (!res.ok) {
+        haptic('error');
+        await showAlert('Пока нельзя опубликовать\n' +
+            (res.problems || []).map(function (x) { return '• ' + x.text; }).join('\n'));
+        return;
+    }
+    mkApply(res);
+    haptic('success');
+    showToast('Программа в продаже');
+    if (currentScreen === 'screen-program') renderProgramScreen();
+}
+
+async function unpublishProgram() {
+    const p = getProgram(pgOpenId);
+    const live = programLive(p);
+    if (!live) return;
+    const ok = await showConfirm('Снять «' + programTitle(p) + '» с продажи?\n' +
+        'На вашей странице её больше не будет. У тех, кто уже получил программу, она останется.',
+        { ok: 'Снять', danger: true });
+    if (!ok) return;
+    const res = await mkCall('unpublish', { listing_id: live.id });
+    if (res.error) {
+        await showAlert('Не получилось\nНет связи с сервером. Попробуйте ещё раз.');
+        return;
+    }
+    mkApply(res);
+    haptic('success');
+    showToast('Снята с продажи — теперь её можно менять');
+    if (currentScreen === 'screen-program') renderProgramScreen();
+}
+
+/* Копия — обычный черновик: её можно править и потом опубликовать как новую */
+function copyProgram() {
+    const p = getProgram(pgOpenId);
+    if (!p) return;
+    const c = {
+        id: uid('pg'),
+        title: (programTitle(p) + ' (копия)').slice(0, 80),
+        descr: p.descr || '', goal: p.goal || '', level: p.level || '',
+        price: p.price || 0, status: 'draft', hideWeights: !!p.hideWeights,
+        createdAt: Date.now(),
+        days: JSON.parse(JSON.stringify(p.days || []))
+    };
+    programs().push(c);
+    pgOpenId = c.id;
+    saveProgram(c);
+    renderProgramScreen();
+    window.scrollTo(0, 0);
+    showToast('Копия создана — её можно менять');
+}
+
+/* --- Экран «Моя страница» --- */
+
+function openMyPage() {
+    mpDirty = false;
+    showScreen('screen-mypage', 'screen-programs');
+    if (mkReady()) mkRefresh();
+}
+
+function fillMyPageFields() {
+    const user = (tg && tg.initDataUnsafe) ? tg.initDataUnsafe.user : null;
+    const pg = mk.page;
+    $('mp-name').value = pg ? pg.name : (user ? [user.first_name, user.last_name].filter(Boolean).join(' ') : '');
+    $('mp-about').value = pg ? pg.about : '';
+    $('mp-contact').value = pg ? pg.contact : (user && user.username ? '@' + user.username : '');
+}
+
+function renderMyPage() {
+    const user = (tg && tg.initDataUnsafe) ? tg.initDataUnsafe.user : null;
+    if (!mpDirty) fillMyPageFields();
+
+    const name = $('mp-name').value || 'Т';
+    const photo = (mk.page && mk.page.photo_url) || (user && user.photo_url) || '';
+    $('mp-photo').innerHTML = esc(name.trim().charAt(0).toUpperCase()) +
+        (photo ? '<img src="' + esc(photo) + '" alt="" onerror="this.remove()">' : '');
+    $('mp-sub').innerText = mkReady() ? 'Её увидят покупатели программ'
+                                      : 'Нужен интернет и вход через Telegram';
+    const link = myPageLink();
+    $('mp-link-panel').style.display = link ? '' : 'none';
+    $('mp-link').innerText = link;
+
+    const list = mkListings().filter(function (l) { return l.status === 'live' || l.removed_by === 'owner'; });
+    const live = list.filter(function (l) { return l.status === 'live'; }).length;
+    $('mp-live-total').innerHTML = 'В продаже: <b>' + live + '</b>';
+    $('mp-live').innerHTML = list.length
+        ? list.map(function (l) {
+            const sub = l.status === 'live'
+                ? mkPrice(l.price) + ' · с ' + mkDate(l.created_at)
+                : 'снята администратором приложения';
+            const has = !!getProgram(l.program_id);
+            return '<div class="client-row tpl-row"' +
+                       (has ? ' onclick="openProgram(\'' + esc(l.program_id) + '\')"' : '') + '>' +
+                       '<div style="min-width:0; flex:1;">' +
+                           '<div class="cr-name">' + esc(l.title) + '</div>' +
+                           '<div class="cr-sub">' + esc(sub) + '</div>' +
+                       '</div>' +
+                       (has ? '<span class="arrow-icon arr tpl-open"></span>' : '') +
+                   '</div>';
+          }).join('')
+        : '<div class="empty-note">Пока ничего. Откройте программу и нажмите «Опубликовать».</div>';
+}
+
+async function saveMyPage() {
+    if (!mkReady()) {
+        await showAlert('Нужен интернет\nСтраница хранится на сервере — сохранить можно, когда есть связь.');
+        return;
+    }
+    const res = await mkCall('page_save', {
+        name: $('mp-name').value, about: $('mp-about').value, contact: $('mp-contact').value
+    });
+    if (res.error) {
+        await showAlert('Не получилось\nНет связи с сервером. Попробуйте ещё раз.');
+        return;
+    }
+    if (!res.ok) {
+        haptic('error');
+        await showAlert('Не сохранилось\n' +
+            (res.problems || []).map(function (x) { return '• ' + x.text; }).join('\n'));
+        return;
+    }
+    mkApply(res);
+    mpDirty = false;
+    haptic('success');
+    showToast('Страница сохранена');
+    renderMyPage();
+}
+
+function myPageLink() {
+    return (mk.page && mk.page.code) ? 'https://t.me/' + BOT_NAME + '?start=t_' + mk.page.code : '';
+}
+
+function shareMyPage() {
+    const link = myPageLink();
+    if (!link) return;
+    const url = 'https://t.me/share/url?url=' + encodeURIComponent(link) +
+                '&text=' + encodeURIComponent('Мои программы тренировок');
+    haptic('light');
+    if (tg && tg.openTelegramLink) tg.openTelegramLink(url);
+    else window.open(url, '_blank');
+}
+
+async function copyMyPageLink() {
+    const link = myPageLink();
+    if (!link) return;
+    try { await navigator.clipboard.writeText(link); showToast('Ссылка скопирована'); return; } catch (e) {}
+    try {
+        const box = document.createElement('textarea');
+        box.value = link;
+        box.style.cssText = 'position: fixed; opacity: 0;';
+        document.body.appendChild(box);
+        box.select();
+        const ok = document.execCommand('copy');
+        box.remove();
+        showToast(ok ? 'Ссылка скопирована' : 'Не удалось скопировать');
+    } catch (e) { showToast('Не удалось скопировать'); }
+}
+
+/* --- Сервер появился --- */
+
+let mkWantPrograms = false;       // открыли кнопкой бота «Открыть программу»
+
+function mkOnline() {
+    mkRefreshSoon();
+    // страницу тренера открыли до входа — теперь можно узнать, что уже куплено
+    if (currentScreen === 'screen-shop' && shopCode && !shopAuthed) shopLoad();
+}
+
+/* --- Выданные программы: ложатся в дневник прохождением ---
+   id прохождения строится из id выдачи — на другом телефоне та же выдача
+   не ляжет второй раз. Что уже брали, помнят настройки (они едут на сервер):
+   иначе прекращённую программу сервер подкладывал бы снова. */
+
+function importGrants(list) {
+    const set = ensureSettings();
+    const seen = Array.isArray(set.grantsSeen) ? set.grantsSeen : (set.grantsSeen = []);
+    const fresh = (list || []).filter(function (g) {
+        return g && g.id && seen.indexOf(g.id) === -1 && !getRun('run_' + g.id);
+    });
+    if (!fresh.length) return;
+
+    ensureSelfClient();
+    fresh.forEach(function (g) {
+        // свои упражнения тренера — иначе они выпали бы из тренировок
+        (g.exercises || []).forEach(function (e) {
+            if (e && e.name && !allExercises()[e.name]) DB.exercises.push(CLOUD_TABLES.exercises.in(e));
+        });
+        runs().push({
+            id: 'run_' + g.id, programId: '', clientId: SELF_ID,
+            title: String(g.title || 'Программа').slice(0, 80),
+            hideWeights: !!g.hide_weights, startedAt: Date.now(),
+            days: (g.days || []).map(function (d) {
+                return { name: d.name, ex: JSON.parse(JSON.stringify(d.ex || [])), sessionId: null };
+            })
+        });
+        seen.push(g.id);
+    });
+    saveDB();
+    if (typeof cloudLater === 'function') cloudLater();
+    haptic('success');
+    showToast(fresh.length === 1
+        ? 'Тренер выдал программу «' + fresh[0].title + '» — она в «Программах»'
+        : 'Новые программы: ' + fresh.length + ' — они в «Программах»');
+    if (typeof renderRoleSwitch === 'function') renderRoleSwitch();
+    if (mkWantPrograms && availableRoles().indexOf('programs') !== -1) {
+        mkWantPrograms = false;
+        enterRole('programs');
+    } else if (currentScreen === 'screen-programs') {
+        renderProgramsScreen();
+    }
+}
+
+/* --- Заявки у тренера --- */
+
+function renderRequests() {
+    const panel = $('pg-req-panel');
+    if (!panel) return;
+    const list = isTrainerRole() ? (mk.requests || []) : [];
+    panel.style.display = list.length ? '' : 'none';
+    if (!list.length) return;
+    $('pg-req-total').innerHTML = 'Заявки на покупку: <b>' + list.length + '</b>';
+    $('pg-req').innerHTML = list.map(function (r) {
+        const кто = (r.buyer_name || 'Без имени') + (r.buyer_username ? ' (@' + r.buyer_username + ')' : '');
+        return '<div class="client-row tpl-row" style="flex-wrap: wrap;">' +
+                   '<div style="min-width:0; flex:1 1 100%;">' +
+                       '<div class="cr-name">' + esc(кто) + '</div>' +
+                       '<div class="cr-sub">«' + esc(r.title) + '» · ' + esc(mkPrice(r.price)) +
+                           ' · ' + esc(mkDate(r.created_at)) + '</div>' +
+                   '</div>' +
+                   '<div class="field-pair" style="flex:1 1 100%; margin-top: 10px;">' +
+                       '<button class="btn-soft filled" onclick="issueRequest(\'' + esc(r.id) + '\')">Выдать</button>' +
+                       '<button class="btn-soft" onclick="declineRequest(\'' + esc(r.id) + '\')">Отклонить</button>' +
+                   '</div>' +
+               '</div>';
+    }).join('');
+}
+
+function requestById(id) {
+    return (mk.requests || []).filter(function (r) { return r.id === id; })[0] || null;
+}
+
+async function issueRequest(id) {
+    const r = requestById(id);
+    if (!r) return;
+    const ok = await showConfirm('Выдать «' + r.title + '»?\n' +
+        (r.buyer_name || 'Покупатель') + ' сразу получит программу. Выдавайте, когда оплата уже пришла.',
+        { ok: 'Выдать' });
+    if (!ok) return;
+    await answerRequest('issue', id, 'Программа выдана');
+}
+
+async function declineRequest(id) {
+    const r = requestById(id);
+    if (!r) return;
+    const ok = await showConfirm('Отклонить заявку на «' + r.title + '»?\n' +
+        (r.buyer_name || 'Покупателю') + ' придёт сообщение, что заявка отклонена.',
+        { ok: 'Отклонить', danger: true });
+    if (!ok) return;
+    await answerRequest('decline', id, 'Заявка отклонена');
+}
+
+async function answerRequest(action, id, done) {
+    const res = await mkCall(action, { request_id: id });
+    if (res.error && !res.requests) {
+        await showAlert('Не получилось\n' + (res.error === 'net' || res.error === 'offline'
+            ? 'Нет связи с сервером. Попробуйте ещё раз.' : res.error));
+        return;
+    }
+    if (Array.isArray(res.requests)) mk.requests = res.requests;
+    haptic('success');
+    showToast(res.ok ? done : (res.error || 'Заявки уже нет'));
+    renderRequests();
+}
+
+/* --- Страница тренера глазами покупателя --- */
+
+let shopCode = '';
+let shopData = null;
+let shopAuthed = false;           // ответ получен со входом: известно, что уже куплено
+let shopOfferId = null;
+
+function openShop(code) {
+    if (!code) return;
+    shopCode = String(code);
+    shopData = null;
+    shopAuthed = false;
+    showScreen('screen-shop', currentScreen === 'screen-shop' ? null : currentScreen);
+    shopLoad();
+}
+
+/* Без входа — только витрина; со входом — ещё и что у человека уже есть */
+async function shopLoad() {
+    const code = shopCode;
+    let res;
+    if (mkReady()) {
+        res = await mkCall('page_view', { code: code });
+        if (res && res.ok) shopAuthed = true;
+    } else {
+        try {
+            const r = await cloudFetch(CLOUD_URL + '/functions/v1/market', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', apikey: CLOUD_KEY },
+                body: JSON.stringify({ action: 'page_view', code: code })
+            });
+            res = await r.json();
+        } catch (e) {
+            res = { error: 'net' };
+        }
+    }
+    if (code !== shopCode) return;          // пока ждали, открыли другую
+    shopData = res || { error: 'net' };
+    if (currentScreen === 'screen-shop') renderShop();
+    if (shopOfferId && sheetStack.indexOf('sheet-offer') !== -1) renderOffer();
+}
+
+function renderShop() {
+    const d = shopData;
+    if (!d) {
+        $('sh-name').innerText = '';
+        $('sh-contact').innerText = '';
+        $('sh-about').innerText = 'Загружаю…';
+        $('sh-photo').innerHTML = '';
+        $('sh-own').style.display = 'none';
+        $('sh-total').innerHTML = '';
+        $('sh-list').innerHTML = '';
+        return;
+    }
+    if (!d.ok) {
+        $('sh-name').innerText = '';
+        $('sh-contact').innerText = '';
+        $('sh-photo').innerHTML = '';
+        $('sh-own').style.display = 'none';
+        $('sh-about').innerText = d.error === 'net' ? 'Нет связи. Проверьте интернет и откройте ссылку снова.'
+                                                    : 'Такой страницы нет — возможно, ссылка устарела.';
+        $('sh-total').innerHTML = '';
+        $('sh-list').innerHTML = '';
+        return;
+    }
+    const pg = d.page;
+    $('sh-head').innerText = pg.name || 'Тренер';
+    $('sh-head').setAttribute('data-text', pg.name || 'Тренер');
+    $('sh-sub').innerText = 'Программы тренировок';
+    $('sh-name').innerText = pg.name || '';
+    $('sh-contact').innerText = pg.contact || '';
+    $('sh-about').innerText = pg.about || '';
+    $('sh-photo').innerHTML = esc((pg.name || 'Т').trim().charAt(0).toUpperCase()) +
+        (pg.photo_url ? '<img src="' + esc(pg.photo_url) + '" alt="" onerror="this.remove()">' : '');
+    $('sh-own').style.display = d.own ? '' : 'none';
+
+    const list = d.listings || [];
+    $('sh-total').innerHTML = 'Программ: <b>' + list.length + '</b>';
+    $('sh-list').innerHTML = list.length
+        ? list.map(function (l) {
+            const meta = [listName(PROG_GOALS, l.goal), listName(PROG_LEVELS, l.level),
+                          offerDays(l) + ' ' + plural(offerDays(l), 'тренировка', 'тренировки', 'тренировок')]
+                .filter(Boolean);
+            const mark = (l.mine === 'granted' ? '<span class="pg-badge">у вас</span> '
+                       : (l.mine === 'requested' ? '<span class="pg-badge">заявка</span> ' : '')) +
+                       (l.price ? '' : '<span class="pg-badge">бесплатно</span> ');
+            return '<div class="client-row cl-card" onclick="openOffer(\'' + esc(l.id) + '\')">' +
+                       programCoverHtml({ title: l.title }) +
+                       '<div class="cr-info">' +
+                           '<div class="cr-name">' + esc(l.title) + '</div>' +
+                           '<div class="cr-meta">' + mark + meta.map(esc).join('<span class="dot">·</span>') + '</div>' +
+                       '</div>' +
+                       (l.price ? '<div class="cr-stats"><div class="cr-stat"><b>' +
+                           l.price.toLocaleString('ru') + '</b><span>₽</span></div></div>' : '') +
+                       '<span class="arrow-icon arr"></span>' +
+                   '</div>';
+          }).join('')
+        : '<div class="empty-note">Сейчас в продаже ничего нет.</div>';
+}
+
+function offerDays(l) { return ((l.preview && l.preview.days) || []).length; }
+
+function offerById(id) {
+    return ((shopData && shopData.listings) || []).filter(function (l) { return l.id === id; })[0] || null;
+}
+
+function openOffer(id) {
+    if (!offerById(id)) return;
+    shopOfferId = id;
+    renderOffer();
+    haptic('light');
+    openSheet('sheet-offer');
+}
+
+/* Превью — вариант «В»: скелет всех тренировок и названия упражнений
+   первой, без подходов, повторов и весов */
+function renderOffer() {
+    const l = offerById(shopOfferId);
+    if (!l) return;
+    const days = (l.preview && l.preview.days) || [];
+    const first = (l.preview && l.preview.first) || [];
+    $('of-title').innerText = l.title;
+    $('of-sub').innerText = [listName(PROG_GOALS, l.goal), listName(PROG_LEVELS, l.level),
+        days.length + ' ' + plural(days.length, 'тренировка', 'тренировки', 'тренировок'),
+        mkPrice(l.price)].filter(Boolean).join(' · ');
+    $('of-body').innerHTML =
+        (l.descr ? '<div class="mk-note" style="color: var(--text-main); white-space: pre-line;">' + esc(l.descr) + '</div>' : '') +
+        (l.hide_weights ? '<div class="mk-note" style="margin-top: 8px;">Веса подбираются под вас — по вашей же истории.</div>' : '') +
+        '<div class="caps-label" style="margin-top: 14px;">Из чего состоит</div>' +
+        days.map(function (d, i) {
+            return '<div class="client-row tpl-row">' +
+                       '<span class="pg-day-no">' + (i + 1) + '</span>' +
+                       '<div style="min-width:0; flex:1;">' +
+                           '<div class="cr-name">' + esc(d.name) + (d.sub ? ' · ' + esc(d.sub) : '') + '</div>' +
+                           '<div class="cr-sub">' + d.ex_count + ' ' + plural(d.ex_count, 'упражнение', 'упражнения', 'упражнений') +
+                               ' · ' + d.set_count + ' ' + plural(d.set_count, 'подход', 'подхода', 'подходов') + '</div>' +
+                       '</div>' +
+                   '</div>';
+        }).join('') +
+        (first.length
+            ? '<div class="mk-note" style="margin-top: 10px;"><b>В первой тренировке:</b> ' +
+                  first.map(esc).join(', ') + '</div>'
+            : '');
+
+    const own = !!(shopData && shopData.own);
+    const btn = $('of-buy');
+    btn.disabled = own;
+    btn.innerText = own ? 'Это ваша программа'
+                  : l.mine === 'granted' ? 'Уже у вас — открыть'
+                  : l.mine === 'requested' ? 'Заявка отправлена — написать тренеру'
+                  : l.price ? 'Купить за ' + mkPrice(l.price)
+                  : 'Получить бесплатно';
+    $('of-pay-note').style.display = (l.price && !own && l.mine !== 'granted') ? '' : 'none';
+    $('of-report').style.display = own ? 'none' : '';
+}
+
+let shopBuying = false;
+
+async function buyOffer() {
+    const l = offerById(shopOfferId);
+    if (!l || shopBuying || (shopData && shopData.own)) return;
+
+    if (l.mine === 'granted') { closeSheet('sheet-offer'); openBoughtPrograms(); return; }
+    if (l.mine === 'requested') { writeTrainer(l); return; }
+
+    if (!mkReady()) {
+        await showAlert('Подключаюсь к серверу\nПодождите пару секунд и нажмите ещё раз. ' +
+                        'Если не помогает — проверьте интернет.');
+        return;
+    }
+    shopBuying = true;
+    let res;
+    try {
+        res = await mkCall('buy', { listing_id: l.id });
+    } finally {
+        shopBuying = false;
+    }
+    if (res.error && !res.ok) {
+        await showAlert('Не получилось\n' + (res.error === 'net' || res.error === 'offline' || res.error === 'auth'
+            ? 'Нет связи с сервером. Попробуйте ещё раз.' : res.error));
+        shopLoad();
+        return;
+    }
+    if (res.granted) {
+        l.mine = 'granted';
+        renderOffer();
+        renderShop();
+        mk.at = 0;
+        await mkRefresh();            // заберёт выданное в дневник
+        return;
+    }
+    l.mine = 'requested';
+    renderOffer();
+    renderShop();
+    const go = await showConfirm('Заявка отправлена тренеру\n' +
+        'Напишите ему, чтобы договориться об оплате. Когда тренер получит оплату и нажмёт «Выдать», ' +
+        'программа появится у вас в «Программах».\n\n' +
+        'Оплата и возврат — напрямую с тренером, приложение в оплате не участвует.',
+        { ok: 'Написать тренеру', cancelText: 'Позже' });
+    if (go) writeTrainer(l, res.contact);
+}
+
+/* Чат с тренером: по @нику — с готовым текстом, по телефону — показываем номер */
+function writeTrainer(l, contact) {
+    contact = contact || (shopData && shopData.page && shopData.page.contact) || '';
+    const nick = /^@([A-Za-z0-9_]{4,32})$/.exec(contact);
+    if (nick) {
+        const text = 'Здравствуйте! Хочу купить вашу программу «' + l.title + '» за ' + mkPrice(l.price) + '.';
+        const url = 'https://t.me/' + nick[1] + '?text=' + encodeURIComponent(text);
+        if (tg && tg.openTelegramLink) tg.openTelegramLink(url);
+        else window.open(url, '_blank');
+        return;
+    }
+    showAlert('Контакт тренера\n' + (contact || 'Тренер не указал контакт.'));
+}
+
+function openBoughtPrograms() {
+    if (availableRoles().indexOf('programs') !== -1) enterRole('programs');
+}
+
+async function reportOffer() {
+    const l = offerById(shopOfferId);
+    if (!l) return;
+    const ok = await showConfirm('Пожаловаться на программу?\n' +
+        'Администратор приложения посмотрит её и, если нужно, снимет с продажи.',
+        { ok: 'Пожаловаться' });
+    if (!ok) return;
+    if (!mkReady()) { showToast('Нет связи — попробуйте позже'); return; }
+    await mkCall('report', { listing_id: l.id });
+    showToast('Жалоба отправлена');
+}
+
 function moveProgramDay(step) {
     const p = getProgram(pgOpenId);
     if (!p) return;
+    if (programLockedToast(p)) return;
     const to = pgDayIndex + step;
     if (to < 0 || to >= p.days.length) return;
 
@@ -15239,6 +16193,7 @@ async function deleteProgramDay() {
     const p = getProgram(pgOpenId);
     const d = p && p.days[pgDayIndex];
     if (!d) return;
+    if (programLockedToast(p)) return;
     const ok = await showConfirm('Убрать «' + d.name + '» из программы?',
                                  { ok: 'Убрать', danger: true });
     if (!ok) return;
@@ -15254,6 +16209,7 @@ async function deleteProgramDay() {
 function addProgramDay() {
     const p = getProgram(pgOpenId);
     if (!p) return;
+    if (programLockedToast(p)) return;
     p.days.push({ name: '', ex: [] });
     renumberProgramDays(p);
     saveProgram(p);
@@ -15267,6 +16223,7 @@ function copyProgramDay() {
     const p = getProgram(pgOpenId);
     const d = p && p.days[pgDayIndex];
     if (!d) return;
+    if (programLockedToast(p)) return;
 
     const копия = { name: '', ex: JSON.parse(JSON.stringify(d.ex || [])) };
     p.days.splice(pgDayIndex + 1, 0, копия);
@@ -15661,6 +16618,7 @@ function hasCabinetRole() {
    остальным — когда появится витрина или купленное. */
 function hasProgramsRole() {
     if (isTrainerRole()) return true;
+    if (runs().length > 0) return true;       // купленное видно всегда, даже клиенту чужого тренера
     if (hasCabinetRole()) return false;
     return programs().length > 0;
 }
@@ -15791,6 +16749,21 @@ function bootEntry() {
     // знакомство ему не показываем
     if (/^inv_/i.test(param)) { enterRole('trainer'); return; }
 
+    // Пришёл по ссылке на страницу тренера — показываем её сразу. Новому
+    // человеку знакомство здесь мешает: он пришёл за программой, а не за
+    // приложением. Он считается пользователем дневника — туда и ляжет купленное.
+    if (/^t_[a-z0-9]+$/i.test(param)) {
+        if (!onboardingDone() && !isExistingUser()) markOnboarded();
+        const roles0 = availableRoles();
+        const last0 = lastPlace();
+        enterRole((last0 && roles0.indexOf(last0.mode) !== -1) ? last0.mode
+                  : (roles0.indexOf('trainer') !== -1 ? 'trainer' : 'diary'), last0 ? last0.tab : null);
+        openShop(param.slice(2));
+        return;
+    }
+    // Кнопка из сообщения бота про заявку или выданную программу
+    if (param === 'progs') mkWantPrograms = true;
+
     if (!onboardingDone()) {
         if (isExistingUser()) {
             // обновился давний пользователь: знакомство ему ни к чему,
@@ -15808,6 +16781,10 @@ function bootEntry() {
     let role = (last && roles.indexOf(last.mode) !== -1) ? last.mode
              : (roles.indexOf('trainer') !== -1 ? 'trainer' : 'diary');
     enterRole(role, last ? last.tab : null);
+    if (mkWantPrograms && availableRoles().indexOf('programs') !== -1) {
+        mkWantPrograms = false;
+        enterRole('programs');
+    }
 }
 
 function pickRole(role) {
@@ -17124,6 +18101,8 @@ function cloudSet(state, note) {
     cloudState = state;
     cloudNote = note || '';
     renderCloudLine();
+    // покупке и выдаче нужен сервер: как только он есть — подтягиваем
+    if (state === 'ok' && typeof mkOnline === 'function') setTimeout(mkOnline, 600);
 }
 
 /* Причина важнее кода ошибки: тренеру надо понять, ждать или что-то делать */
