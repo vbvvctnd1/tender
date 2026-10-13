@@ -1768,6 +1768,56 @@ textarea.fld {
 .mk-note { font-size: 13.5px; line-height: 1.45; color: var(--text-muted); }
 .mk-note b { color: var(--text-main); }
 .mp-who { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+
+/* Страница тренера для покупателя — визитка */
+.pg-fold { display: flex; align-items: center; cursor: pointer; }
+.pg-fold .pg-fold-arr { margin-left: auto; transition: transform 0.2s ease; }
+.pg-fold .pg-fold-arr.open { transform: rotate(90deg); }
+
+.shop-own {
+    margin: 0 16px 10px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: rgba(127, 127, 127, 0.14);
+    color: var(--text-muted);
+    font-size: 12.5px;
+    font-weight: 600;
+    text-align: center;
+}
+.shop-card { text-align: center; }
+.shop-photo {
+    position: relative;
+    width: 96px; height: 96px;
+    margin: 4px auto 12px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px; font-weight: 800;
+    color: #fff;
+    background: linear-gradient(145deg, rgba(var(--acc-rgb, 120, 120, 140), 0.9), rgba(var(--acc-rgb, 80, 80, 100), 0.45));
+    box-shadow: 0 0 0 3px rgba(var(--acc-rgb, 127, 127, 127), 0.55), 0 10px 30px -10px rgba(0, 0, 0, 0.8);
+}
+.shop-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.shop-name { font-size: 24px; font-weight: 800; line-height: 1.2; color: var(--text-main); }
+.shop-stats { margin-top: 4px; font-size: 13px; color: var(--text-muted); }
+.shop-write { margin: 14px auto 2px; padding-left: 22px; padding-right: 22px; }
+.shop-about { margin-top: 14px; text-align: left; }
+.shop-about:empty { display: none; }
+.shop-about .sa-row {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 9px 0;
+    border-top: 1px solid rgba(127, 127, 127, 0.16);
+    font-size: 14px; line-height: 1.4;
+    color: var(--text-main);
+}
+.shop-about .sa-row:first-child { border-top: none; }
+.shop-about .sa-ic { flex: 0 0 auto; width: 20px; text-align: center; }
+.shop-about .sa-ic .mi { width: 17px; height: 17px; vertical-align: -3px; }
+.shop-about .sa-text { white-space: pre-line; color: var(--text-main); }
+:root[data-style="minimal"] .shop-photo {
+    background: var(--m-input, #2a2a2a);
+    box-shadow: 0 0 0 2px var(--m-text, #fff);
+}
 .mp-photo {
     position: relative;
     width: 56px; height: 56px; flex: none;
@@ -3119,7 +3169,28 @@ body.pad-open { padding-bottom: 62vh; }
    Экран — список упражнений; открытое раскрывается прямо в своей карточке. */
 /* Стрелка складывания: у раскрытой карточки смотрит вниз. Значок тот же,
    что у свёрнутых кругов, — язык один. */
-#wk-ex-list .ex-item > div:first-child { flex: 1 1 auto; min-width: 0; }
+/* Название ужимается само (переносится внутри), а не выталкивает стрелку и
+   крестик на отдельную строку: на узком экране с плашкой «свой вес» крестик
+   уезжал вниз и съедал строку (скрин 13 октября) */
+#wk-ex-list .ex-item > div:first-child { flex: 1 1 0; min-width: 0; }
+
+/* Список упражнений без своей рамки: карточки и так в рамках, а «рамка в
+   рамке» съедала ширину. Панель остаётся только как отступ и подпись. */
+.panel.wk-list-panel,
+:root[data-style="neo"] .panel.wk-list-panel,
+:root[data-style="minimal"] .panel.wk-list-panel {
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 4px;
+    background: none;
+    border: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+.panel.wk-list-panel::before,
+.panel.wk-list-panel::after { display: none; }
+.panel.wk-list-panel .panel-title { padding: 0 4px; border-bottom: none; }
 #wk-ex-list .ex-chev { flex: 0 0 auto; font-size: 24px; font-weight: 400; pointer-events: none; }
 #wk-ex-list .ex-item.editing .ex-chev { transform: rotate(90deg); }
 #wk-param-line {
@@ -6131,7 +6202,7 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
 
     <!-- Тренировка — это список упражнений. Открытое раскрывается прямо
          в своей карточке: редактор подходов переезжает туда (placeWorkoutEditor) -->
-    <div class="panel">
+    <div class="panel wk-list-panel">
         <div class="panel-title">
             <span class="panel-title-text">Тренировка</span>
         </div>
@@ -6622,6 +6693,7 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
             <span class="sheet-close-txt" onclick="closeSheet('sheet-offer')">Закрыть</span>
         </div>
         <div id="of-body"></div>
+        <div class="mk-note" id="of-client-note" style="display: none; margin-top: 12px;"></div>
         <button class="btn-soft filled" id="of-buy" style="width: 100%; margin-top: 14px;" onclick="buyOffer()">Купить</button>
         <div class="price-hint dim" id="of-pay-note">
             Оплата и возврат — напрямую с тренером, приложение в оплате не участвует.
@@ -7315,23 +7387,20 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
     <div class="screen-head">
         <div class="back-chip" onclick="goBack()"><span class="only-neo">❮</span><svg class="mi only-min" aria-hidden="true"><use href="#i-chev-left"/></svg></div>
         <div class="head-titles">
-            <h2 id="sh-head" data-text="Программы тренера">Программы тренера</h2>
+            <h2 id="sh-head" data-text="Страница тренера">Страница тренера</h2>
             <span class="head-sub" id="sh-sub"></span>
         </div>
     </div>
 
-    <div class="panel">
-        <div class="mp-who">
-            <div class="mp-photo" id="sh-photo"></div>
-            <div style="min-width: 0;">
-                <div class="cr-name" id="sh-name"></div>
-                <div class="cr-sub" id="sh-contact"></div>
-            </div>
-        </div>
-        <div class="mk-note" id="sh-about"></div>
-        <div class="mk-note" id="sh-own" style="display: none; margin-top: 10px;">
-            <b>Так вашу страницу видят покупатели.</b>
-        </div>
+    <div class="shop-own" id="sh-own" style="display: none;">Так вашу страницу видят покупатели</div>
+
+    <!-- Визитка: крупное фото, имя, «Написать», регалии списком -->
+    <div class="panel shop-card">
+        <div class="shop-photo" id="sh-photo"></div>
+        <div class="shop-name" id="sh-name"></div>
+        <div class="shop-stats" id="sh-stats"></div>
+        <button class="btn-soft filled shop-write" id="sh-write" onclick="writeTrainer(null)">Написать</button>
+        <div class="shop-about" id="sh-about"></div>
     </div>
 
     <div class="panel">
@@ -7445,7 +7514,7 @@ function applyViewport() {
    день файл выкладывается не раз: по одной дате не понять, приехало ли
    обновление или Telegram показывает копию из кэша. Ставится при выкладке
    скриптом publish.py — руками не правится. */
-const BUILD = '13.10.2026, 12:30';
+const BUILD = '13.10.2026, 15:00';
 let fullReason = '';        // почему полного экрана нет — тоже видно в Профиле
 
 /* Полный экран: приложение занимает телефон целиком, а кнопки Telegram
@@ -8380,6 +8449,13 @@ function goBack() {
     if (sheetStack.length) { closeSheet(sheetStack[sheetStack.length - 1]); return; }
     if (currentScreen === 'screen-start') { if (tg) tg.close(); return; }
 
+    // Страница тренера открывается поверх чего угодно — кабинета, дневника,
+    // «Моей страницы»; назад ведёт туда, откуда её открыли
+    if (currentScreen === 'screen-shop' && backFrom['screen-shop'] && backFrom['screen-shop'] !== 'screen-shop') {
+        showScreen(backFrom['screen-shop']);
+        return;
+    }
+
     // В дневнике верхний уровень — его собственные вкладки. Уходить с них
     // некуда, поэтому «назад» открывает список ролей — то же, что аватарка.
     if (isDiaryMode()) {
@@ -8807,7 +8883,10 @@ const CATEGORY_ORDER = [
 /* Вес всегда пишется суммарным и берётся как есть — приложение его
    не домножает. Единственное исключение: equipment == bodyweight,
    там к довесу прибавляется вес клиента × bwShare.
-   unilateral — только пометка тренеру, на подсчёт не влияет.     */
+   unilateral — только пометка тренеру, на подсчёт не влияет.
+   Выпады, болгарские, зашагивания, скручивания и твист — тоже «свой вес»
+   (13 октября): их часто делают без снаряда, и при «0 кг» тоннаж был нулём.
+   Гантели или блин в них — довесок.                                */
 const BASE_EX = {
 
     // Грудь
@@ -8834,11 +8913,11 @@ const BASE_EX = {
     "Шраги": { category: "Спина", target: "Трапеция", muscles: { "Трапеция": 1, "Предплечья": 0.3 }, compound: false, unilateral: false, equipment: "dumbbell" },
 
     // Ноги
-    "Болгарские приседания": { category: "Ноги", target: "Квадрицепс", muscles: { "Квадрицепс": 1, "Ягодицы": 0.5, "Бицепс бедра": 0.3, "Икроножные": 0.2 }, compound: true, unilateral: true, equipment: "dumbbell" },
-    "Выпады": { category: "Ноги", target: "Квадрицепс", muscles: { "Квадрицепс": 1, "Ягодицы": 0.5, "Бицепс бедра": 0.3, "Икроножные": 0.2 }, compound: true, unilateral: true, equipment: "dumbbell" },
+    "Болгарские приседания": { category: "Ноги", target: "Квадрицепс", muscles: { "Квадрицепс": 1, "Ягодицы": 0.5, "Бицепс бедра": 0.3, "Икроножные": 0.2 }, compound: true, unilateral: true, equipment: "bodyweight", bwShare: 0.8 },
+    "Выпады": { category: "Ноги", target: "Квадрицепс", muscles: { "Квадрицепс": 1, "Ягодицы": 0.5, "Бицепс бедра": 0.3, "Икроножные": 0.2 }, compound: true, unilateral: true, equipment: "bodyweight", bwShare: 0.7 },
     "Гакк-приседания": { category: "Ноги", target: "Квадрицепс", muscles: { "Квадрицепс": 1, "Ягодицы": 0.5, "Бицепс бедра": 0.3, "Икроножные": 0.2 }, compound: true, unilateral: false, equipment: "machine" },
     "Жим ногами": { category: "Ноги", target: "Квадрицепс", muscles: { "Квадрицепс": 1, "Ягодицы": 0.5, "Бицепс бедра": 0.3, "Икроножные": 0.2 }, compound: true, unilateral: false, equipment: "machine" },
-    "Зашагивания на платформу": { category: "Ноги", target: "Квадрицепс", muscles: { "Квадрицепс": 1, "Ягодицы": 0.5, "Бицепс бедра": 0.3, "Икроножные": 0.2 }, compound: true, unilateral: true, equipment: "dumbbell" },
+    "Зашагивания на платформу": { category: "Ноги", target: "Квадрицепс", muscles: { "Квадрицепс": 1, "Ягодицы": 0.5, "Бицепс бедра": 0.3, "Икроножные": 0.2 }, compound: true, unilateral: true, equipment: "bodyweight", bwShare: 0.8 },
     "Махи ногой назад в кроссовере": { category: "Ноги", target: "Ягодицы", muscles: { "Ягодицы": 1, "Бицепс бедра": 0.5 }, compound: false, unilateral: true, equipment: "machine" },
     "Отведение бедра (тренажёр)": { category: "Ноги", target: "Ягодицы", muscles: { "Ягодицы": 1 }, compound: false, unilateral: false, equipment: "machine" },
     "Подъёмы на носки сидя": { category: "Ноги", target: "Икроножные", muscles: { "Икроножные": 1 }, compound: false, unilateral: false, equipment: "machine" },
@@ -8874,8 +8953,8 @@ const BASE_EX = {
 
     // Пресс
     "Подъём ног в висе": { category: "Пресс", target: "Пресс", muscles: { "Пресс": 1, "Предплечья": 0.3 }, compound: false, unilateral: false, equipment: "bodyweight", bwShare: 0.4 },
-    "Пресс/скручивания": { category: "Пресс", target: "Пресс", muscles: { "Пресс": 1 }, compound: false, unilateral: false, equipment: "machine" },
-    "Русский твист": { category: "Пресс", target: "Пресс", muscles: { "Пресс": 1 }, compound: false, unilateral: false, equipment: "dumbbell" },
+    "Пресс/скручивания": { category: "Пресс", target: "Пресс", muscles: { "Пресс": 1 }, compound: false, unilateral: false, equipment: "bodyweight", bwShare: 0.3 },
+    "Русский твист": { category: "Пресс", target: "Пресс", muscles: { "Пресс": 1 }, compound: false, unilateral: false, equipment: "bodyweight", bwShare: 0.3 },
     "Скручивания на блоке": { category: "Пресс", target: "Пресс", muscles: { "Пресс": 1 }, compound: false, unilateral: false, equipment: "machine" },
 };
 
@@ -12329,7 +12408,11 @@ function renderWorkoutExList() {
 
     let before = '', after = '';
     if (plan) {
-        after = '<button class="btn-soft repeat-round" onclick="repeatRound()">↻ Повторить круг · ' +
+        // сколько кругов уже есть и какой добавится — иначе после третьего
+        // нажатия не понять, на каком круге клиент
+        const done = plan.nextRound - 1;
+        after = '<div class="caps-label round-count">Сделано кругов: ' + done + '</div>' +
+                '<button class="btn-soft repeat-round" onclick="repeatRound()">↻ + круг ' + plan.nextRound + ' · ' +
                 plan.last.length + ' ' + plural(plan.last.length, 'упражнение', 'упражнения', 'упражнений') + '</button>';
     }
 
@@ -15009,7 +15092,13 @@ function renderProgramsScreen() {
     $('pg-page-panel').style.display = isTrainerRole() ? '' : 'none';
     box.parentNode.style.display = buyerOnly ? 'none' : '';
     total.style.display = list.length ? '' : 'none';
-    total.innerHTML = 'Всего программ: <b>' + list.length + '</b>';
+    // Список свёрнут, пока не нажмут: сверху важнее страница и заявки
+    const open = pgListOpen();
+    total.classList.add('pg-fold');
+    total.onclick = togglePgList;
+    total.innerHTML = 'Мои программы · <b>' + list.length + '</b>' +
+        '<span class="arrow-icon arr pg-fold-arr' + (open ? ' open' : '') + '"></span>';
+    box.style.display = (list.length && !open) ? 'none' : '';
 
     if (!list.length) {
         box.innerHTML =
@@ -15045,6 +15134,18 @@ function renderProgramsScreen() {
                    '<span class="arrow-icon arr"></span>' +
                '</div>';
     }).join('');
+}
+
+const PG_OPEN_KEY = 'silovoyAssistentV6:pgOpen';
+
+function pgListOpen() {
+    try { return localStorage.getItem(PG_OPEN_KEY) === '1'; } catch (e) { return false; }
+}
+
+function togglePgList() {
+    try { localStorage.setItem(PG_OPEN_KEY, pgListOpen() ? '0' : '1'); } catch (e) {}
+    haptic('select');
+    renderProgramsScreen();
 }
 
 function renderRunsPanel() {
@@ -15966,6 +16067,13 @@ async function shopLoad() {
     if (mkReady()) {
         res = await mkCall('page_view', { code: code });
         if (res && res.ok) shopAuthed = true;
+    } else if (sb && cabinetOn) {
+        // клиент в кабинете: вход есть, но не тренерский — спрашиваем сами
+        try {
+            const r = await sb.functions.invoke('market', { body: { action: 'page_view', code: code } });
+            res = r.error ? { error: 'net' } : (r.data || {});
+            if (res.ok) shopAuthed = true;
+        } catch (e) { res = { error: 'net' }; }
     } else {
         try {
             const r = await cloudFetch(CLOUD_URL + '/functions/v1/market', {
@@ -15988,7 +16096,9 @@ function renderShop() {
     const d = shopData;
     if (!d) {
         $('sh-name').innerText = '';
-        $('sh-contact').innerText = '';
+        $('sh-stats').innerText = '';
+        $('sh-write').style.display = 'none';
+        $('sh-about').innerHTML = '';
         $('sh-about').innerText = 'Загружаю…';
         $('sh-photo').innerHTML = '';
         $('sh-own').style.display = 'none';
@@ -15998,7 +16108,9 @@ function renderShop() {
     }
     if (!d.ok) {
         $('sh-name').innerText = '';
-        $('sh-contact').innerText = '';
+        $('sh-stats').innerText = '';
+        $('sh-write').style.display = 'none';
+        $('sh-about').innerHTML = '';
         $('sh-photo').innerHTML = '';
         $('sh-own').style.display = 'none';
         $('sh-about').innerText = d.error === 'net' ? 'Нет связи. Проверьте интернет и откройте ссылку снова.'
@@ -16008,17 +16120,31 @@ function renderShop() {
         return;
     }
     const pg = d.page;
-    $('sh-head').innerText = pg.name || 'Тренер';
-    $('sh-head').setAttribute('data-text', pg.name || 'Тренер');
+    const list = d.listings || [];
     $('sh-sub').innerText = 'Программы тренировок';
-    $('sh-name').innerText = pg.name || '';
-    $('sh-contact').innerText = pg.contact || '';
-    $('sh-about').innerText = pg.about || '';
+    $('sh-name').innerText = pg.name || 'Тренер';
     $('sh-photo').innerHTML = esc((pg.name || 'Т').trim().charAt(0).toUpperCase()) +
         (pg.photo_url ? '<img src="' + esc(pg.photo_url) + '" alt="" onerror="this.remove()">' : '');
     $('sh-own').style.display = d.own ? '' : 'none';
 
-    const list = d.listings || [];
+    const всегоДней = list.reduce(function (n, l) { return n + offerDays(l); }, 0);
+    $('sh-stats').innerText = list.length
+        ? list.length + ' ' + plural(list.length, 'программа', 'программы', 'программ') + ' · ' +
+          всегоДней + ' ' + plural(всегоДней, 'тренировка', 'тренировки', 'тренировок')
+        : '';
+
+    const nick = /^@([A-Za-z0-9_]{4,32})$/.exec(pg.contact || '');
+    $('sh-write').style.display = (pg.contact && !d.own) ? '' : 'none';
+    $('sh-write').innerText = nick ? 'Написать ' + pg.contact : 'Контакт тренера';
+
+    // «О себе» списком: каждая строка, написанная с новой строки, — отдельный
+    // пункт. Регалии тренера — его сильная сторона, сплошным серым их не видно.
+    const lines = String(pg.about || '').split(/\n+/).map(function (x) { return x.trim(); }).filter(Boolean);
+    $('sh-about').innerHTML = lines.map(function (x) {
+        return '<div class="sa-row"><span class="sa-ic">' + emo('🏆') + ico('award') + '</span>' +
+               '<span class="sa-text">' + esc(x) + '</span></div>';
+    }).join('');
+
     $('sh-total').innerHTML = 'Программ: <b>' + list.length + '</b>';
     $('sh-list').innerHTML = list.length
         ? list.map(function (l) {
@@ -16087,14 +16213,23 @@ function renderOffer() {
             : '');
 
     const own = !!(shopData && shopData.own);
+    const clientHere = !!(shopData && shopData.client_of_this);
+    const clientElse = !!(shopData && shopData.client_elsewhere);
     const btn = $('of-buy');
     btn.disabled = own;
+    $('of-client-note').style.display = (clientHere || clientElse) && !own ? '' : 'none';
+    $('of-client-note').innerText = clientHere
+        ? 'Вы занимаетесь у ' + ((shopData.page && shopData.page.name) || 'этого тренера') +
+          ' — эту программу он может дать вам сам. Напишите ему.'
+        : 'Вы клиент другого тренера — покупать программы из кабинета клиента пока нельзя. ' +
+          'Можно написать тренеру.';
     btn.innerText = own ? 'Это ваша программа'
+                  : (clientHere || clientElse) ? 'Написать тренеру'
                   : l.mine === 'granted' ? 'Уже у вас — открыть'
                   : l.mine === 'requested' ? 'Заявка отправлена — написать тренеру'
                   : l.price ? 'Купить за ' + mkPrice(l.price)
                   : 'Получить бесплатно';
-    $('of-pay-note').style.display = (l.price && !own && l.mine !== 'granted') ? '' : 'none';
+    $('of-pay-note').style.display = (l.price && !own && !clientHere && !clientElse && l.mine !== 'granted') ? '' : 'none';
     $('of-report').style.display = own ? 'none' : '';
 }
 
@@ -16103,6 +16238,7 @@ let shopBuying = false;
 async function buyOffer() {
     const l = offerById(shopOfferId);
     if (!l || shopBuying || (shopData && shopData.own)) return;
+    if (shopData && (shopData.client_of_this || shopData.client_elsewhere)) { writeTrainer(l); return; }
 
     if (l.mine === 'granted') { closeSheet('sheet-offer'); openBoughtPrograms(); return; }
     if (l.mine === 'requested') { writeTrainer(l); return; }
@@ -16149,7 +16285,10 @@ function writeTrainer(l, contact) {
     contact = contact || (shopData && shopData.page && shopData.page.contact) || '';
     const nick = /^@([A-Za-z0-9_]{4,32})$/.exec(contact);
     if (nick) {
-        const text = 'Здравствуйте! Хочу купить вашу программу «' + l.title + '» за ' + mkPrice(l.price) + '.';
+        const клиент = shopData && shopData.client_of_this;
+        const text = !l ? 'Здравствуйте! Увидел(а) вашу страницу с программами.'
+                   : клиент ? 'Здравствуйте! Хочу заниматься по вашей программе «' + l.title + '».'
+                   : 'Здравствуйте! Хочу купить вашу программу «' + l.title + '» за ' + mkPrice(l.price) + '.';
         const url = 'https://t.me/' + nick[1] + '?text=' + encodeURIComponent(text);
         if (tg && tg.openTelegramLink) tg.openTelegramLink(url);
         else window.open(url, '_blank');
@@ -19145,6 +19284,9 @@ async function leaveCabinet() {
 
 /* Вход в кабинет: приложение тренера клиенту не показываем вовсе */
 async function enterCabinet() {
+    // Пришёл по ссылке на страницу тренера и смотрит её — кабинет встаёт
+    // под неё, а не вместо: раньше клиент так и не видел страницу (13 октября)
+    const keepShop = currentScreen === 'screen-shop' && shopCode;
     cabinetOn = true;
     // дорогу узнал — больше не подсказываем
     try { localStorage.setItem(CAB_HINT_KEY, '1'); } catch (e) {}
@@ -19152,6 +19294,7 @@ async function enterCabinet() {
     cloudSet('ok');
     hideLinkPlate();
     showScreen('screen-cabinet');
+    if (keepShop) openShop(shopCode);
     await cabinetLoad();
 }
 
