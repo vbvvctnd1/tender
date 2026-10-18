@@ -358,6 +358,42 @@ body {
     transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
+/* Лого на экране загрузки. Слои — картинки на чёрном; «screen» складывает
+   их как свет, поэтому чёрный фон картинок не виден. Тёмный фон экрана —
+   в обоих стилях: лого нарисовано для тёмного. */
+:root[data-style] #splash-screen { background: #000; }
+.sf-logo { display: flex; flex-direction: column; align-items: center; }
+.sf-icon { position: relative; width: 168px; height: 165px; }
+.sf-l, .sf-w { position: absolute; inset: 0; width: 100%; height: 100%; mix-blend-mode: screen; }
+.sf-word { position: relative; width: 250px; height: 34px; margin-top: 18px; }
+
+.sf-frame   { animation: sfFrame 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.sf-letters { animation: sfLetters 0.38s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both; }
+.sf-stripe  { animation: sfStroke 0.24s ease-out 0.5s both; }
+.sf-word-main { animation: sfStroke 0.42s cubic-bezier(0.4, 0, 0.2, 1) 0.55s both; }
+.sf-word-red  { animation: sfPop 0.18s ease-out 0.95s both; }
+
+@keyframes sfFrame {
+    from { opacity: 0; transform: scale(0.86); filter: brightness(2.2) blur(6px); }
+    to   { opacity: 1; transform: none; filter: none; }
+}
+@keyframes sfLetters {
+    from { opacity: 0; transform: translateX(-16px) skewX(-10deg); }
+    to   { opacity: 1; transform: none; }
+}
+/* штрих и надпись «прочерчиваются» слева направо */
+@keyframes sfStroke {
+    from { clip-path: inset(0 100% 0 0); }
+    to   { clip-path: inset(0 0 0 0); }
+}
+@keyframes sfPop {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .sf-l, .sf-w { animation: none !important; }
+}
+
 .splash-logo {
     font-size: 56px;
     filter: drop-shadow(0 4px 12px rgba(var(--ch-cyan), 0.2));
@@ -3385,7 +3421,7 @@ body.pad-open { padding-bottom: 62vh; }
    ========================================================================== */
 
 /* Заставка сразу на чёрной основе — без серой вспышки */
-:root[data-style="neo"] #splash-screen { background: #020205; }
+:root[data-style="neo"] #splash-screen { background: #000; }
 
 /* --- Шапки экранов: полупрозрачное стекло, сквозь него течёт сияние --- */
 :root[data-style="neo"] .premium-header,
@@ -3769,10 +3805,15 @@ body.pad-open { padding-bottom: 62vh; }
     gap: 4px;
     border-radius: 26px;
     color: rgba(255, 255, 255, 0.38);
-    font-size: 9.5px;
+    /* Обычными буквами, не заглавными: на iPhone «ЕЖЕДНЕВНИК» и «УПРАЖНЕНИЯ»
+       не влезали в кнопку (заглавные шире примерно на 20%) — 18 октября */
+    font-size: 10px;
+    text-transform: none;
     letter-spacing: 0;
     transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+/* выделенная вкладка чуть шире: её подпись видна целиком, короткие соседи ужимаются */
+:root[data-style="neo"] .nav-tab.active { flex-grow: 1.3; }
 :root[data-style="neo"] .nav-tab-svg {
     position: relative;
     z-index: 1;
@@ -5018,7 +5059,7 @@ body.pad-open { padding-bottom: 62vh; }
 :root[data-style="minimal"] .ex-back .arr::after { content: none; }
 
 /* --- Заставка --- */
-:root[data-style="minimal"] #splash-screen { background: var(--m-bg); color: var(--m-text); }
+:root[data-style="minimal"] #splash-screen { background: #000; color: #fff; }
 :root[data-style="minimal"] .splash-logo { animation: none; filter: none; }
 .splash-mark {
     width: 64px;
@@ -6098,10 +6139,21 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
 </div>
 
 <!-- Нативный Splash Screen -->
+<!-- Экран загрузки: лого Simple Fit собирается за секунду. Слои вырезаны из
+     картинки владельца (supabase/splash/), весят вместе ~15 КБ и вшиты прямо
+     сюда — появляются мгновенно, без загрузки из сети. -->
 <div id="splash-screen">
-    <div class="splash-logo"><span class="only-neo">⚡</span><span class="splash-mark only-min"><svg class="mi" aria-hidden="true"><use href="#i-dumbbell"/></svg></span></div>
-    <h2 style="font-weight: 800; font-size: 20px; margin-top: 16px; letter-spacing: -0.5px;"><span class="only-neo">SYSTEM LOADED</span><span class="only-min">Силовой ассистент</span></h2>
-    <div class="spinner"></div>
+    <div class="sf-logo" aria-label="Simple Fit">
+        <div class="sf-icon">
+            <img class="sf-l sf-frame" alt="" src="data:image/webp;base64,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">
+            <img class="sf-l sf-letters" alt="" src="data:image/webp;base64,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">
+            <img class="sf-l sf-stripe" alt="" src="data:image/webp;base64,UklGRkwFAABXRUJQVlA4IEAFAACwPwCdASrAAbgBPjEYiEQiIwg9GBgBglpbuF2sR/MH8l3viwD5APmQtf98+3n7e9MmgfqA+Zfj38lf0z9iPiI/1z9AP6P2jvMR5+voX/xnqAf2T/R9Yx6AHmt/7f9tfhE/bP/Yer80k0CV+/MAezt9IBRRva6xYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLE6C8w2r25HYiAdnnd9BiaFlItNK6xXzBPrVGuWcIwA1cJt1k5jCrCFlItNK6xXzBPrad5SEy4YMfYQyaZ3QGJoWUi00rrE6AxbI3kPQofAIDFc90BrXRNK6xYsWLFixXxz5iAKjwxvpFQYCyYit0BiaFlItNK6xYsku5lWELKRaaV1ixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixYsWLFixXwAAD+//BbIAAAAAAbJS2heXyRL7YA3cQ2odnHX/7LvU61WGvkO97TM+xLJdX6XaObnnd48MEp5+MONCc+Uwqn5bR84ze6rrP/7Vf7IP+MSPnBNRnU1fReGgPHFRhBSA0IzYcdD2gGFaWTWdOSDqw/Hnlm2CcBbDy1jQlW+2hyY74Bbf5jAY2lYZcUn/yOrc5/EYoBAvVuXA2F3AC4SWa+nKZhF2VreFxxwLtePJW57bZ4wU0JxPhCani8dlxML/2XEWSujcuEm5C749qB4kascye0vhhlnw9npi3UY1YXw2YNm3whP/2zKrOuxgbND+ltmu2fpu76G8enR6hrty+OnfFITo1gEBbY1T4po1a27wONBqgu/+ZZA5QtZCa0GyVWKy2TblFoMtrSQFYmqbeiRhLMerS5eJUxJCjMgl5B2at3U2FHJVcoRKBivndQJQ5EPOZ411iWWshgFtAiWCHypTFk4j1gdOIQuQJSSS9+uBhCRTstT1G732bzJU7c33mFGulMRYiWzv/3De4EfQxIMt47YEh+H7RWFveB7t8OljZSnmy3+MsxTP81sGC526/cvfAMLoKKG5LTTijG1/kdTYH5x6PtNJyWm0GHXKYQodl6PoqTpNHFretfbAsJU76Gw/Jq+PHZxjHKSO3gYqS4ijEJCAB7k/8q1C9InFIJcBkamhN5KrOmG3MaEj0C5MsMlCJXfGpSYGETJvCVvyOlNVjxpZ1/svor9NzQKLVn/sMhRsUXfXMzUvyiKJOTKfHB/lBS9fookVbs9NefEwYYywhJlF8bIX8cgz5nFhY2n360z13OgOaqwYBP33k0SX9kj04sEM2B5ni+rJYe4PIXwr1hwCPfUXs7ogKSqpbidw49fdkIVfz/Rw8ICcMkmXoRQ0W4g2DflEoAZ4jIuBdFddQ3+5anDBfKnj1ZcsXeTfkg/89mNpjhW0sHpyQKswQWavLwViQaZMK7u5cU6LPVv/jt/jWtBkD6/5ov9HXxIw31u5X8F6lZHprHqciVx8MJp3jOdzlqI0EhChLM5cSnXybvSS6k03e7Jr+vas1bNIC7l2m5HNcNS8S1xcAAAAAAAAAAAAAAAAAAAAA=">
+        </div>
+        <div class="sf-word">
+            <img class="sf-w sf-word-main" alt="" src="data:image/webp;base64,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">
+            <img class="sf-w sf-word-red" alt="" src="data:image/webp;base64,UklGRhgCAABXRUJQVlA4IAwCAABwHQCdASoJA2oAPjEYi0SiIaEQSzQEIAMEtLdwu1iP5zswJsMcB9gHsAc4B/d/yA4AH64f47+Z++rzwHWAegB5YHsifsp6MxMqgSfBGxBUc9sReIKjntiLxBUc9hRP21CgoYrhZzkEbEFRz2xF4gqOe2IvEFRz2E+ENyHM+Fw1iGFGdX2g5Ks5yCNiCo57Yi8QVHPbEXiCo57Y0MRsQVHPbEXiCo57Yi8QVHPbEXiCo57Yi8QVHPbEXiCo57Yi8QVHPbEXiCo57Yi8QVHPbEXiCo57Yi8QVHPbEXiCo57Yi8QVHPbEXiCo57Yi8QVHPbEXiAQAAP7/8cVgDuBfj/PPp/MNcCoxy/APT6SoU/DyQZ0/7wHqDTSJzi1//y5X/setKcAsm3RhgG5XQ+JL/08m0mvvU+bsL83u1Nsy9+lcr/+JR8IgZ2DmTnq/boAWP4r+0OCzSekRmJ1UmFjE8QFuLbRjST+4fgvF71H7T4GEReG853bNg/df9rstx6POGGCCL5A2s6kXwUks60FwlBL/YoWh3Npgf+AX/flAlr3dt8BZto0E8kHqeE5xm+uxFrJyYNl2XkHz+kgjIghPOOZn39czoxDQD8R/JR8g8hZKpy7AqImF91XTRSVmHko9GI9nA5K5Timf/mgHJ7w7yRclkTP5hhptsH78oi0P4d087fsWAAAAAAAAAAAAAA==">
+        </div>
+    </div>
 </div>
 
 
@@ -6133,16 +6185,7 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
     <!-- Сколько тренировок в выбранном дне -->
     <div class="day-hero" id="day-hero"></div>
 
-    <!-- Поиск по всем клиентам: пока введён текст, вместо ленты дня — найденные -->
-    <label class="day-search" id="day-search">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8"/>
-            <path d="m21 21-4.35-4.35"/>
-        </svg>
-        <input type="text" id="day-search-input" autocomplete="off" placeholder="Поиск клиента"
-               oninput="onDaySearch()">
-        <button type="button" class="day-search-clear" onclick="clearDaySearch()" aria-label="Очистить">✕</button>
-    </label>
+    <!-- Поиск клиента убран из Ежедневника 18 октября: клиентов ищут во вкладке «Клиенты» -->
 
     <div class="strip-row">
         <button class="strip-arrow" id="cal-prev" onclick="stepStripWeek(-1)"
@@ -6401,6 +6444,7 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
         </div>
         <div class="fold-body" id="fold-tpl-body" style="display: none;">
             <div id="tpl-inline-list"></div>
+            <button class="btn-soft" style="width: 100%; margin-top: 10px;" onclick="openNewTemplate()">＋ Новый шаблон</button>
         </div>
     </div>
 
@@ -7336,7 +7380,17 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
         </div>
     </div>
 
-    <div class="panel">
+    <!-- Готовая страница — так её видит покупатель; поля — по «Редактировать» -->
+    <div class="panel shop-card" id="mp-view" style="display: none;">
+        <div class="shop-photo" id="mp-v-photo"></div>
+        <div class="shop-name" id="mp-v-name"></div>
+        <div class="shop-stats" id="mp-v-contact"></div>
+        <div class="shop-about" id="mp-v-about"></div>
+        <div class="mk-note" id="mp-v-empty" style="display: none; margin-top: 12px;"></div>
+        <button class="btn-soft" style="width: 100%; margin-top: 14px;" onclick="editMyPage()">Редактировать</button>
+    </div>
+
+    <div class="panel" id="mp-edit">
         <div class="mp-who">
             <div class="mp-photo" id="mp-photo"></div>
             <div class="price-hint dim" style="margin: 0;">Фото берётся из Telegram</div>
@@ -7359,9 +7413,10 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
             <div class="price-hint dim">По нему покупатель напишет вам, чтобы оплатить программу</div>
         </div>
 
-        <button class="btn-soft filled" style="width: 100%; margin-top: 6px;" onclick="saveMyPage()">
-            Сохранить
-        </button>
+        <div class="field-pair" style="margin-top: 6px;">
+            <button class="btn-soft" id="mp-cancel" onclick="cancelMyPage()">Отмена</button>
+            <button class="btn-soft filled" onclick="saveMyPage()">Сохранить</button>
+        </div>
     </div>
 
     <div class="panel" id="mp-link-panel" style="display: none;">
@@ -7371,10 +7426,7 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
             <button class="btn-soft" onclick="shareMyPage()">Поделиться</button>
             <button class="btn-soft" onclick="copyMyPageLink()">Скопировать</button>
         </div>
-        <div class="field-pair" style="margin-top: 10px;">
-            <button class="btn-soft" onclick="showQrFor(myPageLink())">QR-код</button>
-            <button class="btn-soft" onclick="openShop(mk.page.code)">Как видят</button>
-        </div>
+        <button class="btn-soft" style="width: 100%; margin-top: 10px;" onclick="showQrFor(myPageLink())">QR-код</button>
         <div class="price-hint dim">Ссылку кидайте в свой канал, Инстаграм, ВК — по ней откроется ваша страница с программами.</div>
     </div>
 
@@ -7522,7 +7574,7 @@ function applyViewport() {
    день файл выкладывается не раз: по одной дате не понять, приехало ли
    обновление или Telegram показывает копию из кэша. Ставится при выкладке
    скриптом publish.py — руками не правится. */
-const BUILD = '18.10.2026, 07:52';
+const BUILD = '18.10.2026, 11:15';
 let fullReason = '';        // почему полного экрана нет — тоже видно в Профиле
 
 /* Полный экран: приложение занимает телефон целиком, а кнопки Telegram
@@ -8509,7 +8561,7 @@ function showScreen(id, from) {
     if (typeof closePad === 'function') closePad();
 
     // набранный поиск не должен спустя время прятать ленту дня
-    if (leaving === 'screen-schedule' && id !== 'screen-schedule' && $('day-search-input').value) {
+    if (leaving === 'screen-schedule' && id !== 'screen-schedule' && $('day-search-input') && $('day-search-input').value) {
         $('day-search-input').value = '';
         $('day-search').classList.remove('has-text');
     }
@@ -10584,11 +10636,13 @@ function renderDayHero() {
 /* --- Поиск клиента на экране расписания --- */
 
 function onDaySearch() {
+    if (!$('day-search')) return;            // поле убрано из Ежедневника
     $('day-search').classList.toggle('has-text', !!$('day-search-input').value);
     renderDayFeed();
 }
 
 function clearDaySearch() {
+    if (!$('day-search-input')) return;
     $('day-search-input').value = '';
     onDaySearch();
 }
@@ -14329,7 +14383,7 @@ async function saveTemplateName() {
     tplNameSessionId = null;
     closeSheet('sheet-tpl-name');
     haptic('success');
-    renderHistory();
+    if (currentScreen === 'screen-client' && clTab === 'history') renderHistory();
     renderTemplatesSection();
     showToast('Шаблон «' + t.name + '» сохранён · на тренировке: «Из шаблона»');
 }
@@ -14444,6 +14498,79 @@ function renderTemplatesSheet() {
 
 /* Раздел «Шаблоны тренировок» на экране упражнений: число в шапке всегда,
    список — только когда раздел раскрыт */
+/* --- Новый шаблон из вкладки «Упражнения» ---
+   Раньше шаблон делался только звёздочкой в истории клиента — надо было
+   сначала найти клиента. Теперь: «＋ Новый шаблон» → чья история → какая
+   тренировка → посмотреть → «Сохранить как шаблон» (то же окно названия,
+   что у звёздочки). Шаблонов с нуля нет — решение владельца 18 октября. */
+
+function tplRow(onclick, name, sub) {
+    return '<div class="client-row tpl-row" onclick="' + onclick + '">' +
+               '<div style="min-width:0; flex:1;">' +
+                   '<div class="cr-name">' + name + '</div>' +
+                   (sub ? '<div class="cr-sub">' + sub + '</div>' : '') +
+               '</div>' +
+               '<span class="arrow-icon arr tpl-open"></span>' +
+           '</div>';
+}
+
+function openNewTemplate() {
+    const sources = trainerClients().filter(function (c) { return clientHistory(c.id).length; });
+    if (getClient(SELF_ID) && clientHistory(SELF_ID).length) sources.push(getClient(SELF_ID));
+    $('pn-title').innerText = 'Новый шаблон';
+    $('pn-sub').innerText = sources.length ? 'Из чьей истории взять тренировку' : '';
+    $('pn-list').innerHTML = sources.length
+        ? sources.map(function (c) {
+            const n = clientHistory(c.id).length;
+            return tplRow("tplPickClient('" + c.id + "')",
+                esc(isSelfClient(c.id) ? 'Мои тренировки' : c.name),
+                n + ' ' + plural(n, 'тренировка', 'тренировки', 'тренировок'));
+          }).join('')
+        : '<div class="empty-note">Пока нет проведённых тренировок — шаблон берётся из истории.</div>';
+    haptic('light');
+    if (sheetStack.indexOf('sheet-pg-new') === -1) openSheet('sheet-pg-new');
+}
+
+function tplPickClient(clientId) {
+    const c = getClient(clientId);
+    if (!c) return;
+    const list = clientHistory(clientId).slice().reverse().slice(0, 40);
+    $('pn-title').innerText = isSelfClient(clientId) ? 'Мои тренировки' : c.name;
+    $('pn-sub').innerText = 'Выберите тренировку';
+    $('pn-list').innerHTML = list.map(function (s) {
+        const tpl = templateOf(s.id);
+        const parts = [muscleSummary(s.ex), distinctNames(s.ex).length + ' упр.'].filter(Boolean);
+        return tplRow("tplPickSession('" + s.id + "')",
+            esc(humanDate(s.date)) + (tpl ? ' <span class="pg-badge">в шаблонах</span>' : ''),
+            esc(parts.join(' · ')));
+    }).join('') + tplRow('openNewTemplate()', '← Другой клиент', '');
+    haptic('select');
+}
+
+function tplPickSession(sessionId) {
+    const s = getSession(sessionId);
+    if (!s) return;
+    const tpl = templateOf(sessionId);
+    $('pn-title').innerText = humanDate(s.date);
+    $('pn-sub').innerText = [muscleSummary(s.ex), (getClient(s.clientId) && !isSelfClient(s.clientId) ? getClient(s.clientId).name : '')]
+        .filter(Boolean).join(' · ');
+    $('pn-list').innerHTML = exListHtml(s.ex, s.bodyWeight) +
+        (tpl
+            ? '<div class="mk-note" style="margin-top: 12px;">Эта тренировка уже в шаблонах: «' + esc(tpl.name) + '».</div>'
+            : '<button class="btn-soft filled" style="width: 100%; margin-top: 14px;" ' +
+              "onclick=\"tplSaveFromPicker('" + s.id + "')\">Сохранить как шаблон</button>") +
+        '<button class="btn-soft" style="width: 100%; margin-top: 10px;" ' +
+        "onclick=\"tplPickClient('" + s.clientId + "')\">← К тренировкам</button>";
+    haptic('select');
+}
+
+async function tplSaveFromPicker(sessionId) {
+    if (templateOf(sessionId)) { showToast('Эта тренировка уже в шаблонах'); return; }
+    closeSheet('sheet-pg-new');
+    await new Promise(function (r) { setTimeout(r, 280); });
+    await toggleTemplate(sessionId);         // откроет то же окно «В шаблоны», что и ☆
+}
+
 function renderTemplatesSection() {
     const box = $('tpl-inline-list');
     if (!box) return;
@@ -14454,8 +14581,9 @@ function renderTemplatesSection() {
     box.innerHTML = list.length
         ? list.map(function (t) { return templateRowHtml(t, false); }).join('')
         : '<div class="tpl-empty">Шаблонов пока нет.<br>' +
-          'Отметьте звёздочкой ☆ тренировку в истории клиента — и её можно будет ' +
-          'накатить любому другому. Веса подставятся по его собственной истории.</div>';
+          'Нажмите «＋ Новый шаблон» и выберите тренировку из истории клиента (или ☆ в его ' +
+          'истории) — её можно будет накатить любому другому. Веса подставятся по его ' +
+          'собственной истории.</div>';
 }
 
 /* Вес для запланированного подхода: сначала из истории этого клиента,
@@ -15592,6 +15720,7 @@ let mk = loadMk();
 mk.requests = [];
 let mkBusy = false;
 let mpDirty = false;              // на «Моей странице» начали печатать — ответ сервера поля не трогает
+let mpEditing = false;            // «Моя страница» открыта на правку (иначе — как видит покупатель)
 
 function saveMk() {
     try {
@@ -15834,6 +15963,7 @@ function copyProgram() {
 
 function openMyPage() {
     mpDirty = false;
+    mpEditing = false;
     showScreen('screen-mypage', 'screen-programs');
     if (mkReady()) mkRefresh();
 }
@@ -15846,9 +15976,55 @@ function fillMyPageFields() {
     $('mp-contact').value = pg ? pg.contact : (user && user.username ? '@' + user.username : '');
 }
 
+/* Страница заполнена — показываем её как покупатель, правка по кнопке.
+   Пустая (имени нет) — сразу поля. */
+function myPageFilled() { return !!(mk.page && String(mk.page.name || '').trim()); }
+
+function editMyPage() {
+    mpEditing = true;
+    mpDirty = false;
+    fillMyPageFields();
+    renderMyPage();
+    haptic('light');
+    setTimeout(function () { try { $('mp-name').focus(); } catch (e) {} }, 60);
+}
+
+function cancelMyPage() {
+    mpEditing = false;
+    mpDirty = false;
+    fillMyPageFields();
+    renderMyPage();
+}
+
+function renderMyPageView() {
+    const user = (tg && tg.initDataUnsafe) ? tg.initDataUnsafe.user : null;
+    const pg = mk.page || {};
+    const name = pg.name || '';
+    const photo = pg.photo_url || (user && user.photo_url) || '';
+    $('mp-v-photo').innerHTML = esc((name || 'Т').trim().charAt(0).toUpperCase()) +
+        (photo ? '<img src="' + esc(photo) + '" alt="" onerror="this.remove()">' : '');
+    $('mp-v-name').innerText = name;
+    $('mp-v-contact').innerText = pg.contact ? 'Контакт: ' + pg.contact : 'Контакт не указан';
+    const lines = String(pg.about || '').split(/\n+/).map(function (x) { return x.trim(); }).filter(Boolean);
+    $('mp-v-about').innerHTML = lines.map(function (x) {
+        return '<div class="sa-row"><span class="sa-ic">' + emo('🏆') + ico('award') + '</span>' +
+               '<span class="sa-text">' + esc(x) + '</span></div>';
+    }).join('');
+    const empty = [];
+    if (!lines.length) empty.push('пару строк о себе — опыт, регалии');
+    if (!pg.contact) empty.push('контакт — по нему покупатель напишет вам');
+    $('mp-v-empty').style.display = empty.length ? '' : 'none';
+    $('mp-v-empty').innerText = empty.length ? 'Добавьте ' + empty.join(' и ') + ' — «Редактировать».' : '';
+}
+
 function renderMyPage() {
     const user = (tg && tg.initDataUnsafe) ? tg.initDataUnsafe.user : null;
     if (!mpDirty) fillMyPageFields();
+    const view = myPageFilled() && !mpEditing;
+    $('mp-view').style.display = view ? '' : 'none';
+    $('mp-edit').style.display = view ? 'none' : '';
+    $('mp-cancel').style.display = myPageFilled() ? '' : 'none';
+    if (view) renderMyPageView();
 
     const name = $('mp-name').value || 'Т';
     const photo = (mk.page && mk.page.photo_url) || (user && user.photo_url) || '';
@@ -15901,9 +16077,11 @@ async function saveMyPage() {
     }
     mkApply(res);
     mpDirty = false;
+    mpEditing = false;
     haptic('success');
     showToast('Страница сохранена');
     renderMyPage();
+    window.scrollTo(0, 0);
 }
 
 function myPageLink() {
@@ -17134,7 +17312,7 @@ window.addEventListener('DOMContentLoaded', function () {
         splash.style.transform = 'scale(1.03)';
         splash.style.filter = 'blur(10px)';
         setTimeout(function () { splash.style.display = 'none'; }, 500);
-    }, 900);
+    }, 1150);                       // лого собирается за ~1,1 с — даём доиграть
 });
 
 window.addEventListener('pagehide', function () { if (wkSession) saveDraft(); });
