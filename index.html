@@ -1806,6 +1806,18 @@ textarea.fld {
 .mp-who { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
 
 /* Страница тренера для покупателя — визитка */
+/* Плашки доверия на странице тренера (идея с Профи.ру, 18 октября) */
+.trust { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 8px; margin: 14px 0 2px; }
+.trust:empty { display: none; }
+.trust > div { padding: 10px 6px; border-radius: 14px; background: rgba(127, 127, 127, 0.12); text-align: center; min-width: 0; }
+.trust b { display: block; font-size: 17px; font-weight: 800; color: var(--text-main); line-height: 1.15; white-space: nowrap; }
+.trust span { display: block; margin-top: 3px; font-size: 11px; color: var(--text-muted); line-height: 1.25; }
+/* «Вы тоже тренер?» — для тех, кто пришёл покупателем или ведёт дневник */
+.become .bc-title { font-size: 16px; font-weight: 800; color: var(--text-main); }
+.become .bc-text { margin-top: 6px; font-size: 13.5px; line-height: 1.45; color: var(--text-muted); }
+.become ul { margin: 10px 0 0; padding-left: 0; list-style: none; }
+.become li { font-size: 13.5px; line-height: 1.45; color: var(--text-main); padding: 3px 0; }
+
 .pg-fold { display: flex; align-items: center; cursor: pointer; }
 .pg-fold .pg-fold-arr { margin-left: auto; transition: transform 0.2s ease; }
 .pg-fold .pg-fold-arr.open { transform: rotate(90deg); }
@@ -7257,6 +7269,18 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
         <div id="pg-req"></div>
     </div>
 
+    <div class="panel become" id="pg-become" style="display: none;">
+        <div class="bc-title"><span class="only-neo">🏋️ </span>Вы тоже тренер?</div>
+        <div class="bc-text">Ведите клиентов и продавайте свои программы.</div>
+        <ul>
+            <li><span class="only-neo">📅 </span>расписание, абонементы и прогресс клиентов</li>
+            <li><span class="only-neo">📦 </span>программа из истории клиента за минуту</li>
+            <li><span class="only-neo">💰 </span>своя страница — покупатели пишут вам напрямую</li>
+        </ul>
+        <div class="bc-text">Пока идёт тест — бесплатно.</div>
+        <button class="btn-soft filled" style="width: 100%; margin-top: 12px;" onclick="becomeTrainer()">Попробовать как тренер</button>
+    </div>
+
     <div class="panel" id="pg-runs-panel" style="display: none;">
         <div class="clients-total">Иду по программе</div>
         <div id="pg-runs"></div>
@@ -7384,6 +7408,7 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
     <div class="panel shop-card" id="mp-view" style="display: none;">
         <div class="shop-photo" id="mp-v-photo"></div>
         <div class="shop-name" id="mp-v-name"></div>
+        <div class="trust" id="mp-v-trust"></div>
         <div class="shop-stats" id="mp-v-contact"></div>
         <div class="shop-about" id="mp-v-about"></div>
         <div class="mk-note" id="mp-v-empty" style="display: none; margin-top: 12px;"></div>
@@ -7466,6 +7491,18 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
     <div class="panel">
         <div class="clients-total" id="sh-total"></div>
         <div id="sh-list"></div>
+    </div>
+
+    <div class="panel become" id="sh-become" style="display: none;">
+        <div class="bc-title"><span class="only-neo">🏋️ </span>Вы тоже тренер?</div>
+        <div class="bc-text">Ведите клиентов и продавайте свои программы.</div>
+        <ul>
+            <li><span class="only-neo">📅 </span>расписание, абонементы и прогресс клиентов</li>
+            <li><span class="only-neo">📦 </span>программа из истории клиента за минуту</li>
+            <li><span class="only-neo">💰 </span>своя страница — покупатели пишут вам напрямую</li>
+        </ul>
+        <div class="bc-text">Пока идёт тест — бесплатно.</div>
+        <button class="btn-soft filled" style="width: 100%; margin-top: 12px;" onclick="becomeTrainer()">Попробовать как тренер</button>
     </div>
 </div>
 
@@ -7574,7 +7611,7 @@ function applyViewport() {
    день файл выкладывается не раз: по одной дате не понять, приехало ли
    обновление или Telegram показывает копию из кэша. Ставится при выкладке
    скриптом publish.py — руками не правится. */
-const BUILD = '18.10.2026, 11:15';
+const BUILD = '18.10.2026, 21:48';
 let fullReason = '';        // почему полного экрана нет — тоже видно в Профиле
 
 /* Полный экран: приложение занимает телефон целиком, а кнопки Telegram
@@ -10809,7 +10846,9 @@ function renderDayFeed() {
     html +=
         '<div class="timeline-empty-slot" onclick="openMatrixSheet()">' +
             '<span class="slot-plus">+</span>' +
-            '<span>Все окна дня</span>' +
+            // было «Все окна дня» — непонятно, зачем жать; внутри сетка часов,
+            // где записывают в свободное время (18 октября)
+            '<span>Записать клиента</span>' +
         '</div>';
 
     feed.innerHTML = html;
@@ -15220,6 +15259,7 @@ function renderProgramsScreen() {
     renderRunsPanel();
     renderPageRow();
     renderRequests();
+    $('pg-become').style.display = isTrainerRole() ? 'none' : '';
     mkRefreshSoon();
     const list = programs();
     // Покупатель (не тренер) приходит сюда за купленным: своих программ у
@@ -15764,6 +15804,7 @@ async function mkRefresh() {
         mkApply(res);
         mk.at = Date.now();
         mk.requests = Array.isArray(res.requests) ? res.requests : [];
+        if (res.stats) mk.stats = res.stats;
         importGrants(res.grants || []);
         if (currentScreen === 'screen-programs') renderProgramsScreen();
         if (currentScreen === 'screen-program') renderProgramScreen();
@@ -16010,6 +16051,8 @@ function renderMyPageView() {
         return '<div class="sa-row"><span class="sa-ic">' + emo('🏆') + ico('award') + '</span>' +
                '<span class="sa-text">' + esc(x) + '</span></div>';
     }).join('');
+    const live = mkListings().filter(function (l) { return l.status === 'live'; }).length;
+    $('mp-v-trust').innerHTML = trustHtml(live, mk.stats).replace(/^<div class="trust">|<\/div>$/g, '');
     const empty = [];
     if (!lines.length) empty.push('пару строк о себе — опыт, регалии');
     if (!pg.contact) empty.push('контакт — по нему покупатель напишет вам');
@@ -16082,6 +16125,37 @@ async function saveMyPage() {
     showToast('Страница сохранена');
     renderMyPage();
     window.scrollTo(0, 0);
+}
+
+/* Плашки доверия: программы в продаже, покупатели (если уже есть — «0
+   покупателей» отпугивает) и с какого месяца тренер в Simple Fit */
+const MONTHS_SHORT = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+
+function trustHtml(programsCount, stats) {
+    const tiles = [];
+    if (programsCount) {
+        tiles.push('<div><b>' + programsCount + '</b><span>' +
+            plural(programsCount, 'программа', 'программы', 'программ') + '</span></div>');
+    }
+    if (stats && stats.buyers) {
+        tiles.push('<div><b>' + stats.buyers + '</b><span>' +
+            plural(stats.buyers, 'покупатель', 'покупателя', 'покупателей') + '</span></div>');
+    }
+    if (stats && stats.since) {
+        const d = new Date(stats.since);
+        if (!isNaN(d)) tiles.push('<div><b>' + MONTHS_SHORT[d.getMonth()] + ' ' + d.getFullYear() +
+            '</b><span>в Simple Fit</span></div>');
+    }
+    return tiles.length ? '<div class="trust">' + tiles.join('') + '</div>' : '';
+}
+
+/* «Попробовать как тренер»: включаем режим тренера и ведём в Ежедневник.
+   Купленное и дневник остаются. */
+function becomeTrainer() {
+    markTrainerRole();
+    haptic('success');
+    enterRole('trainer');
+    showToast('Режим тренера включён — добавьте первого клиента во вкладке «Клиенты»');
 }
 
 function myPageLink() {
@@ -16313,11 +16387,9 @@ function renderShop() {
         (pg.photo_url ? '<img src="' + esc(pg.photo_url) + '" alt="" onerror="this.remove()">' : '');
     $('sh-own').style.display = d.own ? '' : 'none';
 
-    const всегоДней = list.reduce(function (n, l) { return n + offerDays(l); }, 0);
-    $('sh-stats').innerText = list.length
-        ? list.length + ' ' + plural(list.length, 'программа', 'программы', 'программ') + ' · ' +
-          всегоДней + ' ' + plural(всегоДней, 'тренировка', 'тренировки', 'тренировок')
-        : '';
+    $('sh-stats').innerHTML = trustHtml(list.length, d.stats);
+    // «Вы тоже тренер?» — не тренерам и не на своей странице
+    $('sh-become').style.display = (!d.own && !isTrainerRole()) ? '' : 'none';
 
     const nick = /^@([A-Za-z0-9_]{4,32})$/.exec(pg.contact || '');
     $('sh-write').style.display = (pg.contact && !d.own) ? '' : 'none';
