@@ -6555,6 +6555,17 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
     <div style="padding: 0 16px 20px;">
         <button class="btn-soft" id="cab-back" style="width: 100%; display: none;"
                 onclick="leaveCabinet()">Вернуться в приложение тренера</button>
+
+        <!-- Единственная дорога отсюда наружу для того, у кого приложения
+             тренера нет. Нарочно тихая и отдельная: случайно не нажмёшь. -->
+        <div id="cab-become" style="display: none; margin-top: 18px;">
+            <p class="cab-hint" style="margin-bottom: 8px;">
+                Тренируете других сами? Можно завести своё приложение —
+                записи вашего тренера останутся на месте.
+            </p>
+            <button class="btn-soft" style="width: 100%;"
+                    onclick="becomeTrainer()">Я тоже тренирую других</button>
+        </div>
     </div>
 </div>
 
@@ -7268,7 +7279,8 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
         <button class="trainer-av av-roles" onclick="openRoles()" aria-label="Куда перейти"></button>
         <h1 data-text="Программы">Программы</h1>
         <div class="header-icons">
-            <div class="icon-btn" onclick="openNewProgram()"><span class="only-neo">＋</span><svg class="mi only-min" aria-hidden="true"><use href="#i-plus"/></svg></div>
+            <!-- Покупателю создавать нечего: он пришёл за купленным -->
+            <div class="icon-btn" id="pg-add" onclick="openNewProgram()"><span class="only-neo">＋</span><svg class="mi only-min" aria-hidden="true"><use href="#i-plus"/></svg></div>
         </div>
     </div>
 
@@ -7623,7 +7635,7 @@ function applyViewport() {
    день файл выкладывается не раз: по одной дате не понять, приехало ли
    обновление или Telegram показывает копию из кэша. Ставится при выкладке
    скриптом publish.py — руками не правится. */
-const BUILD = '18.10.2026, 22:48';
+const BUILD = '19.10.2026, 00:05';
 let fullReason = '';        // почему полного экрана нет — тоже видно в Профиле
 
 /* Полный экран: приложение занимает телефон целиком, а кнопки Telegram
@@ -8565,6 +8577,15 @@ function goBack() {
         return;
     }
 
+    // Кабинет клиента — его верхний экран, и уходить с него некуда. Раньше
+    // «назад» проваливалось до последнего случая и открывало Ежедневник
+    // тренера. В приложение тренера теперь только кнопкой — и только тому,
+    // у кого оно есть.
+    if (typeof inCabinet === 'function' && inCabinet()) {
+        if (tg) tg.close();
+        return;
+    }
+
     // В дневнике верхний уровень — его собственные вкладки. Уходить с них
     // некуда, поэтому «назад» открывает список ролей — то же, что аватарка.
     if (isDiaryMode()) {
@@ -8600,7 +8621,63 @@ function goBack() {
     if (tg) tg.close();
 }
 
+/* --- Какие экраны чьи ---
+   Раньше роль решала только, какое нижнее меню нарисовать: любой экран
+   открывался из любой роли, и «назад» из кабинета клиента уводило прямо в
+   приложение тренера. Теперь у каждой роли свой список, и проверка стоит в
+   единственной двери — в showScreen, через которую идут все переходы.
+
+   Список именно РАЗРЕШЁННЫХ, а не запрещённых. Разница в том, что будет с
+   новым экраном: при списке запретов он открыт всем, пока его не впишут
+   вручную; при списке разрешений — закрыт сам по себе. Помнить обо всём
+   будущем нельзя, поэтому только так. */
+const ROLE_SCREENS = {
+    // Кабинет клиента — запертая комната: его экран и страница тренера,
+    // по которой он мог прийти. Больше ничего, и выйти можно только кнопкой.
+    cabinet:  ['screen-cabinet', 'screen-shop'],
+
+    diary:    ['screen-workout', 'screen-client', 'screen-settings',
+               'screen-profile', 'screen-start', 'screen-shop'],
+
+    programs: ['screen-programs', 'screen-program', 'screen-run', 'screen-workout',
+               'screen-mypage', 'screen-settings', 'screen-profile',
+               'screen-start', 'screen-shop'],
+
+    trainer:  ['screen-schedule', 'screen-clients', 'screen-client', 'screen-workout',
+               'screen-exercises', 'screen-settings', 'screen-profile',
+               'screen-mypage', 'screen-start', 'screen-shop']
+};
+
+/* Пускать ли на экран. У кабинета правило жёсткое: ни на какой чужой экран
+   и ни при каких условиях. У своих же ролей — мягче: экран соседней роли
+   просто переводит в неё, иначе «Открыть в дневнике» и прохождение программы
+   пришлось бы объяснять человеку отдельно. */
+function screenAllowed(id) {
+    if (typeof inCabinet === 'function' && inCabinet()) {
+        return ROLE_SCREENS.cabinet.indexOf(id) !== -1;
+    }
+
+    const свои = ROLE_SCREENS[appMode] || [];
+    if (свои.indexOf(id) !== -1) return true;
+
+    const роли = (typeof availableRoles === 'function') ? availableRoles() : [];
+    for (let i = 0; i < роли.length; i++) {
+        const r = роли[i];
+        if (r === 'cabinet') continue;                  // туда — только кнопкой
+        if ((ROLE_SCREENS[r] || []).indexOf(id) !== -1) {
+            appMode = r;
+            if (typeof applyNavMode === 'function') applyNavMode();
+            return true;
+        }
+    }
+    return false;
+}
+
 function showScreen(id, from) {
+    // Единственная дверь во все экраны — здесь и стоит охрана. Закрытый экран
+    // просто не открывается: человек остаётся там, где был.
+    if (!screenAllowed(id)) return;
+
     if (from) backFrom[id] = from;
     const leaving = currentScreen;
 
@@ -15373,6 +15450,7 @@ function renderProgramsScreen() {
     renderPageRow();
     renderRequests();
     $('pg-become').style.display = isTrainerRole() ? 'none' : '';
+    if ($('pg-add')) $('pg-add').style.display = isTrainerRole() ? '' : 'none';
     mkRefreshSoon();
     const list = programs();
     // Покупатель (не тренер) приходит сюда за купленным: своих программ у
@@ -16266,6 +16344,10 @@ function trustHtml(programsCount, stats) {
    Купленное и дневник остаются. */
 function becomeTrainer() {
     markTrainerRole();
+    // Нажать могли из кабинета: пока режим клиента включён, охрана ролей
+    // никуда не пустит — и правильно сделает.
+    cabinetOn = false;
+    if (typeof setCloudRole === 'function') setCloudRole('trainer');
     haptic('success');
     enterRole('trainer');
     showToast('Режим тренера включён — добавьте первого клиента во вкладке «Клиенты»');
@@ -17300,6 +17382,12 @@ function bootEntry() {
 function pickRole(role) {
     closeSheet('sheet-roles');
     haptic('select');
+
+    // Выбор в списке — такое же осознанное действие, как кнопка «Вернуться
+    // в приложение тренера»: режим клиента снимается. Без этого выбор просто
+    // ничего бы не сделал — охрана ролей никуда бы не пустила.
+    if (role !== 'cabinet') cabinetOn = false;
+
     const last = lastPlace();
     enterRole(role, (last && last.mode === role) ? last.tab : null);
 }
@@ -19553,6 +19641,10 @@ const CLOUD_ROLE = 'silovoyAssistentV6:role';
 const CLOUD_ROLES = 'silovoyAssistentV6:roles';   // что доступно этому человеку
 
 let cabinetOn = false;
+
+/* Охрана ролей живёт выше по файлу и спрашивает про кабинет через эту
+   функцию: напрямую до объявления переменной не дотянуться. */
+function inCabinet() { return cabinetOn === true; }
 let cabinetReady = false;       // данные с сервера пришли и нарисованы
 let cabinetCard = null;         // { client_name, trainer_name, pass_left }
 let cabinetSessions = [];
@@ -19709,8 +19801,13 @@ function renderCabinet() {
             (left > 0 ? 'осталось по абонементу' : 'занятия закончились — напишите тренеру') +
         '</div>';
 
+    // Своё приложение тренера есть — показываем выход; нет — предлагаем завести.
+    // Одновременно обе кнопки не показываем: это была бы развилка на пустом месте.
+    const своё = !!cloudRoles().trainer || isTrainerRole();
     const back = $('cab-back');
-    if (back) back.style.display = cloudRoles().trainer ? '' : 'none';
+    if (back) back.style.display = своё ? '' : 'none';
+    const стать = $('cab-become');
+    if (стать) стать.style.display = своё ? 'none' : '';
 
     $('cab-history').innerHTML = cabinetSessions.length
         ? cabinetSessions.map(cabEntryHtml).join('')
