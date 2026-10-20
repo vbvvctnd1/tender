@@ -2181,14 +2181,47 @@ textarea.fld {
 .hist-star.on { color: var(--neon-orange); }
 
 /* --- Строка подхода --- */
+/* Строка подхода лежит в обёртке .set-swipe поверх красного «Удалить».
+   Плашки «Рабочий / Разминка» и крестика больше нет (20 октября): место
+   отдано весу и повторам — поля выше, цифры крупнее, галочка больше. */
+.set-swipe { position: relative; margin-bottom: 8px; border-radius: 16px; overflow: hidden; }  /* смахнутая строка не вылезает за карточку */
+.set-swipe > .set-row {
+    position: relative;
+    z-index: 1;
+    margin-bottom: 0;
+    touch-action: pan-y;             /* вверх-вниз листает страница, вбок — наше */
+    transition: transform 0.22s cubic-bezier(0.25, 1, 0.5, 1);
+}
+.set-swipe.open > .set-row { transform: translateX(-96px); }
+.set-del-bg {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 110px;
+    padding-left: 14px;
+    border: none;
+    border-radius: 16px;
+    background: #E5484D;
+    color: #fff;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    /* поверхность строки полупрозрачная — без этого красное просвечивало бы */
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+}
+.set-swipe.open .set-del-bg { opacity: 1; pointer-events: auto; }
+.set-swipe.dragging .set-del-bg { opacity: 1; }
+
 .set-row {
     display: grid;
-    /* Вес шире повторов: там бывает «132.5», а в повторах максимум «15».
-       Поровну они делились до тех пор, пока на узком телефоне вес с
-       десятыми не начал обрезаться. */
-    grid-template-columns: 18px 58px 1.3fr 0.7fr 38px 24px;
+    /* Вес шире повторов: там бывает «132.5», а в повторах максимум «15» */
+    grid-template-columns: 20px 1.25fr 1fr 46px;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     margin-bottom: 8px;
     padding: 7px 8px;
     background: rgba(var(--ch-surface), 0.62);
@@ -2201,38 +2234,21 @@ textarea.fld {
     background: rgba(var(--ch-green), 0.07);
     border-color: rgba(var(--ch-green), 0.28);
 }
-.set-row.warm { background: rgba(var(--ch-fill), 0.05); }
+.set-num { text-align: center; font-size: 14px; font-weight: 800; color: var(--text-muted); }
 
-.set-num { text-align: center; font-size: 13px; font-weight: 800; color: var(--text-muted); }
-
-.set-pill {
-    height: 34px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 4px;
-    border-radius: 10px;
-    border: 0.5px solid transparent;
-    font-size: 10.5px;
-    font-weight: 800;
-    letter-spacing: 0.2px;
-    cursor: pointer;
-    user-select: none;
-}
-.set-pill.work { color: var(--text-main); background: rgba(var(--ch-surface), 0.9); border-color: var(--card-border); }
-.set-pill.warm { color: var(--text-caps); background: rgba(var(--ch-fill), 0.14); border-color: rgba(var(--ch-fill), 0.2); }
 
 .set-row .fld {
-    height: 36px;
+    height: 46px;
     padding: 0 6px;
-    font-size: 15px;
+    font-size: 20px;
+    font-weight: 700;
     text-align: center;
-    border-radius: 10px;
+    border-radius: 12px;
 }
 
 .set-check {
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2240,7 +2256,7 @@ textarea.fld {
     border-radius: 50%;
     background: rgba(var(--ch-surface), 0.7);
     color: rgba(var(--ch-fill), 0.55);
-    font-size: 16px;
+    font-size: 19px;
     font-weight: 900;
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -2252,21 +2268,6 @@ textarea.fld {
     box-shadow: 0 3px 10px rgba(var(--ch-green), 0.3);
 }
 
-.set-del {
-    width: 24px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: none;
-    border-radius: 8px;
-    background: transparent;
-    color: rgba(var(--ch-fill), 0.45);
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-}
-.set-del:active { color: var(--neon-red); background: rgba(var(--ch-red), 0.1); }
 
 /* Подписи колонок над подходами: та же сетка, что у строки каждого стиля,
    но без плашки — подписи встают ровно над полями веса и повторов */
@@ -4580,8 +4581,8 @@ body.pad-open { padding-bottom: 62vh; }
 :root[data-style="neo"] .set-row {
     position: relative;
     overflow: hidden;
-    grid-template-columns: 22px 70px 1.3fr 0.7fr 38px 26px;
-    gap: 6px;
+    grid-template-columns: 22px 1.25fr 1fr 46px;
+    gap: 8px;
     padding: 8px;
     border-radius: 20px;
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.008));
@@ -4614,8 +4615,9 @@ body.pad-open { padding-bottom: 62vh; }
     pointer-events: none;
     transition: all 0.3s ease;
 }
-:root[data-style="neo"] .set-row.warm { background: linear-gradient(180deg, rgba(120, 120, 128, 0.05), rgba(120, 120, 128, 0.01)); }
-:root[data-style="neo"] .set-row.warm::after { background: rgba(255, 255, 255, 0.14); }
+/* строка непрозрачная: под ней прячется красное «Удалить» */
+:root[data-style="neo"] .set-swipe > .set-row:not(.set-head) { background-color: #15151c; }
+:root[data-style="neo"] .set-swipe, :root[data-style="neo"] .set-del-bg { border-radius: 20px; }
 :root[data-style="neo"] .set-row.done {
     background: linear-gradient(180deg, rgba(50, 215, 75, 0.10), rgba(50, 215, 75, 0.02));
     border-color: rgba(50, 215, 75, 0.22);
@@ -4626,50 +4628,26 @@ body.pad-open { padding-bottom: 62vh; }
 }
 :root[data-style="neo"] .set-row.done::after { background: var(--neon-green); box-shadow: 0 0 12px rgba(50, 215, 75, 0.85); }
 
-:root[data-style="neo"] .set-num { font-size: 13px; font-weight: 800; color: rgba(255, 255, 255, 0.32); font-variant-numeric: tabular-nums; }
+:root[data-style="neo"] .set-num { font-size: 14px; font-weight: 800; color: rgba(255, 255, 255, 0.32); font-variant-numeric: tabular-nums; }
 
 :root[data-style="neo"] .set-row .fld {
-    height: 38px;
+    height: 46px;
     padding: 0 4px;
-    border-radius: 12px;
-    font-size: 16px;
+    border-radius: 14px;
+    font-size: 20px;
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
     box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 -1px 0 rgba(0, 0, 0, 0.4) inset;
 }
 
-:root[data-style="neo"] .set-pill {
-    height: 38px;
-    padding: 0 6px;
-    border-radius: 12px;
-    font-size: 11px;
-    letter-spacing: 0.02em;
-    white-space: nowrap;
-    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-/* «Рабочий» — метка подхода, а не главная кнопка: тонкая акцентная рамка
-   без заливки и свечения, чтобы не спорить с ✓ и «Сохранить» */
-:root[data-style="neo"] .set-pill.work {
-    color: #fff;
-    background: linear-gradient(180deg, rgba(var(--acc-rgb), 0.20), rgba(var(--acc-rgb), 0.05));
-    border-color: rgba(var(--acc-rgb), 0.45);
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset, 0 -1px 0 rgba(0, 0, 0, 0.4) inset;
-    text-shadow: none;
-}
-:root[data-style="neo"] .set-pill.warm {
-    color: rgba(255, 255, 255, 0.62);
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
-    border-color: rgba(255, 255, 255, 0.10);
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.10) inset, 0 -1px 0 rgba(0, 0, 0, 0.4) inset;
-}
-:root[data-style="neo"] .set-pill:active { transform: scale(0.92); }
 
 :root[data-style="neo"] .set-check {
-    width: 38px;
-    height: 38px;
+    width: 44px;
+    height: 44px;
     border: 1.5px solid rgba(255, 255, 255, 0.16);
     background: rgba(255, 255, 255, 0.04);
     color: rgba(255, 255, 255, 0.35);
-    font-size: 15px;
+    font-size: 18px;
     transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 :root[data-style="neo"] .set-check:active { transform: scale(0.86); }
@@ -4681,19 +4659,12 @@ body.pad-open { padding-bottom: 62vh; }
     animation: neoCheckPulse 2.4s ease-in-out infinite;
 }
 
-:root[data-style="neo"] .set-del {
-    width: 30px;
-    height: 34px;
-    border-radius: 12px;
-    color: rgba(255, 255, 255, 0.28);
-}
-:root[data-style="neo"] .set-del:active { color: #FF5A5A; background: rgba(226, 53, 53, 0.14); }
 
 /* узкий телефон: сетка строки компактнее, чтобы вес и повторы не сжались */
 @media (max-width: 380px) {
-    :root[data-style="neo"] .set-row { grid-template-columns: 16px 56px 1.35fr 0.65fr 34px 22px; gap: 4px; padding: 7px; }
-    :root[data-style="neo"] .set-row .fld { font-size: 15px; padding: 0 2px; }
-    :root[data-style="neo"] .set-check { width: 34px; height: 34px; }
+    :root[data-style="neo"] .set-row { grid-template-columns: 18px 1.25fr 1fr 44px; gap: 6px; padding: 7px; }
+    :root[data-style="neo"] .set-row .fld { font-size: 19px; padding: 0 2px; }
+    :root[data-style="neo"] .set-check { width: 42px; height: 42px; }
 }
 
 /* --- Упражнения, уже в тренировке: карточка с акцентной полоской --- */
@@ -4912,7 +4883,6 @@ body.pad-open { padding-bottom: 62vh; }
 :root[data-style="neo"] .fold-count { font-size: 12px; }
 :root[data-style="neo"] .ex-plan-tag { font-size: 10.5px; }
 :root[data-style="neo"] .btn-primary { font-size: 16px; }
-:root[data-style="neo"] .set-del { font-size: 16px; }
 :root[data-style="neo"] #ex-search { font-weight: 600; }
 /* подсказка — обычный текст; «Из шаблона» в заголовке блока — маленькая кнопка */
 :root[data-style="neo"] .panel-title .btn-soft.base-toggle { height: 32px; padding: 0 10px; }
@@ -5767,37 +5737,34 @@ body.pad-open { padding-bottom: 62vh; }
 
 /* --- Тренировка --- */
 :root[data-style="minimal"] .set-row {
-    grid-template-columns: 22px 62px 1.3fr 0.7fr 36px 24px;
-    gap: 6px;
+    grid-template-columns: 22px 1.25fr 1fr 46px;
+    gap: 8px;
     padding: 8px;
     background: var(--m-card);
     border: none;
     border-radius: 14px;
     box-shadow: var(--m-sh-1);
 }
-:root[data-style="minimal"] .set-row.warm { background: var(--m-card); }
+/* выполненный подход серее, но всё равно непрозрачный: под ним «Удалить» */
+:root[data-style="minimal"] .set-swipe > .set-row.done { background: var(--m-input); }
 /* выполненный подход — просто серее, без зелени */
 :root[data-style="minimal"] .set-row.done { background: var(--m-input); box-shadow: none; }
-:root[data-style="minimal"] .set-num { font-size: 12px; color: var(--m-muted); font-variant-numeric: tabular-nums; }
-:root[data-style="minimal"] .set-pill { height: 34px; border: none; border-radius: 10px; letter-spacing: 0.02em; }
-:root[data-style="minimal"] .set-pill.work { background: var(--m-act); color: var(--m-act-text); }
-:root[data-style="minimal"] .set-pill.warm { background: var(--m-input); color: var(--m-muted); }
-:root[data-style="minimal"] .set-row .fld { height: 34px; padding: 0 6px; border-radius: 10px; font-size: 16px; }
+:root[data-style="minimal"] .set-num { font-size: 13px; color: var(--m-muted); font-variant-numeric: tabular-nums; }
+:root[data-style="minimal"] .set-row .fld { height: 46px; padding: 0 6px; border-radius: 12px; font-size: 20px; font-weight: 700; }
 :root[data-style="minimal"] .set-check {
-    width: 34px;
-    height: 34px;
+    width: 44px;
+    height: 44px;
     border: 1.5px solid var(--m-muted-2);
     background: transparent;
     color: var(--m-muted-2);
-    font-size: 15px;
+    font-size: 18px;
     box-shadow: none;
 }
 :root[data-style="minimal"] .set-check.on { background: var(--m-act); border-color: var(--m-act); color: var(--m-act-text); }
-:root[data-style="minimal"] .set-del { width: 26px; font-size: 15px; color: var(--m-muted-2); }
 @media (max-width: 380px) {
-    :root[data-style="minimal"] .set-row { grid-template-columns: 16px 56px 1.35fr 0.65fr 32px 20px; gap: 4px; padding: 7px; }
-    :root[data-style="minimal"] .set-row .fld { font-size: 15px; padding: 0 3px; }
-    :root[data-style="minimal"] .set-check { width: 32px; height: 32px; }
+    :root[data-style="minimal"] .set-row { grid-template-columns: 18px 1.25fr 1fr 44px; gap: 6px; padding: 7px; }
+    :root[data-style="minimal"] .set-row .fld { font-size: 19px; padding: 0 3px; }
+    :root[data-style="minimal"] .set-check { width: 42px; height: 42px; }
 }
 
 :root[data-style="minimal"] .ex-item {
@@ -7635,7 +7602,7 @@ function applyViewport() {
    день файл выкладывается не раз: по одной дате не понять, приехало ли
    обновление или Telegram показывает копию из кэша. Ставится при выкладке
    скриптом publish.py — руками не правится. */
-const BUILD = '19.10.2026, 00:05';
+const BUILD = '20.10.2026, 03:53';
 let fullReason = '';        // почему полного экрана нет — тоже видно в Профиле
 
 /* Полный экран: приложение занимает телефон целиком, а кнопки Telegram
@@ -10185,7 +10152,6 @@ function computeMetrics(session) {
     (session.ex || []).forEach(function (e) {
         (e.sets || []).forEach(function (s) {
             if (s.completed === false) return;
-            if (s.isWarmup) { warmupSets++; return; }
             workingSets++;
             workingReps += num(s.r, 0);
             tonnage += setTonnage(e.n, s.w, s.r, bw);
@@ -10219,7 +10185,7 @@ function pastMaxWorkingWeight(exName, history) {
         (s.ex || []).forEach(function (e) {
             if (e.n !== exName) return;
             (e.sets || []).forEach(function (st) {
-                if (st.isWarmup || !st.completed) return;
+                if (!st.completed) return;
                 const ew = effWeight(exName, st.w, bw);
                 if (ew > max) max = ew;
             });
@@ -10242,24 +10208,14 @@ function lastPerformance(exName, history) {
     return null;
 }
 
-/* Автоопределение разминочных сетов: пока вес ниже 80% от прошлого рабочего
-   максимума — это разминка. Ручное переключение имеет приоритет. */
-function evaluateSetTypes(rows, exName, pastMax, bodyWeight) {
-    let hitWorking = false;
-    return rows.map(function (set) {
-        if (set.manualOverride) return Object.assign({}, set, { isWarmup: !!set.isWarmup });
-        if (!pastMax) return Object.assign({}, set, { isWarmup: false });
-
-        const ew = effWeight(exName, set.w, bodyWeight);
-        let warm;
-        if (!hitWorking) {
-            if (ew >= 0.8 * pastMax) { hitWorking = true; warm = false; }
-            else warm = true;
-        } else {
-            warm = false;
-        }
-        return Object.assign({}, set, { isWarmup: warm });
-    });
+/* Разминки как отдельного вида подходов больше нет (решение владельца
+   20 октября): тренер и так вводит от меньшего к большему, и все подходы
+   считаются одинаково — в тоннаж, в подходы на мышцу, в подсказки «как в
+   прошлый раз». Рекорды и максимум от этого не меняются: лёгкий подход
+   тяжелее рабочего не бывает. Старая пометка isWarmup в данных осталась,
+   но её никто не читает. */
+function evaluateSetTypes(rows) {
+    return rows.map(function (set) { return Object.assign({}, set, { isWarmup: false }); });
 }
 
 /* Чем была тренировка: «Грудь», «Грудь · Руки» или «Фуллбоди». Отвечает на
@@ -10276,7 +10232,7 @@ function muscleSummary(ex) {
     (ex || []).forEach(function (e) {
         const cat = exData(e.n).category || 'Другое';
         (e.sets || []).forEach(function (st) {
-            if (st.isWarmup || st.completed === false) return;   // разминка не в счёт
+            if (st.completed === false) return;
             byCat[cat] = (byCat[cat] || 0) + 1;
             all += 1;
         });
@@ -10313,7 +10269,7 @@ function muscleStats(session) {
     (session.ex || []).forEach(function (e) {
         const muscles = exData(e.n).muscles || { 'Другое': 1.0 };
         (e.sets || []).forEach(function (s) {
-            if (s.isWarmup || s.completed === false) return;
+            if (s.completed === false) return;
             // объём в килограммах учитывает обе стороны, а счёт подходов — нет:
             // три подхода одной рукой это три подхода на мышцу, а не шесть
             const tonnage = setTonnage(e.n, s.w, s.r, bw);
@@ -12324,28 +12280,108 @@ function addSetRow() {
     }, 40);
 }
 
+/* Подход удаляется смахиванием влево и «Удалить». Без «Отменить»: строку
+   надо нарочно смахнуть и ещё нажать, случайно так не выйдет, а всплывающее
+   сообщение в зале только мешает (решение владельца). Последний подход не
+   удаляется — в упражнении всегда есть строка. */
 function removeSetRow(index) {
-    const removed = currentSetRows[index];
-    if (!removed) return;
-    const wasOnly = currentSetRows.length <= 1;
-
-    if (wasOnly) currentSetRows = blankRows();
-    else currentSetRows.splice(index, 1);
+    if (!currentSetRows[index] || currentSetRows.length <= 1) return;
+    if (padCfg) closePad();          // клавиатура смотрела на эту строку
+    setSwipeOpen = -1;
+    currentSetRows.splice(index, 1);
+    haptic('medium');
     renderSetRows();
     saveDraft();
-
-    // Вернуть подход можно, только пока открыт тот же набор строк:
-    // сменили упражнение — сообщение гаснет.
-    const session = wkSession, exName = selectedExercise, editing = wkEditingIndex;
-    offerUndo('Подход ' + (index + 1) + ' убран', function () {
-        if (currentScreen !== 'screen-workout' || wkSession !== session ||
-            selectedExercise !== exName || wkEditingIndex !== editing) return false;
-        if (wasOnly && currentSetRows.length === 1) currentSetRows = [removed];
-        else currentSetRows.splice(Math.min(index, currentSetRows.length), 0, removed);
-        renderSetRows();
-        saveDraft();
-    }, { kind: 'set' });
 }
+
+/* --- Смахивание строки подхода ---
+   Слушаем один раз на всём списке: строки перерисовываются на каждую цифру,
+   и вешать обработчики на каждую заново было бы и долго, и ненадёжно.
+   Вертикальную прокрутку браузер ведёт сам (touch-action: pan-y), нам
+   достаются только движения вбок. */
+let setSwipeOpen = -1;               // какая строка открыта (видно «Удалить»)
+const SWIPE_OPEN = 96;               // настолько отъезжает строка — ширина «Удалить»
+
+function closeSetSwipe() {
+    if (setSwipeOpen === -1) return;
+    setSwipeOpen = -1;
+    document.querySelectorAll('#wk-set-rows .set-swipe.open').forEach(function (el) { el.classList.remove('open'); });
+}
+
+function openSetSwipe(i) {
+    const box = document.querySelector('#wk-set-rows .set-swipe[data-i="' + i + '"]');
+    if (!box || box.classList.contains('no-del')) return;
+    closeSetSwipe();
+    setSwipeOpen = i;
+    box.classList.add('open');
+    haptic('light');
+}
+
+(function armSetSwipe() {
+    let drag = null;                 // { box, row, i, x0, y0, dx, side, base }
+    let eatClick = false;            // после смахивания тап по полю не открывает клавиатуру
+
+    document.addEventListener('pointerdown', function (e) {
+        const row = e.target.closest && e.target.closest('#wk-set-rows .set-swipe:not(.no-del) .set-row');
+        if (!row) {
+            // тап мимо открытой строки закрывает её
+            if (setSwipeOpen !== -1 && !(e.target.closest && e.target.closest('.set-del-bg'))) closeSetSwipe();
+            return;
+        }
+        const box = row.parentNode;
+        drag = { box: box, row: row, i: +box.getAttribute('data-i'), x0: e.clientX, y0: e.clientY,
+                 dx: 0, side: null, base: box.classList.contains('open') ? -SWIPE_OPEN : 0 };
+    }, true);
+
+    document.addEventListener('pointermove', function (e) {
+        if (!drag) return;
+        const dx = e.clientX - drag.x0, dy = e.clientY - drag.y0;
+        if (drag.side === null) {
+            if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+            drag.side = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+            if (drag.side === 'x') {
+                if (setSwipeOpen !== -1 && setSwipeOpen !== drag.i) closeSetSwipe();
+                drag.row.style.transition = 'none';
+                drag.box.classList.add('dragging');
+            }
+        }
+        if (drag.side !== 'x') return;
+        drag.dx = Math.max(-SWIPE_OPEN - 40, Math.min(0, drag.base + dx));
+        drag.row.style.transform = 'translateX(' + drag.dx + 'px)';
+    }, true);
+
+    const end = function () {
+        if (!drag) return;
+        const d = drag;
+        drag = null;
+        if (d.side !== 'x') return;
+        eatClick = true;
+        setTimeout(function () { eatClick = false; }, 350);
+        d.row.style.transition = '';
+        d.row.style.transform = '';
+        d.box.classList.remove('dragging');
+        if (d.dx < -SWIPE_OPEN / 2) openSetSwipe(d.i);
+        else if (setSwipeOpen === d.i) closeSetSwipe();
+    };
+    document.addEventListener('pointerup', end, true);
+    document.addEventListener('pointercancel', function () {
+        if (drag && drag.side === 'x') {
+            drag.row.style.transition = '';
+            drag.row.style.transform = '';
+            drag.box.classList.remove('dragging');
+        }
+        drag = null;
+    }, true);
+
+    document.addEventListener('click', function (e) {
+        if (!eatClick) return;
+        if (e.target.closest && e.target.closest('#wk-set-rows')) {
+            e.stopPropagation();
+            e.preventDefault();
+        }
+        eatClick = false;
+    }, true);
+})();
 
 function updateSetVal(index, field, value) {
     if (!currentSetRows[index]) return;
@@ -12354,14 +12390,6 @@ function updateSetVal(index, field, value) {
     saveDraft();
 }
 
-function toggleSetWarmup(index) {
-    if (!currentSetRows[index]) return;
-    currentSetRows[index].manualOverride = true;
-    currentSetRows[index].isWarmup = !currentSetRows[index].isWarmup;
-    haptic('select');
-    renderSetRows();
-    saveDraft();
-}
 
 /* Подстановки «как в прошлый раз» держим здесь, а не в HTML-атрибутах:
    иначе значение пришлось бы экранировать внутри вложенных кавычек. */
@@ -12412,17 +12440,18 @@ function renderSetRows() {
     const isAS = isAssisted(selectedExercise);
 
     const past = lastPerformance(selectedExercise, wkHistory);
-    const pastWorking = past ? past.sets.filter(function (s) { return !s.isWarmup; }) : [];
+    const pastWorking = past ? past.sets : [];
 
     currentSetRows = evaluateSetTypes(currentSetRows, selectedExercise, wkPastMax, bw);
     setDefaults = [];
 
     // подписи колонок: без них две цифры в строке — загадка
     const head = '<div class="set-row set-head" aria-hidden="true">' +
-        '<span></span><span></span><span class="caps-label">' +
+        '<span></span><span class="caps-label">' +
             (isAS ? '−кг' : (isBW ? '+кг' : 'кг')) + '</span>' +
-        '<span class="caps-label">повт</span><span></span><span></span>' +
+        '<span class="caps-label">повт</span><span></span>' +
         '</div>';
+    const canDel = currentSetRows.length > 1;
 
     $('wk-set-rows').innerHTML = head + currentSetRows.map(function (set, i) {
         const ref = pastWorking[i] || (pastWorking.length ? pastWorking[pastWorking.length - 1] : null);
@@ -12436,17 +12465,17 @@ function renderSetRows() {
 
         const wPh = isBW ? '+' + defW + ' (' + bw + ')'
                   : (isAS ? bw + '−' + defW : String(defW));
-        const warm = !!set.isWarmup;
         const done = !!set.completed;
         const wVal = (set.w !== undefined && set.w !== null) ? set.w : '';
         const rVal = (set.r !== undefined && set.r !== null) ? set.r : '';
 
+        // Строка лежит поверх красного «Удалить»: смахнул влево — открылось.
+        // Последний подход не удаляется — в упражнении всегда есть строка.
         return '' +
-        '<div class="set-row ' + (done ? 'done' : (warm ? 'warm' : '')) + '">' +
+        '<div class="set-swipe' + (canDel ? '' : ' no-del') + (setSwipeOpen === i ? ' open' : '') + '" data-i="' + i + '">' +
+        (canDel ? '<button class="set-del-bg" onclick="removeSetRow(' + i + ')">Удалить</button>' : '') +
+        '<div class="set-row ' + (done ? 'done' : '') + '">' +
             '<span class="set-num">' + (i + 1) + '</span>' +
-            '<span class="set-pill ' + (warm ? 'warm' : 'work') + '" onclick="toggleSetWarmup(' + i + ')">' +
-                (warm ? 'Разминка' : 'Рабочий') +
-            '</span>' +
             '<input class="fld set-weight' + padActiveClass(i, 'w') + '" type="text" readonly' +
                   ' placeholder="' + esc(wPh) + '" value="' + esc(wVal) + '"' +
                   ' onclick="openSetPad(' + i + ', &quot;w&quot;)">' +
@@ -12454,9 +12483,7 @@ function renderSetRows() {
                   ' placeholder="' + esc(defR) + '" value="' + esc(rVal) + '"' +
                   ' onclick="openSetPad(' + i + ', &quot;r&quot;)">' +
             '<button class="set-check ' + (done ? 'on' : '') + '" onclick="toggleSetDone(' + i + ')">✓</button>' +
-            (currentSetRows.length > 1
-                ? '<button class="set-del" onclick="removeSetRow(' + i + ')">✕</button>'
-                : '<div></div>') +
+        '</div>' +
         '</div>';
     }).join('');
 
@@ -12552,11 +12579,11 @@ function exItemHtml(e, i, bw) {
         const raw = num(s.w, 0);
         if (s.completed) {
             doneCount++;
-            if (!s.isWarmup) workingKg += setTonnage(e.n, raw, s.r, bw);
+            workingKg += setTonnage(e.n, raw, s.r, bw);
         }
         const wTxt = setWeightText(e.n, raw, bw);
-        // разминочные приглушены, запланированные — ещё бледнее
-        const cls = !s.completed ? 'planned' : (s.isWarmup ? 'warm' : '');
+        // запланированные — бледнее
+        const cls = !s.completed ? 'planned' : '';
         parts.push('<span class="' + cls + '">' + wTxt + ' × ' + s.r + '</span>');
     });
 
@@ -12594,7 +12621,7 @@ function roundFoldHtml(round, bw) {
         (ex[i].sets || []).forEach(function (s) {
             if (!s.completed) { full = false; return; }
             any = true;
-            if (!s.isWarmup) kg += setTonnage(ex[i].n, num(s.w, 0), s.r, bw);
+            kg += setTonnage(ex[i].n, num(s.w, 0), s.r, bw);
         });
         if (any) doneBlocks++;
     });
@@ -13038,7 +13065,7 @@ function exListHtml(ex, bw, hideW) {
         const txt = sets.map(function (st) {
             const raw = num(st.w, 0);
             const w = hideW ? '×' : setWeightText(name, raw, bw) + ' ×';
-            return '<span class="' + (st.isWarmup ? 'warm' : '') + '">' + w + ' ' + st.r + '</span>';
+            return '<span>' + w + ' ' + st.r + '</span>';
         }).join('<span class="sep">·</span>');
         return '<div class="hist-ex"><div class="n">' + esc(name) + exBadge(name) + '</div>' +
                '<div class="set-list">' + txt + '</div></div>';
@@ -13128,8 +13155,7 @@ function histEntryHtml(s) {
     const bw = validBW(s.bodyWeight, 80);
     const starred = !!templateOf(s.id);
 
-    const sets = m.workingSets + ' ' + plural(m.workingSets, 'подход', 'подхода', 'подходов') +
-                 (m.warmupSets ? ' + ' + m.warmupSets + ' разм.' : '');
+    const sets = m.workingSets + ' ' + plural(m.workingSets, 'подход', 'подхода', 'подходов');
     const meta = esc(s.time) + ' · ' + sets +
                  (m.tonnage ? ' · ' + m.tonnage.toLocaleString('ru') + ' кг' : '');
     const мышцы = muscleSummary(s.ex);
@@ -13326,7 +13352,7 @@ function bestWorkingSet(session, name) {
     (session.ex || []).forEach(function (e) {
         if (e.n !== name) return;
         (e.sets || []).forEach(function (st) {
-            if (st.isWarmup || st.completed === false) return;
+            if (st.completed === false) return;
             const r = num(st.r, 0);
             if (r <= 0) return;
             const w = Math.round(effWeight(name, st.w, bw) * 10) / 10;
@@ -13645,7 +13671,7 @@ function renderProgression() {
 
         matched.forEach(function (e) {
             (e.sets || []).forEach(function (st) {
-                if (st.completed === false || st.isWarmup) return;
+                if (st.completed === false) return;
                 const raw = num(st.w, 0);
                 const r = num(st.r, 0);
                 if (r <= 0) return;
@@ -14816,8 +14842,8 @@ function renderTemplatesSection() {
 }
 
 /* Вес для запланированного подхода: сначала из истории этого клиента,
-   и только если он упражнение не делал — из шаблона.
-   Разминочные и рабочие сопоставляем раздельно: у них разные веса. */
+   и только если он упражнение не делал — из шаблона. Подход N шаблона
+   берёт вес подхода N из прошлого раза. */
 /* cursor — сколько подходов каждого упражнения шаблон уже расставил. В круговой
    упражнение встречается в каждом круге: второй круг берёт второй подход
    из истории клиента, а не снова первый. В сплите и фулл-боди упражнение
@@ -14826,13 +14852,11 @@ function renderTemplatesSection() {
    свои из истории. Чужие 80 кг новичку не ориентир. */
 function plannedSetsFor(exName, tplSets, cursor, ignoreW) {
     const past = lastPerformance(exName, wkHistory);
-    const warm = past ? past.sets.filter(function (s) { return s.isWarmup; }) : [];
-    const work = past ? past.sets.filter(function (s) { return !s.isWarmup; }) : [];
-    const at = cursor ? (cursor[exName] || (cursor[exName] = { warm: 0, work: 0 })) : { warm: 0, work: 0 };
+    const pool = past ? past.sets : [];
+    const at = cursor ? (cursor[exName] || (cursor[exName] = { work: 0 })) : { work: 0 };
 
     return (tplSets || []).map(function (ts) {
-        const pool = ts.isWarmup ? warm : work;
-        const idx = ts.isWarmup ? at.warm++ : at.work++;
+        const idx = at.work++;
         const ref = pool[idx] || (pool.length ? pool[pool.length - 1] : null);
         // stampRow запоминает, с какими цифрами строка появилась: иначе
         // правку плана руками не отличить от нетронутого плана
@@ -14840,9 +14864,9 @@ function plannedSetsFor(exName, tplSets, cursor, ignoreW) {
         return stampRow({
             w: ref ? num(ref.w, свой) : свой,
             r: ts.r,
-            isWarmup: !!ts.isWarmup,
+            isWarmup: false,
             completed: false,          // это план, а не результат
-            manualOverride: !!ts.isWarmup,
+            manualOverride: false,
             fromPlan: true             // серым, пока не отмечен; при уходе с упражнения не стирается
         });
     });
@@ -15766,10 +15790,7 @@ function shareSetsText(name, sets, hideW) {
             return wl ? wl + '×' + s.r : s.r + ' повт.';
         }).join(' · ');
     };
-    const warm = (sets || []).filter(function (s) { return s.isWarmup; });
-    const work = (sets || []).filter(function (s) { return !s.isWarmup; });
-    const w = one(work);
-    return warm.length ? 'разминка: ' + one(warm) + (w ? '; рабочие: ' + w : '') : w;
+    return one(sets || []);
 }
 
 /* Строки одной тренировки: [{ h: 'Круговая · 3 круга' }, { n: 'Жим лёжа', s: '4 × 8, 80 кг' }] */
@@ -18422,6 +18443,7 @@ function openWorkoutBwPad() {
 
 function openSetPad(index, field) {
     if (!currentSetRows[index]) return;
+    setSwipeOpen = -1;
     padSetIndex = index;
     padSetField = field;
     // Строки перерисовываются, чтобы подсветка правимого поля появилась ДО
