@@ -32,7 +32,7 @@
             root.setAttribute('data-theme', mode === 'dark' ? 'dark' : 'light');
         } else {
             // по умолчанию — Нео-Стекло: оно всегда тёмное
-            var tod = look.neoVariant;
+            var tod = look.neoVariant === 'mine' ? look.myTod : look.neoVariant;
             if (['morning', 'day', 'evening', 'night'].indexOf(tod) === -1) {
                 var h = new Date().getHours();
                 tod = h >= 4 && h < 10 ? 'morning' : h >= 10 && h < 16 ? 'day'
@@ -2219,7 +2219,7 @@ textarea.fld {
 .set-row {
     display: grid;
     /* Вес шире повторов: там бывает «132.5», а в повторах максимум «15» */
-    grid-template-columns: 20px 1.25fr 1fr 46px;
+    grid-template-columns: 20px 1.3fr 1fr;
     align-items: center;
     gap: 8px;
     margin-bottom: 8px;
@@ -2234,6 +2234,21 @@ textarea.fld {
     background: rgba(var(--ch-green), 0.07);
     border-color: rgba(var(--ch-green), 0.28);
 }
+/* «Дальше: <упражнение>» — главная кнопка под тренировкой, «другое» — мелкая */
+#wk-next-ex {
+    width: 100%;
+    margin-top: 10px;
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-height: 58px;
+}
+#wk-next-ex .wkn-cap { font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.75; }
+#wk-next-ex .wkn-name { font-size: 16px; font-weight: 800; line-height: 1.2; }
+#wk-add-exercise.wk-add-small { min-height: 0; height: 40px; margin-top: 8px; font-size: 13.5px; opacity: 0.85; }
+
 .set-num { text-align: center; font-size: 14px; font-weight: 800; color: var(--text-muted); }
 
 
@@ -3056,6 +3071,12 @@ body.pad-open .toast.show { transform: translateY(0); }
     transition: transform 0.25s cubic-bezier(0.25, 1, 0.5, 1);
 }
 .keypad.show { transform: translateY(0); }
+/* Касание по клавиатуре страницу не листает и экран не увеличивает. Раньше
+   палец, чуть съехавший при нажатии ⌫, прокручивал страницу под клавиатурой
+   — строка подхода «уезжала вниз», сильнее всего нижняя (20 октября).
+   Быстрые нажатия подряд засчитываются все. */
+.keypad { touch-action: none; overscroll-behavior: contain; -webkit-user-select: none; user-select: none; }
+.keypad button { touch-action: none; -webkit-tap-highlight-color: transparent; }
 
 .kp-head {
     display: flex;
@@ -4581,7 +4602,7 @@ body.pad-open { padding-bottom: 62vh; }
 :root[data-style="neo"] .set-row {
     position: relative;
     overflow: hidden;
-    grid-template-columns: 22px 1.25fr 1fr 46px;
+    grid-template-columns: 22px 1.3fr 1fr;
     gap: 8px;
     padding: 8px;
     border-radius: 20px;
@@ -4662,7 +4683,7 @@ body.pad-open { padding-bottom: 62vh; }
 
 /* узкий телефон: сетка строки компактнее, чтобы вес и повторы не сжались */
 @media (max-width: 380px) {
-    :root[data-style="neo"] .set-row { grid-template-columns: 18px 1.25fr 1fr 44px; gap: 6px; padding: 7px; }
+    :root[data-style="neo"] .set-row { grid-template-columns: 18px 1.3fr 1fr; gap: 6px; padding: 7px; }
     :root[data-style="neo"] .set-row .fld { font-size: 19px; padding: 0 2px; }
     :root[data-style="neo"] .set-check { width: 42px; height: 42px; }
 }
@@ -5737,7 +5758,7 @@ body.pad-open { padding-bottom: 62vh; }
 
 /* --- Тренировка --- */
 :root[data-style="minimal"] .set-row {
-    grid-template-columns: 22px 1.25fr 1fr 46px;
+    grid-template-columns: 22px 1.3fr 1fr;
     gap: 8px;
     padding: 8px;
     background: var(--m-card);
@@ -5762,7 +5783,7 @@ body.pad-open { padding-bottom: 62vh; }
 }
 :root[data-style="minimal"] .set-check.on { background: var(--m-act); border-color: var(--m-act); color: var(--m-act-text); }
 @media (max-width: 380px) {
-    :root[data-style="minimal"] .set-row { grid-template-columns: 18px 1.25fr 1fr 44px; gap: 6px; padding: 7px; }
+    :root[data-style="minimal"] .set-row { grid-template-columns: 18px 1.3fr 1fr; gap: 6px; padding: 7px; }
     :root[data-style="minimal"] .set-row .fld { font-size: 19px; padding: 0 3px; }
     :root[data-style="minimal"] .set-check { width: 42px; height: 42px; }
 }
@@ -6251,6 +6272,8 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
 
         <div id="wk-ex-list"></div>
 
+        <!-- Следующее упражнение из прошлой тренировки — одним нажатием -->
+        <button class="btn-soft filled" id="wk-next-ex" style="display: none;" onclick="goNextFromPast()"></button>
         <button class="btn-soft" id="wk-add-exercise" onclick="openExPicker()">＋ Упражнение</button>
 
         <!-- Карман редактора: отсюда он уезжает в открытую карточку и сюда же
@@ -6266,10 +6289,6 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
                 <div id="wk-set-rows"></div>
                 <!-- Пока в упражнении нет ни одной галочки, тренер может не
                      понимать, что без неё подход никуда не попадёт -->
-                <div id="wk-tick-hint" class="tick-hint" hidden>
-                    <span class="th-text">Отмечайте ✓ — в тренировку попадают только отмеченные подходы</span>
-                    <button class="th-off" onclick="hideTickHint()">Больше не показывать</button>
-                </div>
                 <div class="btn-row" id="wk-add-set">
                     <button class="btn-soft" onclick="addSetRow()">+ Подход</button>
                 </div>
@@ -6556,6 +6575,8 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
         <label class="caps-label" style="margin-top: 14px;">Вариант</label>
         <div class="goal-chips" id="set-theme-chips"></div>
         <p class="panel-note" id="set-theme-note"></p>
+        <button class="btn-soft" id="set-fix-color" style="width: 100%; margin-top: 10px; display: none;"
+                onclick="fixMyColor()">Закрепить этот цвет</button>
 
         <div class="toggle-line" id="set-livebg" onclick="toggleLookOption('liveBg')">
             <span>
@@ -6579,13 +6600,6 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
             устройстве и в любой поездке.</p>
         <select class="fld" id="set-tz" onchange="setTz(this.value)"></select>
         <p class="panel-note" id="set-tz-now" style="margin: 10px 0 0;"></p>
-    </div>
-
-    <!-- Панели нет, пока подсказки не выключены: сообщать «подсказки
-         показываются» — значит занимать экран ничем. -->
-    <div class="panel" id="set-hints-panel" style="display: none;">
-        <div class="panel-title"><span class="ttl"><span class="only-neo">💡 </span><svg class="mi only-min" aria-hidden="true"><use href="#i-zap"/></svg>Подсказки</span></div>
-        <div id="set-hints"></div>
     </div>
 
 </div>
@@ -7602,7 +7616,7 @@ function applyViewport() {
    день файл выкладывается не раз: по одной дате не понять, приехало ли
    обновление или Telegram показывает копию из кэша. Ставится при выкладке
    скриптом publish.py — руками не правится. */
-const BUILD = '20.10.2026, 03:53';
+const BUILD = '21.10.2026, 05:32';
 let fullReason = '';        // почему полного экрана нет — тоже видно в Профиле
 
 /* Полный экран: приложение занимает телефон целиком, а кнопки Telegram
@@ -7865,8 +7879,20 @@ const NEO_VARIANTS = [
     { v: 'morning', label: 'Утро' },
     { v: 'day',     label: 'День' },
     { v: 'evening', label: 'Вечер' },
-    { v: 'night',   label: 'Ночь' }
+    { v: 'night',   label: 'Ночь' },
+    // закреплённый тренером оттенок; в списке, только когда он есть
+    { v: 'mine',    label: 'Мой цвет' }
 ];
+
+/* «Мой цвет»: в «Авто» последний час перед сменой времени суток оттенок
+   перетекает в следующий — получаются цвета, которых нет в списке (в 3–4
+   ночи фиолетовый → зелёный даёт бирюзово-синий). «Закрепить этот цвет»
+   запоминает тот, что сейчас на экране. Он всегда ОДИН: новый заменяет
+   прежний (решение владельца 21 октября). */
+function validMyColor(m) {
+    return !!(m && Array.isArray(m.acc) && m.acc.length === 3 && Array.isArray(m.bg) &&
+              m.bg.length === 6 && NEO_ACCENTS[m.tod]);
+}
 
 /* Время суток: с какого часа начинается каждое. Последний час перед
    границей акцент перетекает в следующий — без резкой смены. */
@@ -7934,6 +7960,8 @@ function neoBgAt(date) {
 /* Цвета, к которым Нео-Стекло должно прийти по текущим настройкам */
 function neoTarget() {
     const v = lookSettings().neoVariant;
+    const mine = lookSettings().myColor;
+    if (v === 'mine' && validMyColor(mine)) return { acc: mine.acc, bg: mine.bg };
     if (v !== 'auto' && NEO_ACCENTS[v]) return { acc: NEO_ACCENTS[v], bg: NEO_BG[v] };
     const now = new Date();
     return { acc: neoAccentAt(now), bg: neoBgAt(now) };
@@ -8028,7 +8056,9 @@ function applyTheme() {
     const apply = function () {
         root.setAttribute('data-style', nextStyle);
         root.setAttribute('data-theme', nextTheme);
-        if (neo) root.setAttribute('data-tod', s.neoVariant === 'auto' ? todAt(new Date()) : s.neoVariant);
+        if (neo) root.setAttribute('data-tod', s.neoVariant === 'auto' ? todAt(new Date())
+            : s.neoVariant === 'mine' ? (validMyColor(s.myColor) ? s.myColor.tod : todAt(new Date()))
+            : s.neoVariant);
         else root.removeAttribute('data-tod');
         root.setAttribute('data-nav-labels', s.navLabels ? 'on' : 'off');
         syncNeoBackground();
@@ -8040,7 +8070,8 @@ function applyTheme() {
 
     try {
         localStorage.setItem(LOOK_KEY, JSON.stringify({
-            style: s.style, theme: s.theme, neoVariant: s.neoVariant, navLabels: s.navLabels
+            style: s.style, theme: s.theme, neoVariant: s.neoVariant, navLabels: s.navLabels,
+            myTod: validMyColor(s.myColor) ? s.myColor.tod : ''
         }));
     } catch (e) {}
 
@@ -8119,6 +8150,18 @@ function setLookVariant(v) {
     renderThemeChips();
 }
 
+function fixMyColor() {
+    const s = ensureSettings();
+    const now = new Date();
+    s.myColor = { acc: neoAccentAt(now), bg: neoBgAt(now), tod: todBlendAt(now).tod };
+    s.neoVariant = 'mine';
+    saveDB();
+    haptic('success');
+    applyTheme();
+    renderThemeChips();
+    showToast('Цвет закреплён — «Мой цвет». Новый заменит этот');
+}
+
 function toggleLookOption(key) {
     if (key !== 'liveBg' && key !== 'navLabels') return;
     const s = ensureSettings();
@@ -8141,7 +8184,10 @@ function renderThemeChips() {
     }).join('');
 
     const current = neo ? s.neoVariant : s.theme;
-    box.innerHTML = (neo ? NEO_VARIANTS : MINIMAL_THEMES).map(function (o) {
+    const hasMine = validMyColor(s.myColor);
+    box.innerHTML = (neo ? NEO_VARIANTS : MINIMAL_THEMES).filter(function (o) {
+        return o.v !== 'mine' || hasMine;          // пока ничего не закрепляли — пункта нет
+    }).map(function (o) {
         return '<div class="goal-chip' + (o.v === current ? ' on' : '') +
                '" onclick="setLookVariant(\'' + o.v + '\')">' + o.label + '</div>';
     }).join('');
@@ -8150,14 +8196,24 @@ function renderThemeChips() {
     if (neo) {
         note = s.neoVariant === 'auto'
             ? 'Сейчас ' + TOD_NAME[todAt(new Date())] + ' — оттенок меняется сам: ' +
-              'утро 4–10, день 10–16, вечер 16–22, ночь 22–4.'
-            : 'Оттенок закреплён, время суток не влияет.';
+              'утро 4–10, день 10–16, вечер 16–22, ночь 22–4. В последний час перед ' +
+              'сменой цвет перетекает — понравился такой, закрепите.'
+            : s.neoVariant === 'mine'
+                ? 'Ваш закреплённый цвет. Поменять — «Авто» и «Закрепить» другой.'
+                : 'Оттенок закреплён, время суток не влияет.';
     } else {
         note = s.theme === 'auto'
             ? 'Сейчас ' + (resolveTheme('auto') === 'dark' ? 'тёмная' : 'светлая') + ' — как в Telegram.'
             : 'Выбрана вручную, Telegram не влияет.';
     }
     $('set-theme-note').innerText = note;
+
+    // «Закрепить этот цвет» — в «Авто» Нео-Стекла
+    const fix = $('set-fix-color');
+    if (fix) {
+        fix.style.display = neo && s.neoVariant === 'auto' ? '' : 'none';
+        fix.textContent = hasMine ? 'Закрепить этот цвет (заменит «Мой цвет»)' : 'Закрепить этот цвет';
+    }
 
     // живой фон есть только у Нео-Стекла
     $('set-livebg').style.display = neo ? '' : 'none';
@@ -9068,8 +9124,10 @@ const BASE_EX = {
     // Ноги
     "Болгарские приседания": { category: "Ноги", target: "Квадрицепс", muscles: { "Квадрицепс": 1, "Ягодицы": 0.5, "Бицепс бедра": 0.3, "Икроножные": 0.2 }, compound: true, unilateral: true, equipment: "bodyweight", bwShare: 0.8 },
     "Выпады": { category: "Ноги", target: "Квадрицепс", muscles: { "Квадрицепс": 1, "Ягодицы": 0.5, "Бицепс бедра": 0.3, "Икроножные": 0.2 }, compound: true, unilateral: true, equipment: "bodyweight", bwShare: 0.7 },
-    "Гакк-приседания": { category: "Ноги", target: "Квадрицепс", muscles: { "Квадрицепс": 1, "Ягодицы": 0.5, "Бицепс бедра": 0.3, "Икроножные": 0.2 }, compound: true, unilateral: false, equipment: "machine" },
-    "Жим ногами": { category: "Ноги", target: "Квадрицепс", muscles: { "Квадрицепс": 1, "Ягодицы": 0.5, "Бицепс бедра": 0.3, "Икроножные": 0.2 }, compound: true, unilateral: false, equipment: "machine" },
+    // loadShare — какая доля веса идёт в тоннаж: салазки под углом ~45°, человек
+    // толкает около 70% веса блинов. В строках, истории и рекордах вес — как на тренажёре.
+    "Гакк-приседания": { category: "Ноги", target: "Квадрицепс", muscles: { "Квадрицепс": 1, "Ягодицы": 0.5, "Бицепс бедра": 0.3, "Икроножные": 0.2 }, compound: true, unilateral: false, equipment: "machine", loadShare: 0.7 },
+    "Жим ногами": { category: "Ноги", target: "Квадрицепс", muscles: { "Квадрицепс": 1, "Ягодицы": 0.5, "Бицепс бедра": 0.3, "Икроножные": 0.2 }, compound: true, unilateral: false, equipment: "machine", loadShare: 0.7 },
     "Зашагивания на платформу": { category: "Ноги", target: "Квадрицепс", muscles: { "Квадрицепс": 1, "Ягодицы": 0.5, "Бицепс бедра": 0.3, "Икроножные": 0.2 }, compound: true, unilateral: true, equipment: "bodyweight", bwShare: 0.8 },
     "Махи ногой назад в кроссовере": { category: "Ноги", target: "Ягодицы", muscles: { "Ягодицы": 1, "Бицепс бедра": 0.5 }, compound: false, unilateral: true, equipment: "machine" },
     "Отведение бедра (тренажёр)": { category: "Ноги", target: "Ягодицы", muscles: { "Ягодицы": 1 }, compound: false, unilateral: false, equipment: "machine" },
@@ -9167,7 +9225,7 @@ function effWeight(exName, rawWeight, bodyWeight) {
 }
 
 function setTonnage(exName, rawWeight, reps, bodyWeight) {
-    return effWeight(exName, rawWeight, bodyWeight) * num(reps, 0);
+    return effWeight(exName, rawWeight, bodyWeight) * num(reps, 0) * (exData(exName).loadShare || 1);
 }
 
 /* Как показать вес подхода словами. Раньше это было переписано в трёх местах
@@ -9612,6 +9670,10 @@ function normalizeDB(raw) {
         if (rs.style === 'minimal' || rs.style === 'neo') settings.style = rs.style;
         if (MINIMAL_THEMES.some(function (o) { return o.v === rs.theme; })) settings.theme = rs.theme;
         if (NEO_VARIANTS.some(function (o) { return o.v === rs.neoVariant; })) settings.neoVariant = rs.neoVariant;
+        if (validMyColor(rs.myColor)) {
+            settings.myColor = { acc: rs.myColor.acc, bg: rs.myColor.bg, tod: rs.myColor.tod };
+        }
+        if (settings.neoVariant === 'mine' && !settings.myColor) settings.neoVariant = 'auto';
         settings.liveBg = normBool(rs.liveBg, true);
         settings.navLabels = normBool(rs.navLabels, true);
         if (rs.slotFlow === 'row' || rs.slotFlow === 'col') settings.slotFlow = rs.slotFlow;
@@ -11652,42 +11714,6 @@ function saveProgramDay() {
     showToast('Тренировка сохранена');
 }
 
-/* Подсказки тренер может выключить навсегда. Флаг живёт в настройках, а не
-   в памяти телефона: настройки уезжают на сервер, и на втором устройстве
-   подсказка тоже молчит. */
-function hintsOn(name) {
-    const h = ensureSettings().hints;
-    return !h || h[name] !== false;
-}
-
-function updateTickHint() {
-    const box = $('wk-tick-hint');
-    if (!box) return;
-    const show = !!selectedExercise && hintsOn('tick') && currentSetRows.length &&
-        !currentSetRows.some(function (s) { return s.completed; });
-    box.hidden = !show;
-}
-
-function hideTickHint() {
-    const set = ensureSettings();
-    set.hints = set.hints || {};
-    set.hints.tick = false;
-    saveDB();
-    haptic('light');
-    updateTickHint();
-    renderHintsPanel();
-    showToast('Подсказка выключена. Вернуть — в настройках');
-}
-
-function showHintsAgain() {
-    const set = ensureSettings();
-    set.hints = {};
-    saveDB();
-    haptic('success');
-    renderHintsPanel();
-    updateTickHint();
-    showToast('Подсказки снова включены');
-}
 
 /* Пояса, в которых работают наши тренеры. Полный список Intl — это сотни
    строк, в которых не найти свой город. */
@@ -11769,16 +11795,73 @@ function renderTzPanel() {
     }
 }
 
+/* Подсказок в настройках больше нет (была одна — про галочки, а галочек нет
+   с 21 октября); осталась панель часового пояса */
 function renderHintsPanel() {
-    const row = $('set-hints');
-    if (!row) return;
-    const panel = $('set-hints-panel');
-    const on = hintsOn('tick');
-    if (panel) panel.style.display = on ? 'none' : '';
     renderTzPanel();
-    row.innerHTML = on
-        ? ''
-        : '<button class="btn-soft" style="width: 100%;" onclick="showHintsAgain()">Показывать подсказки снова</button>';
+}
+
+/* --- Тренировка без галочек (21 октября) ---
+   Решение владельца: «что видно в тренировке, то и сохранится». Строка, где
+   вписаны повторы, — сделанный подход; пустая — нет. Внутри это всё та же
+   пометка completed, поэтому история, рекорды, круги и список упражнений
+   работают без правок: её просто ставит приложение, а не палец тренера.
+   Лишний подход тренер смахивает, лишнее упражнение убирает ✕. */
+function hasReps(row) { return num(row && row.r, 0) > 0; }
+
+function syncSetsDone() {
+    if (!wkSession) return;
+    const mark = function (rows) {
+        (rows || []).forEach(function (row) { row.completed = hasReps(row); });
+    };
+    mark(currentSetRows);
+    (wkSession.ex || []).forEach(function (e) { mark(e.sets); });
+}
+
+/* Строка подхода N — с цифрами подхода N прошлой тренировки: сделал так же —
+   ничего не трогаешь. Столько подходов в прошлый раз не было — как
+   предыдущая строка; упражнение новое — пустая. */
+function rowFromPast(n, prev) {
+    const past = lastPerformance(selectedExercise, wkHistory);
+    const sets = past ? past.sets : [];
+    const filled = prev && ((prev.w !== '' && prev.w != null) || (prev.r !== '' && prev.r != null));
+    const ref = sets[n] || (filled ? prev : null) || (sets.length ? sets[sets.length - 1] : null);
+    return stampRow({
+        w: ref && ref.w != null ? ref.w : '',
+        r: ref && ref.r != null ? ref.r : '',
+        isWarmup: false, completed: false, manualOverride: false
+    });
+}
+
+/* «Дальше»: первое упражнение прошлой тренировки, которого сегодня ещё нет.
+   В зале не надо искать по списку — в прошлый раз шли в этом порядке. */
+function nextFromPast() {
+    if (!wkSession || isProgramEdit() || !wkHistory || !wkHistory.length) return '';
+    const past = wkHistory[wkHistory.length - 1];
+    const today = (wkSession.ex || []).map(function (e) { return e.n; });
+    const order = [];
+    (past.ex || []).forEach(function (e) { if (order.indexOf(e.n) === -1) order.push(e.n); });
+    for (let i = 0; i < order.length; i++) {
+        if (today.indexOf(order[i]) === -1 && allExercises()[order[i]]) return order[i];
+    }
+    return '';
+}
+
+function goNextFromPast() {
+    const name = nextFromPast();
+    if (!name) { openExPicker(); return; }
+    haptic('light');
+    selectExerciseByName(name);
+}
+
+function paintNextEx() {
+    const next = $('wk-next-ex'), btn = $('wk-add-exercise');
+    if (!next || !btn) return;
+    const name = nextFromPast();
+    next.style.display = name ? '' : 'none';
+    if (name) next.innerHTML = '<span class="wkn-cap">Дальше</span><span class="wkn-name">' + esc(name) + '</span>';
+    btn.classList.toggle('wk-add-small', !!name);
+    btn.textContent = name ? '＋ Другое упражнение' : '＋ Упражнение';
 }
 
 function blankRows() {
@@ -12068,6 +12151,15 @@ function selectExerciseByName(name) {
         ? [stampRow({ w: ref.w, r: ref.r, isWarmup: false, completed: false, manualOverride: false })]
         : blankRows();
 
+    if (!isProgramEdit()) {
+        // в этой тренировке его ещё не было — строка сразу с цифрами прошлого раза
+        if (!prev) currentSetRows = [rowFromPast(0, null)];
+        // и упражнение сразу в тренировке: галочки, которая ставила его туда, нет
+        wkSession.ex.push({ n: name, sets: [] });
+        wkEditingIndex = wkSession.ex.length - 1;
+        wkLooseRows = false;
+    }
+
     refreshPastMax();
     renderExNote();
     renderSetRows();
@@ -12089,6 +12181,7 @@ function lastBlockOf(name) {
 /* Уходим с открытого упражнения: отмеченное, план и вписанное руками
    остаются, нетронутые пустые строки убираются. Блок без строк исчезает. */
 function leaveCurrentExercise() {
+    syncSetsDone();
     // Упражнение выбрано, цифры вписаны, а галочки нет — значит, в тренировку
     // оно ещё не попало. Раньше при сворачивании набранное просто исчезало:
     // тренер вводил веса, сворачивал и оставался ни с чем, хотя приложение
@@ -12216,8 +12309,10 @@ function repeatRound() {
     openExFromWorkout(first);
 }
 
-/* Круговая: отметили все подходы упражнения — открываем следующее в ней
-   и говорим куда, чтобы переключение не было сюрпризом */
+/* Круговая: вписали повторы упражнения — открываем следующее в ней и
+   говорим куда, чтобы переключение не было сюрпризом. Галочек нет (21.10):
+   строки следующего упражнения заполнены заранее и уже «сделаны», поэтому
+   по ним не смотрим — переходим всегда. */
 function advanceRound() {
     const active = wkEditingIndex !== null ? wkSession.ex[wkEditingIndex] : null;
     if (!active || !active.circuit) return;
@@ -12228,7 +12323,6 @@ function advanceRound() {
     const sameCircuit = !!next && next.circuit === active.circuit;
     const endsRound = !sameCircuit || next.round !== active.round;
     if (sameCircuit) {
-        if ((next.sets || []).every(function (s) { return s.completed; })) return;
         showToast((endsRound ? 'Круг ' + active.round + ' записан · дальше: ' : 'Дальше: ') + next.n);
         setTimeout(function () {
             if (currentScreen === 'screen-workout' && wkSession && wkSession.ex[at] === next) openExFromWorkout(at);
@@ -12265,13 +12359,18 @@ document.addEventListener('click', function (e) {
 
 function addSetRow() {
     if (!selectedExercise) return;
+    haptic('light');
     const last = currentSetRows.length ? currentSetRows[currentSetRows.length - 1] : { w: '', r: '' };
-    // цифры скопированы, а не вписаны: не отметили — при уходе строка уберётся
-    currentSetRows.push(stampRow({
-        w: last.w !== undefined && last.w !== null ? last.w : '',
-        r: last.r !== undefined && last.r !== null ? last.r : '',
-        isWarmup: false, completed: false, manualOverride: false
-    }));
+    if (isProgramEdit()) {
+        // в программе — копия предыдущей строки, как было
+        currentSetRows.push(stampRow({
+            w: last.w !== undefined && last.w !== null ? last.w : '',
+            r: last.r !== undefined && last.r !== null ? last.r : '',
+            isWarmup: false, completed: false, manualOverride: false
+        }));
+    } else {
+        currentSetRows.push(rowFromPast(currentSetRows.length, last));
+    }
     renderSetRows();
     saveDraft();
     setTimeout(function () {
@@ -12425,6 +12524,7 @@ function toggleSetDone(index) {
 }
 
 function renderSetRows() {
+    syncSetsDone();
     // Упражнение ещё не выбрано: подходов нет, и «+ Подход» добавлять некуда
     const picked = !!selectedExercise;
     $('wk-add-set').style.display = picked ? '' : 'none';
@@ -12449,7 +12549,7 @@ function renderSetRows() {
     const head = '<div class="set-row set-head" aria-hidden="true">' +
         '<span></span><span class="caps-label">' +
             (isAS ? '−кг' : (isBW ? '+кг' : 'кг')) + '</span>' +
-        '<span class="caps-label">повт</span><span></span>' +
+        '<span class="caps-label">повт</span>' +
         '</div>';
     const canDel = currentSetRows.length > 1;
 
@@ -12465,7 +12565,6 @@ function renderSetRows() {
 
         const wPh = isBW ? '+' + defW + ' (' + bw + ')'
                   : (isAS ? bw + '−' + defW : String(defW));
-        const done = !!set.completed;
         const wVal = (set.w !== undefined && set.w !== null) ? set.w : '';
         const rVal = (set.r !== undefined && set.r !== null) ? set.r : '';
 
@@ -12474,7 +12573,7 @@ function renderSetRows() {
         return '' +
         '<div class="set-swipe' + (canDel ? '' : ' no-del') + (setSwipeOpen === i ? ' open' : '') + '" data-i="' + i + '">' +
         (canDel ? '<button class="set-del-bg" onclick="removeSetRow(' + i + ')">Удалить</button>' : '') +
-        '<div class="set-row ' + (done ? 'done' : '') + '">' +
+        '<div class="set-row">' +
             '<span class="set-num">' + (i + 1) + '</span>' +
             '<input class="fld set-weight' + padActiveClass(i, 'w') + '" type="text" readonly' +
                   ' placeholder="' + esc(wPh) + '" value="' + esc(wVal) + '"' +
@@ -12482,12 +12581,10 @@ function renderSetRows() {
             '<input class="fld set-reps' + padActiveClass(i, 'r') + '" type="text" readonly' +
                   ' placeholder="' + esc(defR) + '" value="' + esc(rVal) + '"' +
                   ' onclick="openSetPad(' + i + ', &quot;r&quot;)">' +
-            '<button class="set-check ' + (done ? 'on' : '') + '" onclick="toggleSetDone(' + i + ')">✓</button>' +
         '</div>' +
         '</div>';
     }).join('');
 
-    updateTickHint();
     updateSaveState();
 }
 
@@ -12552,6 +12649,7 @@ function editorDoneSets() {
    Зовётся и из renderSetRows: галочка сразу даёт право сохранить. */
 function updateSaveState() {
     if (!wkSession) return;
+    syncSetsDone();
 
     // В программе кнопка значит «Готово»: выйти можно и из пустой тренировки
     if (isProgramEdit()) {
@@ -12566,8 +12664,8 @@ function updateSaveState() {
     // панель сохранения всегда на экране — когда сохранять можно, лишний текст не нужен
     saveNote.style.display = ready ? 'none' : '';
     saveNote.textContent = wkSession.ex.length
-        ? 'Отметьте ✓ выполненные подходы — они сразу попадут в тренировку.'
-        : 'Выберите упражнение и отметьте ✓ выполненные подходы — они сразу попадут в тренировку.';
+        ? 'Впишите повторы — подход сразу в тренировке.'
+        : 'Выберите упражнение — цифры подставятся из прошлого раза, поправьте, если было иначе.';
 }
 
 /* Карточка упражнения в списке тренировки */
@@ -12644,6 +12742,8 @@ function roundFoldHtml(round, bw) {
    раскрыт только круг, который сейчас правится, остальные свёрнуты в строку.
    Подходы после круговой (или до неё) идут карточками под «По подходам». */
 function renderWorkoutExList() {
+    syncSetsDone();
+    paintNextEx();
     const bw = currentBodyWeight();
     const ex = wkSession.ex;
     const parts = workoutParts(ex);
@@ -12818,6 +12918,7 @@ function openExFromWorkout(index) {
 async function saveWorkout() {
     if (!wkSession) return;
     if (isProgramEdit()) { saveProgramDay(); return; }
+    syncSetsDone();
 
     // Незакрытая правка тоже должна попасть в тренировку
     if (wkEditingIndex !== null && wkSession.ex[wkEditingIndex]) {
@@ -12831,8 +12932,8 @@ async function saveWorkout() {
         ? wkSession.ex.concat([{ n: selectedExercise, sets: JSON.parse(JSON.stringify(fromEditor)) }])
         : wkSession.ex;
 
-    // Строки, куда тренер вписал цифры, но забыл галочку. Дальше они будут
-    // отброшены навсегда, поэтому спрашиваем до того, как трогать данные.
+    // Строки, где вписан вес, а повторов нет: подходом они не считаются и
+    // будут отброшены навсегда, поэтому спрашиваем до того, как трогать данные.
     // Нетронутый план из шаблона молчит: он не работа, а намерение.
     // Открытое упражнение становится блоком тренировки только с первой
     // галочкой. Пока её нет, его строки живут отдельно — и именно их мы
@@ -12860,10 +12961,10 @@ async function saveWorkout() {
         if (missed.length > 4) lines.push('и ещё ' + (missed.length - 4));
         haptic('warning');
         const anyway = await openDialog(
-            'Не отмечены подходы\n\n' + lines.join('\n') +
-            '\n\nВ тренировку попадут только отмеченные ✓.',
+            'Не вписаны повторы\n\n' + lines.join('\n') +
+            '\n\nПодходы без повторов не сохранятся.',
             { ok: 'Сохранить без них', danger: true,
-              cancel: true, cancelText: 'Вернуться и отметить' });
+              cancel: true, cancelText: 'Вернуться и вписать' });
         if (!anyway) return;          // закрыли окно — тоже возвращаемся
     }
 
@@ -18199,6 +18300,13 @@ function rememberPad(kind, value) {
     } catch (e) {}
 }
 
+/* На айфоне одного touch-action мало: движение пальца по клавиатуре гасим
+   и здесь, иначе страница под ней всё равно прокручивается */
+(function () {
+    const kp = document.getElementById('keypad');
+    if (kp) kp.addEventListener('touchmove', function (e) { e.preventDefault(); }, { passive: false });
+})();
+
 function openPad(cfg) {
     padCfg = cfg;
     const start = cfg.get();
@@ -18212,7 +18320,7 @@ function openPad(cfg) {
     renderPad();
     $('keypad').classList.add('show');
     document.body.classList.add('pad-open');
-    haptic('light');
+    haptic(cfg.haptic || 'light');
 
     setTimeout(function () {
         padScrollInto(cfg.scrollTo ? $(cfg.scrollTo)
@@ -18317,6 +18425,7 @@ function renderPad() {
 
 function padDigit(ch) {
     if (!padCfg) return;
+    haptic('select');                 // щелчок: нажатие прошло, не глядя на экран
     // старое значение стирается целиком, тренер набирает вес заново
     if (padFresh) { padValue = ''; padFresh = false; }
     if (ch === '.') {
@@ -18336,7 +18445,7 @@ function padBack() {
     padFresh = false;                 // стираем по цифре из того, что есть
     padValue = padValue.slice(0, -1);
     padApply();
-    haptic('light');
+    haptic('select');
 }
 
 function padStep(n) {
@@ -18459,10 +18568,16 @@ function openSetPad(index, field) {
         min: weight ? 0 : 1,
         max: weight ? 500 : 99,
         remember: weight ? null : 'reps',
+        // в зале смотрят на штангу, а не на экран: толчок посильнее —
+        // «попал в поле», в том числе при переходе с веса на повторы
+        haptic: 'medium',
         get: function () { const r = currentSetRows[index]; return r ? r[field] : ''; },
         set: function (v) { const r = currentSetRows[index]; if (r) r[field] = v; },
         after: function () { renderSetRows(); },
-        onClose: function () { saveDraft(); }
+        onClose: function () {
+            saveDraft();
+            if (!weight && !isProgramEdit()) advanceRound();
+        }
     });
 }
 
