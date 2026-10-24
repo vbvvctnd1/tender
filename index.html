@@ -2235,9 +2235,11 @@ textarea.fld {
     border-color: rgba(var(--ch-green), 0.28);
 }
 /* «Дальше: <упражнение>» — главная кнопка под тренировкой, «другое» — мелкая */
+.wk-next-row { display: flex; gap: 8px; margin-top: 10px; }
 #wk-next-ex {
-    width: 100%;
-    margin-top: 10px;
+    flex: 1 1 auto;
+    min-width: 0;
+    margin-top: 0;
     padding: 12px 16px;
     display: flex;
     flex-direction: column;
@@ -2247,7 +2249,8 @@ textarea.fld {
 }
 #wk-next-ex .wkn-cap { font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.75; }
 #wk-next-ex .wkn-name { font-size: 16px; font-weight: 800; line-height: 1.2; }
-#wk-add-exercise.wk-add-small { min-height: 0; height: 40px; margin-top: 8px; font-size: 13.5px; opacity: 0.85; }
+.wk-next-row #wk-add-exercise { flex: 1 1 auto; width: auto; margin-top: 0; }
+.wk-next-row #wk-add-exercise.wk-add-small { flex: 0 0 58px; height: auto; min-height: 58px; padding: 0; font-size: 26px; font-weight: 400; }
 
 .set-num { text-align: center; font-size: 14px; font-weight: 800; color: var(--text-muted); }
 
@@ -6008,7 +6011,7 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
     justify-content: center;
     padding: calc(24px + var(--head-top)) 20px calc(24px + var(--safe-bottom));
 }
-.start-hello { margin-bottom: 22px; }
+.start-hello { margin-bottom: 22px; text-align: center; }
 .start-hello h1 {
     font-size: 26px;
     font-weight: 800;
@@ -6057,6 +6060,98 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
 .start-btn .sb-txt { flex: 1; min-width: 0; }
 .start-btn .sb-name { display: block; font-size: 16px; font-weight: 700; letter-spacing: -0.2px; }
 .start-btn .sb-sub { display: block; margin-top: 3px; font-size: 12.5px; line-height: 1.35; color: var(--text-muted); }
+
+/* Меню на старте (23 октября): сверху «кто я» — тап открывает Профиль */
+.start-me {
+    align-self: center;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 26px;
+    padding: 6px 16px 6px 6px;
+    border: none;
+    border-radius: 999px;
+    background: rgba(var(--ch-surface), 0.62);
+    color: var(--text-main);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.start-me .sm-av {
+    position: relative;
+    flex: 0 0 auto;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--grad-avatar);
+    color: var(--on-accent);
+    font-size: 13px;
+    font-weight: 700;
+}
+.start-me .sm-av img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.start-me .sm-name { display: block; font-size: 14px; font-weight: 700; }
+.start-me .sm-sub { display: block; font-size: 12px; color: var(--text-muted); }
+/* Заметки у клиента (24.10): в карточке и в окне записи */
+.cl-notes { padding-top: 12px; padding-bottom: 12px; }
+.cl-notes .cn-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
+.cl-notes .cn-title { font-size: 14px; font-weight: 800; display: inline-flex; align-items: center; gap: 6px; }
+.cl-notes .cn-title .mi { width: 16px; height: 16px; }
+.cl-notes .cn-saved { font-size: 12px; color: var(--text-muted); }
+.cl-notes .cn-text {
+    display: block;
+    width: 100%;
+    min-height: 54px;
+    resize: none;
+    overflow: hidden;
+    border: none;
+    border-radius: 12px;
+    padding: 10px 12px;
+    background: rgba(var(--ch-fill), 0.08);
+    color: var(--text-main);
+    font: inherit;
+    font-size: 15px;
+    line-height: 1.45;
+}
+:root[data-style="minimal"] .cl-notes .cn-text { background: var(--m-input); }
+.menu-notes { padding: 4px 2px 6px; }
+.cr-note { margin-top: 4px; font-size: 12.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* кольцо вокруг фото показывало остаток абонемента — его больше нет */
+.ring-none .avatar-ring { display: none; }
+
+/* Меню на старте (24.10): профиль внизу, остальное выше */
+.start-wrap { justify-content: flex-start; padding-top: calc(14vh + var(--head-top)); }
+.start-me { order: 3; margin: auto 0 0; }
+
+:root[data-style="neo"] .start-me { background: rgba(255, 255, 255, 0.06); }
+:root[data-style="neo"] .start-me .sm-av { background: var(--grad-neo); color: #fff; }
+:root[data-style="minimal"] .start-me { background: var(--m-card); }
+:root[data-style="minimal"] .start-me .sm-av { background: var(--m-act); color: var(--m-act-text); }
+.mi-text { font-size: 14px; line-height: 1.5; color: var(--text-main); }
+.mi-text ul { margin: 10px 0 0; padding-left: 0; list-style: none; }
+.mi-text li { padding: 4px 0; }
+.mi-text .mi-note { margin-top: 10px; color: var(--text-muted); font-size: 13px; }
+
+/* «‹ Меню» на месте аватарки в шапке режимов: выход в меню на старте */
+.trainer-av,
+.screen-head .back-chip.as-av {
+    width: auto !important;
+    padding: 0 14px 0 10px !important;
+    border-radius: 999px !important;
+    gap: 3px;
+    font-size: 14px !important;
+    font-weight: 700;
+    letter-spacing: 0 !important;
+    white-space: nowrap;
+}
+.trainer-av .tm-arr,
+.back-chip.as-av .tm-arr { font-size: 19px; line-height: 1; margin-top: -2px; }
+:root[data-style="neo"] .trainer-av::after { display: none; }
+.trainer-av.is-back { padding: 0 !important; aspect-ratio: 1 / 1; }
+.trainer-av.is-back .tm-arr { font-size: 22px; }
 
 :root[data-style="neo"] .start-btn {
     background: var(--neo-glass);
@@ -6179,7 +6274,7 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
          тап по уже выбранному дню в полосе недели. -->
     <div class="premium-header sched-header">
         <button class="trainer-av" id="cal-trainer" onclick="openRoles()"
-                aria-label="Куда перейти"></button>
+                aria-label="Меню"></button>
         <h1 id="cal-month" onclick="openWeeksSheet()">—</h1>
         <button class="sched-add" onclick="openAddModal(null)" aria-label="Записать клиента">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round">
@@ -6219,7 +6314,7 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
 <div id="screen-clients" class="screen">
 
     <div class="premium-header with-av">
-        <button class="trainer-av av-roles" onclick="openRoles()" aria-label="Куда перейти"></button>
+        <button class="trainer-av av-roles" onclick="openRoles()" aria-label="Меню"></button>
         <h1 data-text="Клиенты">Клиенты</h1>
         <div class="header-icons">
             <div class="icon-btn" onclick="openClientEdit(null)"><span class="only-neo">＋</span><svg class="mi only-min" aria-hidden="true"><use href="#i-plus"/></svg></div>
@@ -6272,9 +6367,13 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
 
         <div id="wk-ex-list"></div>
 
-        <!-- Следующее упражнение из прошлой тренировки — одним нажатием -->
-        <button class="btn-soft filled" id="wk-next-ex" style="display: none;" onclick="goNextFromPast()"></button>
-        <button class="btn-soft" id="wk-add-exercise" onclick="openExPicker()">＋ Упражнение</button>
+        <!-- Следующее упражнение из прошлой тренировки — одним нажатием; рядом
+             квадратная «＋» — другое упражнение. В один ряд: мелкая кнопка под
+             «Дальше» пряталась под прилипшей панелью «Сохранить» (24.10). -->
+        <div class="wk-next-row">
+            <button class="btn-soft filled" id="wk-next-ex" style="display: none;" onclick="goNextFromPast()"></button>
+            <button class="btn-soft" id="wk-add-exercise" onclick="openExPicker()" aria-label="Добавить упражнение">＋ Упражнение</button>
+        </div>
 
         <!-- Карман редактора: отсюда он уезжает в открытую карточку и сюда же
              возвращается, когда открывать нечего -->
@@ -6320,10 +6419,20 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
     <!-- Привязка клиента к Telegram: видна на всех вкладках карточки -->
     <div id="cl-tg"></div>
 
+    <!-- Заметки тренера о клиенте (24.10, вместо абонемента): что угодно —
+         «купил 10, осталось 7», ограничения, договорённости. Клиент их не видит. -->
+    <div class="panel cl-notes" id="cl-notes-panel">
+        <div class="cn-head">
+            <span class="cn-title"><span class="only-neo">📝 </span><svg class="mi only-min" aria-hidden="true"><use href="#i-pencil"/></svg>Заметки</span>
+            <span class="cn-saved" id="cl-notes-saved"></span>
+        </div>
+        <textarea id="cl-notes" class="cn-text" rows="2" placeholder="Что угодно: «купил 10, осталось 10», ограничения, договорённости"
+                  oninput="onNotesInput('cl-notes', clClientId)"></textarea>
+    </div>
+
     <div class="seg-control">
         <button class="seg-btn active" id="cl-tab-history" onclick="setClientTab('history')">История</button>
         <button class="seg-btn" id="cl-tab-analytics" onclick="setClientTab('analytics')">Аналитика</button>
-        <button class="seg-btn" id="cl-tab-pass" onclick="setClientTab('pass')">Абонемент</button>
     </div>
 
     <!-- Вкладка: история -->
@@ -6426,7 +6535,7 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
 <div id="screen-exercises" class="screen">
 
     <div class="premium-header with-av">
-        <button class="trainer-av av-roles" onclick="openRoles()" aria-label="Куда перейти"></button>
+        <button class="trainer-av av-roles" onclick="openRoles()" aria-label="Меню"></button>
         <h1 data-text="Упражнения">Упражнения</h1>
         <div class="header-icons">
             <div class="icon-btn" onclick="openExerciseEditor(null)"><span class="only-neo">＋</span><svg class="mi only-min" aria-hidden="true"><use href="#i-plus"/></svg></div>
@@ -6510,7 +6619,7 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
 <!-- ==========================================================================
      ЭКРАН — КАБИНЕТ КЛИЕНТА
      Открывается только тому, кого тренер привязал по ссылке. Ничего
-     не меняет: смотреть свои тренировки, прогресс и остаток занятий.
+     не меняет: смотреть свои тренировки и прогресс.
      ========================================================================== -->
 <div id="screen-cabinet" class="screen">
 
@@ -6521,9 +6630,7 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
         </div>
     </div>
 
-    <div class="panel">
-        <div class="pass-balance" id="cab-balance"></div>
-    </div>
+    <div class="pass-balance" id="cab-balance" style="display: none;"></div>
 
     <div class="panel">
         <div class="panel-title">Прогресс</div>
@@ -6562,7 +6669,7 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
 <div id="screen-settings" class="screen">
 
     <div class="premium-header with-av">
-        <button class="trainer-av av-roles" onclick="openRoles()" aria-label="Куда перейти"></button>
+        <button class="trainer-av av-roles" onclick="openRoles()" aria-label="Меню"></button>
         <h1 data-text="Настройки">Настройки</h1>
     </div>
 
@@ -6680,16 +6787,17 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
                 <span class="ttl up"><span class="only-neo">🏋️‍♂️ </span><svg class="mi only-min" aria-hidden="true"><use href="#i-dumbbell"/></svg><span id="menu-start-label">Начать тренировку</span></span>
                 <span class="arrow-icon arr"></span>
             </button>
-            <!-- Всё о клиенте — одна карточка: история, аналитика и абонемент в ней вкладками.
-                 Отдельные пункты под «Прочим» прятали их от тренера. -->
-            <button class="premium-menu-btn" id="menu-card" onclick="openClientScreen('history')">
-                <span class="ttl up"><span class="only-neo">👤 </span><svg class="mi only-min" aria-hidden="true"><use href="#i-user"/></svg>Карточка клиента</span>
-                <span class="arrow-icon arr"></span>
-            </button>
-            <button class="premium-menu-btn" id="menu-extend" onclick="uiExtendPass()">
-                <span class="ttl up"><span class="only-neo">💳 </span><svg class="mi only-min" aria-hidden="true"><use href="#i-card"/></svg>Продлить абонемент</span>
-                <span class="arrow-icon" id="menu-pass-left">0 зан. <span class="arr"></span></span>
-            </button>
+            <!-- Заметки клиента прямо в окне записи (24.10): перед тренировкой
+                 прочитать «колено — без глубоких приседов» и поправить «осталось 6».
+                 В карточку клиента — через вкладку «Клиенты». -->
+            <div class="cl-notes menu-notes">
+                <div class="cn-head">
+                    <span class="cn-title"><span class="only-neo">📝 </span><svg class="mi only-min" aria-hidden="true"><use href="#i-pencil"/></svg>Заметки</span>
+                    <span class="cn-saved" id="menu-notes-saved"></span>
+                </div>
+                <textarea id="menu-notes" class="cn-text" rows="2" placeholder="Что угодно: «купил 10, осталось 10», ограничения, договорённости"
+                          oninput="onNotesInput('menu-notes', menuNotesClientId)"></textarea>
+            </div>
             <!-- Отчёт клиенту ещё не сделан: пункт спрятан, пока нечего отправлять -->
             <button class="premium-menu-btn" id="menu-report" style="display: none;" onclick="uiClientReport()">
                 <span class="ttl up"><span class="only-neo">📄 </span><svg class="mi only-min" aria-hidden="true"><use href="#i-send"/></svg>Отправить отчёт клиенту</span>
@@ -6830,24 +6938,16 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
                    oninput="onGoalTyped()" onkeydown="onClientEditKey(event)">
         </div>
 
-        <div class="field-pair">
-            <div>
-                <label class="caps-label" for="ce-bw">Вес сейчас, кг</label>
-                <input class="fld" type="text" id="ce-bw" placeholder="80" readonly onclick="openClientBwPad()">
-            </div>
-            <div>
-                <label class="caps-label" for="ce-pass">Абонемент, зан.</label>
-                <input class="fld" type="text" id="ce-pass" placeholder="8" readonly onclick="openPassPad()">
-            </div>
+        <div class="form-row">
+            <label class="caps-label" for="ce-bw">Вес сейчас, кг</label>
+            <input class="fld" type="text" id="ce-bw" placeholder="80" readonly onclick="openClientBwPad()">
         </div>
-        <div class="goal-chips form-row" id="ce-pass-chips" style="margin-top: 8px;"></div>
-
-        <!-- Сумму спрашиваем только у нового клиента: дальше цена живёт
-             в журнале абонемента, и второе место для неё путало бы -->
-        <div class="form-row" id="ce-sum-row" style="display: none;">
-            <label class="caps-label" for="ce-sum">Сумма за абонемент, ₽</label>
-            <input class="fld" type="text" id="ce-sum" placeholder="12000" readonly onclick="openClientSumPad()">
-            <div id="ce-price" class="price-hint dim" style="margin-top: 8px;">Без суммы цену спросим при первом пополнении</div>
+        <!-- Абонемента нет с 24.10 — поля прежней формы остались спрятанными,
+             чтобы старый код их находил; что куплено, тренер пишет в заметках -->
+        <div style="display: none;">
+            <input type="text" id="ce-pass" readonly>
+            <div id="ce-pass-chips"></div>
+            <div id="ce-sum-row"><input type="text" id="ce-sum" readonly><div id="ce-price"></div></div>
         </div>
 
         <div id="ce-error" class="tp-error"></div>
@@ -7218,18 +7318,18 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
 
 <!-- Таб-бар: линейные значки в «парящей» панели, у каждого стиля свой вид.
      Подписи выключаются в настройках. -->
-<!-- Куда перейти: роли человека. Открывается тапом по аватарке в шапке. -->
-<div id="sheet-roles" class="glass-sheet-overlay" onclick="closeSheet('sheet-roles')">
+<!-- Первый вход в режим: коротко, что это, и «Начать». Один раз. -->
+<div id="sheet-mode-intro" class="glass-sheet-overlay" onclick="closeSheet('sheet-mode-intro')">
     <div class="glass-sheet-content" onclick="event.stopPropagation()">
         <div class="sheet-notch"></div>
         <div class="sheet-header">
-            <div>
-                <h2>Куда перейти</h2>
-                <span style="font-size: 13px; color: var(--text-muted);">Можно и то, и другое</span>
-            </div>
-            <span class="sheet-close-txt" onclick="closeSheet('sheet-roles')">Закрыть</span>
+            <div><h2 id="mi-title"></h2></div>
+            <span class="sheet-close-txt" onclick="closeSheet('sheet-mode-intro')">Назад</span>
         </div>
-        <div id="roles-list" class="premium-menu-list"></div>
+        <div id="mi-text" class="mi-text"></div>
+        <button class="btn-primary" style="margin-top: 18px;" onclick="startModeFromIntro()">
+            <span class="up">Начать</span>
+        </button>
     </div>
 </div>
 
@@ -7237,14 +7337,13 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
      списком под аватаркой. -->
 <div id="screen-start" class="screen">
     <div class="start-wrap">
+        <!-- кто я — тап открывает Профиль -->
+        <button class="start-me" id="start-me" onclick="openProfileFromMenu()" aria-label="Профиль"></button>
         <div class="start-hello">
-            <h1 id="start-hi">Дневник тренировок и работа с клиентами — в одном месте</h1>
-            <p id="start-sub">Дневник бесплатный. Остальное — когда понадобится.</p>
+            <h1>Simple Fit</h1>
+            <p>Что открываем?</p>
         </div>
         <div class="start-list" id="start-list"></div>
-        <button class="btn-primary" style="margin-top: 18px;" onclick="finishOnboarding('diary')">
-            <span class="up">Начать</span>
-        </button>
     </div>
 </div>
 
@@ -7257,7 +7356,7 @@ body[data-screen="screen-start"] .ios-navbar { display: none; }
 <div id="screen-programs" class="screen">
 
     <div class="premium-header with-av">
-        <button class="trainer-av av-roles" onclick="openRoles()" aria-label="Куда перейти"></button>
+        <button class="trainer-av av-roles" onclick="openRoles()" aria-label="Меню"></button>
         <h1 data-text="Программы">Программы</h1>
         <div class="header-icons">
             <!-- Покупателю создавать нечего: он пришёл за купленным -->
@@ -7616,7 +7715,7 @@ function applyViewport() {
    день файл выкладывается не раз: по одной дате не понять, приехало ли
    обновление или Telegram показывает копию из кэша. Ставится при выкладке
    скриптом publish.py — руками не правится. */
-const BUILD = '21.10.2026, 05:32';
+const BUILD = '24.10.2026, 02:03';
 let fullReason = '';        // почему полного экрана нет — тоже видно в Профиле
 
 /* Полный экран: приложение занимает телефон целиком, а кнопки Telegram
@@ -8546,6 +8645,67 @@ const NAV_DIARY = {
 function isDiaryMode() { return appMode === 'diary'; }
 function isProgramsMode() { return appMode === 'programs'; }
 
+/* --- «Назад» по шагам (24 октября) ---
+   Решение владельца: «назад» возвращает туда, где был до этого, — это
+   нормальная логика приложения. «‹ Меню» — только на первой странице режима
+   (тренер — Ежедневник, дневник — Зал, Программы — их список). На остальных
+   вкладках нижнего меню — стрелка «назад», по пройденным вкладкам.
+   Внутренние экраны (карточка клиента, тренировка…) возвращают, как и
+   раньше, туда, откуда их открыли. */
+const FIRST_TAB = { trainer: 'nav-schedule', diary: 'nav-d-gym', programs: 'nav-p-mine' };
+const TRAINER_TABS = { 'screen-schedule': 'nav-schedule', 'screen-clients': 'nav-clients',
+                       'screen-exercises': 'nav-exercises', 'screen-settings': 'nav-settings' };
+
+/* Вкладка нижнего меню, если экран — она сама (а не экран внутри неё) */
+function topTabOf(id) {
+    if (isProgramsMode()) return id === 'screen-programs' ? 'nav-p-mine' : null;
+    if (isDiaryMode()) {
+        if (id === 'screen-workout') return (wkSession && wkSession.clientId === SELF_ID) ? 'nav-d-gym' : null;
+        if (id === 'screen-client') return clClientId === SELF_ID ? (clTab === 'analytics' ? 'nav-d-an' : 'nav-d-hist') : null;
+        return id === 'screen-settings' ? 'nav-d-set' : null;
+    }
+    if (appMode === 'trainer') return TRAINER_TABS[id] || null;
+    return null;
+}
+
+function isFirstPage(id) {
+    const t = topTabOf(id);
+    return !!t && t === FIRST_TAB[appMode];
+}
+
+/* Путь по вкладкам с первой страницы. Вернулись на уже пройденную — хвост
+   отрезается: по кругу «Клиенты → Упражнения → Клиенты» назад не гоняет. */
+let tabTrail = [];
+
+function noteTab() {
+    const key = topTabOf(currentScreen);
+    if (!key) return;
+    if (key === FIRST_TAB[appMode]) { tabTrail = [key]; return; }
+    const at = tabTrail.indexOf(key);
+    if (at !== -1) tabTrail = tabTrail.slice(0, at + 1);
+    else tabTrail.push(key);
+}
+
+function backFromTab() {
+    const key = topTabOf(currentScreen);
+    if (tabTrail[tabTrail.length - 1] === key) tabTrail.pop();
+    const prev = tabTrail.length ? tabTrail[tabTrail.length - 1] : FIRST_TAB[appMode];
+    TAB_ACTION[prev]();
+}
+
+/* Кнопка слева в шапке верхних экранов: на первой странице «‹ Меню»,
+   на остальных — стрелка «назад» */
+function syncHeadButtons() {
+    document.querySelectorAll('.trainer-av').forEach(function (el) {
+        const scr = el.closest('.screen');
+        const menu = !!scr && isFirstPage(scr.id);
+        el.classList.toggle('is-back', !menu);
+        el.innerHTML = menu ? '<span class="tm-arr">‹</span>Меню' : '<span class="tm-arr">‹</span>';
+        el.setAttribute('onclick', menu ? 'openRoles()' : 'goBack()');
+        el.setAttribute('aria-label', menu ? 'Меню' : 'Назад');
+    });
+}
+
 /* Какую кнопку подсветить. В дневнике История и Аналитика — один экран
    с двумя вкладками, поэтому смотрим ещё и на вкладку. */
 function navIdFor(id) {
@@ -8585,13 +8745,15 @@ function syncBackButton() {
     if (!tg || !tg.BackButton) return;
     // На экране входа назад некуда: это и есть начало
     if (sheetStack.length ||
-        (currentScreen !== 'screen-start' && !navIdFor(currentScreen))) tg.BackButton.show();
+        (currentScreen !== 'screen-start' && currentScreen !== 'screen-cabinet' &&
+         !isFirstPage(currentScreen))) tg.BackButton.show();
     else tg.BackButton.hide();
 }
 
 function goBack() {
     if (sheetStack.length) { closeSheet(sheetStack[sheetStack.length - 1]); return; }
     if (currentScreen === 'screen-start') { if (tg) tg.close(); return; }
+    if (currentScreen === 'screen-profile' && backFrom['screen-profile'] === 'screen-start') { goMenu(); return; }
 
     // Страница тренера открывается поверх чего угодно — кабинета, дневника,
     // «Моей страницы»; назад ведёт туда, откуда её открыли
@@ -8605,14 +8767,23 @@ function goBack() {
     // тренера. В приложение тренера теперь только кнопкой — и только тому,
     // у кого оно есть.
     if (typeof inCabinet === 'function' && inCabinet()) {
+        // тренер, который ещё и чей-то клиент, выходит в меню; просто клиент — закрывает
+        if (ownsTrainerApp()) { leaveCabinet(); return; }
         if (tg) tg.close();
         return;
     }
 
-    // В дневнике верхний уровень — его собственные вкладки. Уходить с них
-    // некуда, поэтому «назад» открывает список ролей — то же, что аватарка.
+    // Вкладки нижнего меню: с первой страницы — в меню на старте, с
+    // остальных — на шаг назад по пройденным вкладкам (24.10)
+    const tab = topTabOf(currentScreen);
+    if (tab) {
+        if (tab === FIRST_TAB[appMode]) goMenu();
+        else backFromTab();
+        return;
+    }
+
+    // внутренние экраны дневника возвращают в Зал
     if (isDiaryMode()) {
-        if (navIdFor(currentScreen)) { openRoles(); return; }
         diaryGym();
         return;
     }
@@ -8641,7 +8812,7 @@ function goBack() {
         showScreen(backFrom[currentScreen] || 'screen-schedule');
         return;
     }
-    if (tg) tg.close();
+    goMenu();
 }
 
 /* --- Какие экраны чьи ---
@@ -8655,6 +8826,10 @@ function goBack() {
    вручную; при списке разрешений — закрыт сам по себе. Помнить обо всём
    будущем нельзя, поэтому только так. */
 const ROLE_SCREENS = {
+    // Меню на старте: само меню, Профиль (открывается из него) и страница
+    // тренера, если её открыли по ссылке
+    menu:     ['screen-start', 'screen-profile', 'screen-shop'],
+
     // Кабинет клиента — запертая комната: его экран и страница тренера,
     // по которой он мог прийти. Больше ничего, и выйти можно только кнопкой.
     cabinet:  ['screen-cabinet', 'screen-shop'],
@@ -8747,6 +8922,10 @@ function showScreen(id, from) {
     }
     if (id === 'screen-schedule') { renderCalendarStrip(); renderDayFeed(); }
 
+    // карточку своего дневника запоминаем позже, в applyHeadMode: вкладку
+    // (История или Аналитика) ей ставят уже после показа экрана
+    if (!(isDiaryMode() && id === 'screen-client')) noteTab();
+    syncHeadButtons();
     syncBackButton();
 }
 
@@ -9590,6 +9769,8 @@ function normalizeDB(raw) {
             // Цена за занятие по последнему пополнению, тоже из журнала.
             lessonPrice: Math.max(0, Math.round(num(c.lessonPrice, 0))),
             tgId: c.tgId || null,
+            // заметки тренера о клиенте — свободный текст (24.10, вместо абонемента)
+            notes: typeof c.notes === 'string' ? c.notes : '',
             // подставится, когда клиент привяжется к Telegram: там лежит photo_url
             photoUrl: typeof c.photoUrl === 'string' ? c.photoUrl : null,
             // метка клиента-пример из прежних версий: сам пример убран,
@@ -9835,24 +10016,15 @@ function sessionsOnDate(date) {
                       .sort(function (a, b) { return a.time.localeCompare(b.time); });
 }
 
-/* Занятие списывается при проведённой тренировке и при прогуле.
-   При отмене или возврате в план — возвращается на счёт. */
+/* Абонемента нет с 24.10: что куплено и сколько осталось, тренер пишет в
+   заметках сам. Новые тренировки ничего не списывают. Списанное раньше
+   при отмене по-прежнему возвращается на счёт — старые данные не ломаем,
+   они просто спрятаны. */
 function applySessionStatus(session, status) {
     const client = getClient(session.clientId);
     const spends = (status === 'done' || status === 'missed');
 
-    if (spends && !session.passSpent) {
-        if (client && client.passLeft > 0) {
-            client.passLeft -= 1;
-            session.passSpent = true;
-            // В журнал попадают только настоящие движения: при нулевом
-            // абонементе занятие не списывается, и записи быть не должно.
-            addPassOp(DB, session.clientId, {
-                date: session.date, kind: 'session', delta: -1,
-                sessionId: session.id, reason: status
-            });
-        }
-    } else if (!spends && session.passSpent) {
+    if (!spends && session.passSpent) {
         if (client) client.passLeft += 1;
         session.passSpent = false;
         dropSessionOps(DB, session.id);
@@ -10816,14 +10988,11 @@ function daySearchHtml(query) {
             : 'ближайших записей нет';
         return '<div class="premium-card search-hit" onclick="openClient(\'' + c.id + '\', \'history\', \'screen-schedule\')">' +
                    '<div class="card-left">' +
-                       clientAvatarHtml(c, c.passLeft <= 0) +
+                       clientAvatarHtml(c) +
                        '<div class="client-meta">' +
                            '<span class="meta-name">' + esc(c.name) + '</span>' +
                            '<span class="meta-sub">' + esc(when) + '</span>' +
                        '</div>' +
-                   '</div>' +
-                   '<div class="card-right">' +
-                       '<span class="card-pill' + (c.passLeft <= 0 ? ' danger' : '') + '">' + c.passLeft + ' зан.</span>' +
                    '</div>' +
                '</div>';
     }).join('');
@@ -10857,7 +11026,6 @@ function unmarkedStripHtml(pending) {
 function sessionCardHtml(s, c) {
     const isDone = s.status === 'done';
     const needsMark = isUnmarked(s);
-    const lowPass = c.passLeft <= 0;
     const tonnage = s.metrics ? s.metrics.tonnage.toLocaleString('ru') + ' кг' : '';
 
     let state, status, pill = '', badge = '';
@@ -10873,30 +11041,26 @@ function sessionCardHtml(s, c) {
         state = 'st-warn'; status = 'без отметки';
         pill = '<span class="card-pill muted only-neo">!</span>';
         badge = '<span class="card-badge warn only-min">!</span>';
-    } else if (lowPass) {
-        state = 'st-danger'; status = '0 занятий';
-        pill = '<span class="card-pill danger only-neo">0 зан.</span>';
-        badge = '<span class="card-badge warn only-min">0 зан.</span>';
     } else {
+        // что куплено и сколько осталось, тренер пишет в первой строке заметки
         state = 'st-ok';
-        status = c.passLeft + ' ' + plural(c.passLeft, 'занятие', 'занятия', 'занятий');
-        pill = '<span class="card-pill only-neo">' + c.passLeft + ' зан.</span>';
-        badge = '<span class="card-badge on only-min">' + c.passLeft + ' зан.</span>';
+        status = noteLine(c);
     }
     // тренировку начали и ушли, не сохранив: черновик ждёт — это видно на карточке
-    if (hasWorkoutDraft(s)) status = 'тренировка начата' + (state === 'st-ok' ? '' : ' · ' + status);
+    if (hasWorkoutDraft(s)) status = 'тренировка начата' + (status && state !== 'st-ok' ? ' · ' + status : '');
     // тоннаж в Минимализме уже на плашке — в строке просто «проведена»
     const statusMin = isDone ? 'проведена' : status;
     const goal = esc(c.goal || 'Цель не задана');
+    const tail = function (x) { return x ? ' · ' + esc(x) : ''; };
 
     return '<div class="premium-card ' + state + (needsMark ? ' needs-mark' : '') +
                 '" onclick="openClientMenu(\'' + s.id + '\')">' +
                '<div class="card-left">' +
-                   clientAvatarHtml(c, lowPass && !isDone) +
+                   clientAvatarHtml(c) +
                    '<div class="client-meta">' +
                        '<span class="meta-name">' + esc(c.name) + '</span>' +
-                       '<span class="meta-sub only-neo">' + goal + ' · ' + esc(status) + '</span>' +
-                       '<span class="meta-sub only-min">' + goal + ' · ' + esc(statusMin) + '</span>' +
+                       '<span class="meta-sub only-neo">' + goal + tail(status) + '</span>' +
+                       '<span class="meta-sub only-min">' + goal + tail(statusMin) + '</span>' +
                    '</div>' +
                '</div>' +
                '<div class="card-right">' +
@@ -11030,16 +11194,15 @@ function renderMatrixRows() {
         const s = active[0];
         const c = getClient(s.clientId);
         const done = s.status === 'done';
-        const zero = !done && c && c.passLeft <= 0;
         // прошло, а тренер не сказал, состоялось ли
         const unmarked = !done && past;
-        const cls = (done ? 'done' : unmarked ? 'warn' : zero ? 'zero' : 'busy') +
+        const cls = (done ? 'done' : unmarked ? 'warn' : 'busy') +
                     (now ? ' now' : '');
 
         const body =
             '<span class="mx-sub">' + esc(c ? c.name : '—') +
                 (done ? emo(' ✓') + ico('check', 'mi-after') : '') +
-                (unmarked ? ' · ?' : (zero ? ' · 0' : '')) +
+                (unmarked ? ' · ?' : '') +
             '</span>' +
             (active.length > 1 ? '<span class="mx-more">+' + (active.length - 1) + '</span>' : '');
 
@@ -11079,12 +11242,11 @@ function renderHourRows() {
         const c = getClient(s.clientId);
         if (!c) return '';
         const done = s.status === 'done';
-        const zero = !done && c.passLeft <= 0;
         const held = holdsSlot(s);
         return '<div class="matrix-row">' +
                    '<div class="matrix-time">' + esc(s.time) + '</div>' +
                    '<div class="matrix-slot-info mx-name ' +
-                        (!held ? 'off' : done ? 'done' : zero ? 'zero' : 'ok') + '" ' +
+                        (!held ? 'off' : done ? 'done' : 'ok') + '" ' +
                         'onclick="openClientMenu(\'' + s.id + '\')">' +
                        emo('👤 ') + ico('user') + esc(c.name) +
                        (held ? '' : ' — ' + esc(STATUS_LABEL[s.status])) +
@@ -11107,13 +11269,12 @@ function openClientMenu(sessionId) {
     if (!c) return;
 
     activeSessionId = sessionId;
+    menuNotesClientId = c.id;
     $('menu-client-name').innerText = c.name;
-    $('menu-pass-left').innerHTML = c.passLeft + ' зан. <span class="arr"></span>';
     $('menu-client-time').innerText =
-        humanDate(s.date) + ' · ' + s.time + ' · ' +
-        (s.status === 'planned'
-            ? c.passLeft + ' ' + plural(c.passLeft, 'занятие', 'занятия', 'занятий')
-            : STATUS_LABEL[s.status]);
+        humanDate(s.date) + ' · ' + s.time +
+        (s.status === 'planned' ? '' : ' · ' + STATUS_LABEL[s.status]);
+    fillNotes('menu-notes', c.id);
     // проведённую тренировку не начинают заново, а правят
     $('menu-start-label').innerText = s.status === 'done' ? 'Изменить тренировку'
         : hasWorkoutDraft(s) ? 'Продолжить тренировку' : 'Начать тренировку';
@@ -11271,7 +11432,7 @@ function renderPickList() {
             }
             return '<button class="premium-menu-btn" onclick="pickClientForSlot(\'' + c.id + '\')">' +
                        '<span>' + esc(c.name) + '</span>' +
-                       '<span class="arrow-icon">' + c.passLeft + ' зан. <span class="arr"></span></span>' +
+                       '<span class="arrow-icon">' + esc(noteLine(c)) + ' <span class="arr"></span></span>' +
                    '</button>';
         }).join('');
     }
@@ -11405,9 +11566,8 @@ async function uiDeleteBooking() {
         const head = s.status === 'done' ? 'Удалить проведённую тренировку?'
                    : s.status === 'missed' ? 'Удалить запись «не пришёл»?'
                    : 'Удалить запись?';
-        const ok = await showConfirm(head + '\n' +
-            (refund ? 'Занятие вернётся на абонемент.' : 'Занятие не списывалось — абонемент не изменится.') +
-            (s.status === 'done' ? ' Подходы этой тренировки удалятся из истории.' : ''),
+        const ok = await showConfirm(head +
+            (s.status === 'done' ? '\nПодходы этой тренировки удалятся из истории.' : ''),
             { ok: 'Удалить', danger: true });
         if (!ok || getSession(s.id) !== s) return;
     }
@@ -11436,7 +11596,7 @@ async function uiDeleteBooking() {
     haptic('success');
 
     const what = s.status === 'done' ? 'Тренировка удалена' : 'Запись убрана';
-    offerUndo(what + ': ' + (c ? c.name + ' · ' : '') + s.time + (refund ? ' · занятие вернулось' : ''), function () {
+    offerUndo(what + ': ' + (c ? c.name + ' · ' : '') + s.time, function () {
         if (getSession(s.id) || !getClient(s.clientId)) return;
         if (refund) {
             // вернуть можно, только если занятий хватит на это списание снова
@@ -11453,7 +11613,7 @@ async function uiDeleteBooking() {
         }
         DB.sessions.splice(Math.min(index, DB.sessions.length), 0, s);
         recomputeClientMetrics(DB, s.clientId);
-    }, { refused: 'Вернуть не получилось: занятий на абонементе уже не хватает.' });
+    }, { refused: 'Вернуть не получилось.' });
 }
 
 
@@ -11861,7 +12021,8 @@ function paintNextEx() {
     next.style.display = name ? '' : 'none';
     if (name) next.innerHTML = '<span class="wkn-cap">Дальше</span><span class="wkn-name">' + esc(name) + '</span>';
     btn.classList.toggle('wk-add-small', !!name);
-    btn.textContent = name ? '＋ Другое упражнение' : '＋ Упражнение';
+    btn.textContent = name ? '＋' : '＋ Упражнение';
+    btn.setAttribute('aria-label', name ? 'Другое упражнение' : 'Добавить упражнение');
 }
 
 function blankRows() {
@@ -13042,23 +13203,10 @@ async function saveWorkout() {
     renderDayFeed();
     renderMatrixRows();
 
-    // Итог — коротким сообщением. Окно — только когда тренеру надо действовать:
-    // абонемент кончился или занятие списать было не с чего. Но если
-    // абонемента у клиента никогда не было, действовать не надо: тренер их
-    // просто не ведёт, и первая же сохранённая тренировка не должна
-    // заканчиваться предупреждением.
-    const noPass = neverHadPass(DB, client);
-
-    if (client && !noPass && (notCharged || client.passLeft <= 0)) {
-        await showAlert('Тренировка сохранена\n\n' +
-                        (notCharged
-                            ? 'Абонемент был пуст — занятие не списано.'
-                            : 'Это было последнее занятие: абонемент закончился.') +
-                        '\nПополните абонемент клиента.');
-        return;
-    }
-    showToast('Тренировка сохранена · ' + metrics.tonnage.toLocaleString('ru') + ' кг' +
-              (client && !noPass ? ' · осталось ' + client.passLeft + ' зан.' : ''));
+    // Итог — коротким сообщением. Абонемента нет (24.10): что осталось, тренер
+    // правит в заметках сам.
+    void notCharged;
+    showToast('Тренировка сохранена · ' + metrics.tonnage.toLocaleString('ru') + ' кг');
 }
 
 
@@ -13095,14 +13243,62 @@ function openClient(clientId, tab, from) {
     $('cl-name').setAttribute('data-text', c.name);            // блик заголовка в Нео-Стекле
     renderClientSub();
 
+    // заметки — только у клиентов, у своего дневника их нет
+    $('cl-notes-panel').style.display = isSelfClient(c.id) ? 'none' : '';
+    if (!isSelfClient(c.id)) fillNotes('cl-notes', c.id);
+
     haptic('light');
     showScreen('screen-client', from || 'screen-schedule');
-    setClientTab(tab || 'history');
+    setClientTab(tab === 'pass' ? 'history' : (tab || 'history'));
     if (typeof applyHeadMode === 'function') applyHeadMode();
 }
 
 /* Остаток в шапке меняется от пополнений и списаний, поэтому строка
    пересобирается при каждой перерисовке, а не только при открытии карточки. */
+/* --- Заметки о клиенте ---
+   Одна и та же заметка правится и в карточке, и в окне записи. Сохраняется
+   сама, через полсекунды после последней буквы. */
+let notesTimer = null;
+let menuNotesClientId = null;
+
+function noteLine(c) {
+    const line = String((c && c.notes) || '').split('\n').map(function (x) { return x.trim(); })
+        .filter(Boolean)[0] || '';
+    return line.length > 42 ? line.slice(0, 41) + '…' : line;
+}
+
+function fitNotes(el) {
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = Math.max(54, el.scrollHeight) + 'px';
+}
+
+function fillNotes(areaId, clientId) {
+    const el = $(areaId), c = getClient(clientId);
+    if (!el) return;
+    el.value = (c && c.notes) || '';
+    const mark = $(areaId + '-saved');
+    if (mark) mark.textContent = '';
+    setTimeout(function () { fitNotes(el); }, 0);
+}
+
+function onNotesInput(areaId, clientId) {
+    const el = $(areaId);
+    fitNotes(el);
+    const mark = $(areaId + '-saved');
+    if (mark) mark.textContent = '';
+    clearTimeout(notesTimer);
+    notesTimer = setTimeout(function () {
+        const c = getClient(clientId);
+        if (!c || !el) return;
+        c.notes = el.value;
+        saveDB();
+        if (mark) mark.textContent = 'сохранено';
+        renderDayFeed();
+        renderClientsScreen();
+    }, 500);
+}
+
 function renderClientSub() {
     const c = getClient(clClientId);
     if (!c) return;
@@ -13117,31 +13313,23 @@ function renderClientSub() {
         return;
     }
 
-    const debt = num(c.totalDebt, 0);
-    // Коротко, чтобы строка не обрезалась: число тренировок видно в истории.
-    // Остаток тот же, что в балансе: висящее списание уже видно на экране.
-    const left = shownPassLeft(c);
-    $('cl-sub').innerText = (c.goal || 'цель не задана') + ' · ' + c.bodyWeight + ' кг · ' +
-        left + ' ' + plural(left, 'занятие', 'занятия', 'занятий') +
-        (debt > 0 ? ' · долг ' + debt.toLocaleString('ru') + ' ₽' : '');
+    // цель и вес; что куплено и сколько осталось — в заметках
+    $('cl-sub').innerText = (c.goal || 'цель не задана') + ' · ' + c.bodyWeight + ' кг';
     if (typeof renderClientTg === 'function') renderClientTg();
 }
 
 function setClientTab(tab) {
-    // У своей карточки абонемента нет: вкладку прячем, а если на неё
-    // попали из памяти прошлого открытия — уводим в историю.
-    const self = isSelfClient(clClientId);
-    $('cl-tab-pass').style.display = self ? 'none' : '';
-    if (self && tab === 'pass') tab = 'history';
+    // Вкладки «Абонемент» нет с 24.10: попали на неё из памяти — в историю
+    if (tab === 'pass') tab = 'history';
 
     clTab = tab;
-    ['history', 'analytics', 'pass'].forEach(function (t) {
+    ['history', 'analytics'].forEach(function (t) {
         $('cl-tab-' + t).classList.toggle('active', t === tab);
         $('cl-pane-' + t).style.display = t === tab ? '' : 'none';
     });
+    $('cl-pane-pass').style.display = 'none';
 
     if (tab === 'history') renderHistory();
-    else if (tab === 'pass') renderPassTab();
     else renderAnalytics();
 
     // В дневнике История и Аналитика — разные кнопки меню, а экран один.
@@ -13328,7 +13516,6 @@ async function deleteHistorySession(sessionId) {
 
     const refund = !!s.passSpent;
     const ok = await showConfirm('Удалить тренировку за ' + shortDate(s.date) + '?\n' +
-        (refund ? 'Занятие вернётся на абонемент. ' : '') +
         'Запись останется в расписании.',
         { ok: 'Удалить', danger: true });
     if (!ok || getSession(sessionId) !== s) return;
@@ -13355,7 +13542,7 @@ async function deleteHistorySession(sessionId) {
     renderMatrixRows();
     renderClientsScreen();
 
-    offerUndo('Тренировка за ' + shortDate(s.date) + ' удалена' + (refund ? ' · занятие вернулось' : ''), function () {
+    offerUndo('Тренировка за ' + shortDate(s.date) + ' удалена', function () {
         // за эти секунды в запись могли начать новую тренировку — не затираем
         if (!getSession(s.id) || s.ex.length || s.pending || s.status !== 'planned' || s.passSpent) return false;
         const back = linkedOps.filter(function (o) { return !getPassOp(DB, o.id); });
@@ -13370,7 +13557,7 @@ async function deleteHistorySession(sessionId) {
         s.passSpent = before.passSpent;
         recalcPass(DB, s.clientId);
         recomputeClientMetrics(DB, s.clientId);
-    }, { refused: 'Вернуть не получилось: запись уже изменили или занятий на абонементе не хватает.' });
+    }, { refused: 'Вернуть не получилось: запись уже изменили.' });
 }
 
 /* --- Аналитика --- */
@@ -14167,7 +14354,7 @@ async function undoPassOp(id) {
                 s.status = status;
                 s.passSpent = true;
                 recalcPass(DB, s.clientId);
-            }, { refused: 'Вернуть не получилось: запись уже изменили или занятий на абонементе не хватает.' });
+            }, { refused: 'Вернуть не получилось: запись уже изменили.' });
             return;
         }
     }
@@ -14193,7 +14380,7 @@ async function undoPassOp(id) {
         if (opBalanceIfAdded(op) < 0) return false;
         passOpsOf(DB).push(op);
         recalcPass(DB, op.clientId);
-    }, { refused: 'Вернуть не получилось: занятий на абонементе уже не хватает.' });
+    }, { refused: 'Вернуть не получилось.' });
 }
 
 /* Остаток, если вернуть в журнал удалённую операцию. Ниже нуля абонемент
@@ -15080,7 +15267,7 @@ function renderClientsScreen() {
             return s.clientId === c.id && s.status === 'planned';
         }).length;
 
-        const noPass = c.passLeft <= 0;
+        const line = noteLine(c);
 
         // цель и вес — отдельными кусками: при переносе строка рвётся
         // между ними, а не посреди «102 кг»
@@ -15092,21 +15279,15 @@ function renderClientsScreen() {
         // клиента не сжимается до «Олег Ю…» ради подписи под крупной цифрой
         const tags =
             (trained ? '<span class="cr-chip done">' + trained + ' проведено</span>' : '') +
-            (planned ? '<span class="cr-chip">' + planned + ' в плане</span>' : '') +
-            (noPass
-                ? '<button class="btn-soft cr-extend" onclick="event.stopPropagation(); ' +
-                      'extendPassFor(\'' + c.id + '\', \'screen-clients\')">Продлить</button>'
-                : '');
+            (planned ? '<span class="cr-chip">' + planned + ' в плане</span>' : '');
 
         return '<div class="client-row cl-card" onclick="openClient(\'' + c.id + '\', \'history\', \'screen-clients\')">' +
-                   clientAvatarHtml(c, noPass) +
+                   clientAvatarHtml(c) +
                    '<div class="cr-info">' +
                        '<div class="cr-name">' + esc(c.name) + '</div>' +
                        '<div class="cr-meta">' + meta + '</div>' +
                        (tags ? '<div class="cr-tags">' + tags + '</div>' : '') +
-                   '</div>' +
-                   '<div class="cr-stats">' +
-                       '<div class="cr-stat' + (noPass ? ' alert' : '') + '"><b>' + c.passLeft + '</b><span>зан.</span></div>' +
+                       (line ? '<div class="cr-note">' + esc(line) + '</div>' : '') +
                    '</div>' +
                    '<div class="cr-edit" onclick="event.stopPropagation(); openClientEdit(\'' + c.id + '\')">' + emo('🖊️') + ico('pencil') + '</div>' +
                '</div>';
@@ -15140,11 +15321,9 @@ function passLevel(left) {
 function clientAvatarHtml(c, alert) {
     const initials = c.name.trim().split(/\s+/).map(function (p) { return p.charAt(0); })
                       .join('').slice(0, 2).toUpperCase();
-    const left = Math.max(0, Math.round(num(c.passLeft, 0)));
-    const deg = Math.max(14, Math.round(passShare(c) * 360));
-
-    return '<div class="avatar-wrap ring-' + passLevel(left) + '" style="--ring-to: ' + deg + 'deg">' +
-               '<div class="avatar-sphere' + (alert ? ' alert' : '') + '">' +
+    void alert;                 // остатка абонемента больше нет — тревоги на фото тоже
+    return '<div class="avatar-wrap ring-none">' +
+               '<div class="avatar-sphere">' +
                    esc(initials) + avatarPhoto(c) +
                    '<span class="photo-overlay only-neo"></span>' +
                '</div>' +
@@ -15390,7 +15569,8 @@ async function saveClientEdit() {
             passBase: viaTopup ? 0 : passLeft,
             totalDebt: 0,
             lessonPrice: 0,
-            tgId: null
+            tgId: null,
+            notes: ''
         });
         if (viaTopup) {
             addPassOp(DB, clientId, { kind: 'topup', delta: passLeft, amount: passSum });
@@ -15484,21 +15664,12 @@ async function uiSoon(feature) {
 
 /* Аватар тренера в шапке расписания: фото из Telegram поверх инициалов.
    Вне Telegram профиля нет — показываем «Т». */
+/* Шапка верхних экранов: на месте прежней аватарки — «‹ Меню» (23.10).
+   Аватарка с именем теперь в меню на старте (renderStartScreen). */
 function renderTrainerAvatar() {
-    const user = (tg && tg.initDataUnsafe) ? tg.initDataUnsafe.user : null;
-    const initials = user
-        ? [user.first_name, user.last_name].filter(Boolean)
-              .map(function (p) { return String(p).trim().charAt(0); }).join('').slice(0, 2).toUpperCase()
-        : 'Т';
-    const html = esc(initials || 'Т') +
-        (user && user.photo_url
-            ? '<img class="avatar-photo" src="' + esc(user.photo_url) + '" alt="" onerror="this.remove()">'
-            : '');
-    // аватарка стоит в шапке каждого верхнего экрана — через неё меняют роль
-    document.querySelectorAll('.trainer-av').forEach(function (el) { el.innerHTML = html; });
-    document.querySelectorAll('.back-chip.as-av').forEach(function (el) {
-        el.innerHTML = esc(initials || 'Т');
-    });
+    const menu = '<span class="tm-arr">‹</span>Меню';
+    document.querySelectorAll('.back-chip.as-av').forEach(function (el) { el.innerHTML = menu; });
+    syncHeadButtons();
 }
 
 /* Короткая справка о том, что за версия открыта и как она себя чувствует.
@@ -17333,8 +17504,13 @@ function hasCabinetRole() {
 function hasProgramsRole() {
     if (isTrainerRole()) return true;
     if (runs().length > 0) return true;       // купленное видно всегда, даже клиенту чужого тренера
-    if (hasCabinetRole()) return false;
-    return programs().length > 0;
+    return !hasCabinetRole();                 // в меню на старте «Программы» есть у всех (23.10)
+}
+
+/* Своё приложение тренера: у него меню на старте, даже если он ещё и чей-то
+   клиент. Просто клиенту меню не показываем — он живёт в кабинете. */
+function ownsTrainerApp() {
+    return isTrainerRole() || !!(cloudRoles() || {}).trainer;
 }
 
 function availableRoles() {
@@ -17388,130 +17564,67 @@ function enterRole(role, tab) {
         appMode = 'trainer';
     }
     applyNavMode();
+    tabTrail = [];
 
     const tabs = ROLE_TABS[appMode];
     const go = TAB_ACTION[(tabs.indexOf(tab) !== -1) ? tab : tabs[0]];
     go();
 }
 
-/* --- Список ролей под аватаркой --- */
-
-const ROLE_INFO = {
-    diary: { icon: '📔', mi: 'clipboard', name: 'Мой дневник',
-             sub: 'Свои тренировки: зал, история, аналитика' },
-    trainer: { icon: '👥', mi: 'users', name: 'Тренер',
-               sub: 'Расписание, клиенты, абонементы' },
-    programs: { icon: '📦', mi: 'box', name: 'Программы',
-                sub: 'Соберите программу и отдайте клиенту' },
-    cabinet: { icon: '🏅', mi: 'award', name: 'Мои тренировки',
-               sub: 'Занятия у тренера' }
-};
-
+/* Кнопка «‹ Меню» слева вверху (раньше — аватарка со списком ролей) */
 function openRoles() {
-    const roles = availableRoles();
-    // Роль одна — выбирать не из чего, аватарка ведёт в Профиль, как раньше
-    if (roles.length < 2) { showScreen('screen-profile', currentScreen); return; }
-    renderRolesSheet(roles);
     haptic('light');
-    openSheet('sheet-roles');
+    goMenu();
 }
 
-function renderRolesSheet(roles) {
-    const box = $('roles-list');
-    if (!box) return;
-
-    const here = { diary: 'diary', trainer: 'trainer', programs: 'programs' }[appMode];
-    const html = roles.map(function (r) {
-        const i = ROLE_INFO[r];
-        let sub = i.sub;
-        if (r === 'diary') {
-            const n = selfClient() ? clientHistory(SELF_ID).length : 0;
-            if (n) sub = 'Тренировок: ' + n;
-        } else if (r === 'trainer') {
-            const n = trainerClients().length;
-            if (n) sub = 'Клиентов: ' + n;
-        } else if (r === 'programs') {
-            const n = programs().length;
-            if (n) sub = 'Программ: ' + n;
-        } else if (r === 'cabinet') {
-            const t = (cloudRoles() || {}).cabinetTrainer;
-            if (t) sub = 'Тренер: ' + t;
-        }
-        return '<button class="premium-menu-btn' + (r === here ? ' primary' : '') +
-                   '" onclick="pickRole(\'' + r + '\')">' +
-                   '<span class="ttl">' + emo(i.icon + ' ') + ico(i.mi) + esc(i.name) +
-                       '<span style="display:block; margin-top:3px; font-size:12px; font-weight:500; opacity:0.7;">' +
-                           esc(sub) + '</span>' +
-                   '</span>' +
-                   '<span class="arrow-icon arr"></span>' +
-               '</button>';
-    }).join('');
-
-    box.innerHTML = html +
-        '<div class="menu-sep" style="margin: 6px 0; border-top: 0.5px solid rgba(var(--ch-hairline), 0.1);"></div>' +
-        '<button class="premium-menu-btn" onclick="closeSheet(\'sheet-roles\'); showScreen(\'screen-profile\', currentScreen)">' +
-            '<span class="ttl">' + emo('⚙️ ') + ico('user') + 'Профиль</span>' +
-            '<span class="arrow-icon arr"></span>' +
-        '</button>';
-}
-
-/* Вход. Приложение не ждёт сервер: открывается то, что известно из памяти
-   телефона, а сервер догоняет в фоне. */
+/* Вход (23 октября): при каждом открытии — меню на старте, три режима.
+   Не помним «где был в прошлый раз»: одно правило, без сюрпризов.
+   Исключения — ссылки:
+   - реферальная от тренера (ref_…) — сразу «Дневник тренера»;
+   - страница тренера с программами (t_…) — «Программы» и сама страница;
+   - кнопка бота про заявку или выданную программу (progs) — «Программы»;
+   - приглашение клиента (inv_…) — кабинет, его откроет вход в облако.
+   Клиент чужого тренера живёт в кабинете: меню ему не показываем. */
 function bootEntry() {
     const param = (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) || '';
-    // Пришёл по приглашению клиента — кабинет откроет вход в облако,
-    // знакомство ему не показываем
-    if (/^inv_/i.test(param)) { enterRole('trainer'); return; }
 
-    // Пришёл по ссылке на страницу тренера — показываем её сразу. Новому
-    // человеку знакомство здесь мешает: он пришёл за программой, а не за
-    // приложением. Он считается пользователем дневника — туда и ляжет купленное.
+    // давний пользователь после обновления: знакомство ни к чему, он тренер
+    if (!onboardingDone() && isExistingUser()) { markOnboarded(); markTrainerRole(); }
+
+    // клиент — сразу в кабинет, без меню; вход в облако его догрузит
+    if (/^inv_/i.test(param) || (cloudRole() === 'client' && !ownsTrainerApp())) {
+        appMode = 'menu';
+        applyNavMode();
+        if (cloudRole() === 'client') {
+            cabinetOn = true;
+            showScreen('screen-cabinet');
+            renderCabinet();
+        } else {
+            goMenu();
+        }
+        return;
+    }
+
+    // страница тренера — в Программах; знакомство тут не показываем: человек
+    // пришёл за программой, а не за приложением
     if (/^t_[a-z0-9]+$/i.test(param)) {
-        if (!onboardingDone() && !isExistingUser()) markOnboarded();
-        const roles0 = availableRoles();
-        const last0 = lastPlace();
-        enterRole((last0 && roles0.indexOf(last0.mode) !== -1) ? last0.mode
-                  : (roles0.indexOf('trainer') !== -1 ? 'trainer' : 'diary'), last0 ? last0.tab : null);
+        markOnboarded();
+        markModeSeen('programs');
+        enterRole('programs');
         openShop(param.slice(2));
         return;
     }
-    // Кнопка из сообщения бота про заявку или выданную программу
-    if (param === 'progs') mkWantPrograms = true;
 
-    if (!onboardingDone()) {
-        if (isExistingUser()) {
-            // обновился давний пользователь: знакомство ему ни к чему,
-            // и тренером он уже является
-            markOnboarded();
-            markTrainerRole();
-        } else {
-            showOnboarding();
-            return;
-        }
-    }
-
-    const last = lastPlace();
-    const roles = availableRoles();
-    let role = (last && roles.indexOf(last.mode) !== -1) ? last.mode
-             : (roles.indexOf('trainer') !== -1 ? 'trainer' : 'diary');
-    enterRole(role, last ? last.tab : null);
-    if (mkWantPrograms && availableRoles().indexOf('programs') !== -1) {
-        mkWantPrograms = false;
-        enterRole('programs');
-    }
+    goMenu();
+    if (/^ref_/i.test(param)) goMode('trainer');
+    else if (param === 'progs') goMode('programs');
 }
 
+/* Выбор режима (раньше — из списка под аватаркой, теперь из меню) */
 function pickRole(role) {
-    closeSheet('sheet-roles');
-    haptic('select');
-
-    // Выбор в списке — такое же осознанное действие, как кнопка «Вернуться
-    // в приложение тренера»: режим клиента снимается. Без этого выбор просто
-    // ничего бы не сделал — охрана ролей никуда бы не пустила.
+    // осознанный выбор, как «Вернуться в приложение тренера»: режим клиента снимается
     if (role !== 'cabinet') cabinetOn = false;
-
-    const last = lastPlace();
-    enterRole(role, (last && last.mode === role) ? last.tab : null);
+    goMode(role);
 }
 
 /* --- Знакомство ---
@@ -17536,52 +17649,145 @@ function isExistingUser() {
     return !!(DB.clients.length || DB.sessions.length ||
               (DB.exercises || []).length || (DB.templates || []).length);
 }
-function renderStartScreen() {
-    const box = $('start-list');
-    if (!box) return;
+/* --- Меню на старте --- */
 
-    // Пришёл по приглашению тренера — подсвечиваем карточку «Я тренер».
-    // Имя пригласившего не пишем: оно приходит с сервера позже, а вход
-    // не ждёт сервер.
-    const param = (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) || '';
-    const byRef = /^ref_/i.test(param);
+const MODE_INFO = {
+    trainer: { icon: '👥', mi: 'users', name: 'Дневник тренера',
+               sub: 'Клиенты, расписание, тренировки в зале',
+               intro: ['Ежедневник: кто и во сколько записан',
+                       'Тренировка клиента в зале — цифры подставляются из прошлого раза',
+                       'История и прогресс каждого клиента'],
+               note: 'Пока идёт тест — бесплатно.' },
+    diary: { icon: '📔', mi: 'clipboard', name: 'Дневник тренировок',
+             sub: 'Свои тренировки, история, прогресс',
+             intro: ['Записывайте свои тренировки в зале',
+                     'История по месяцам',
+                     'Прогресс и рекорды по каждому упражнению'],
+             note: 'Бесплатно навсегда.' },
+    programs: { icon: '📦', mi: 'box', name: 'Программы',
+                sub: 'Соберите свою или пройдите купленную',
+                intro: ['Тренер собирает программу из своих тренировок и продаёт или дарит',
+                        'Купленная программа — тренировка за тренировкой, веса из вашей истории'],
+                note: '' },
+    cabinet: { icon: '🏅', mi: 'award', name: 'Мои тренировки у тренера',
+               sub: 'Занятия у вашего тренера' }
+};
 
-    const card = function (icon, mi, name, sub, handler, accent) {
-        return '<button class="start-btn' + (accent ? ' accent' : '') + '" onclick="' + handler + '">' +
-                   '<span class="sb-ic">' + emo(icon) + ico(mi) + '</span>' +
-                   '<span class="sb-txt">' +
-                       '<span class="sb-name">' + esc(name) + '</span>' +
-                       '<span class="sb-sub">' + esc(sub) + '</span>' +
-                   '</span>' +
-                   '<span class="arrow-icon arr"></span>' +
-               '</button>';
-    };
+const MODES_KEY = 'silovoyAssistentV6:modes';   // в каких режимах знакомство уже было
 
-    box.innerHTML =
-        card('📔', 'clipboard', 'Мой дневник',
-             'Записывайте тренировки, смотрите прогресс. Бесплатно навсегда',
-             'finishOnboarding(\'diary\')') +
-        card('👥', 'users', 'Я тренер',
-             byRef ? 'Вас пригласил тренер · клиенты, расписание, абонементы'
-                   : 'Клиенты, расписание, абонементы. Дневник для себя входит',
-             'finishOnboarding(\'trainer\')', byRef);
+function modeSeen(role) {
+    try { if ((JSON.parse(localStorage.getItem(MODES_KEY)) || {})[role]) return true; } catch (e) {}
+    // кто режимом уже пользовался, тому знакомство ни к чему
+    if (role === 'trainer') return isTrainerRole();
+    if (role === 'diary') return !!selfClient();
+    if (role === 'programs') return programs().length > 0 || runs().length > 0;
+    return true;
 }
 
-function showOnboarding() {
-    appMode = 'trainer';
+function markModeSeen(role) {
+    try {
+        const all = JSON.parse(localStorage.getItem(MODES_KEY)) || {};
+        all[role] = true;
+        localStorage.setItem(MODES_KEY, JSON.stringify(all));
+    } catch (e) {}
+}
+
+function goMenu() {
+    try { closePad(); } catch (e) {}
+    sheetStack.slice().forEach(closeSheet);
+    appMode = 'menu';
+    tabTrail = [];
     applyNavMode();
     renderStartScreen();
     showScreen('screen-start');
 }
 
-/* Любая карточка и «Начать» делают одно: закрывают знакомство навсегда.
-   Разница только в том, куда попадёшь. */
-function finishOnboarding(role) {
+/* Тап по режиму в меню. Первый раз — коротко, что это, и «Начать». */
+function goMode(role) {
+    if (role === 'cabinet') { enterCabinet(); return; }
+    if (!modeSeen(role)) { openModeIntro(role); return; }
+    startMode(role);
+}
+
+function startMode(role) {
+    markModeSeen(role);
     markOnboarded();
     if (role === 'trainer') markTrainerRole();
     haptic('light');
     enterRole(role);
 }
+
+let introRole = null;
+
+function openModeIntro(role) {
+    const m = MODE_INFO[role];
+    if (!m) return;
+    introRole = role;
+    $('mi-title').innerText = m.name;
+    $('mi-text').innerHTML = '<ul>' + m.intro.map(function (x) {
+        return '<li>' + emo('• ') + esc(x) + '</li>';
+    }).join('') + '</ul>' + (m.note ? '<div class="mi-note">' + esc(m.note) + '</div>' : '');
+    haptic('light');
+    openSheet('sheet-mode-intro');
+}
+
+function startModeFromIntro() {
+    const role = introRole;
+    introRole = null;
+    closeSheet('sheet-mode-intro');
+    if (role) startMode(role);
+}
+
+function openProfileFromMenu() {
+    haptic('light');
+    showScreen('screen-profile', 'screen-start');
+}
+
+function renderStartScreen() {
+    const box = $('start-list');
+    if (!box) return;
+
+    // кто я: аватарка и имя из Telegram
+    const user = (tg && tg.initDataUnsafe) ? tg.initDataUnsafe.user : null;
+    const name = user ? [user.first_name, user.last_name].filter(Boolean).join(' ') : '';
+    const initials = (name || 'Т').split(' ').map(function (p) { return p.charAt(0); }).join('').slice(0, 2).toUpperCase();
+    $('start-me').innerHTML =
+        '<span class="sm-av">' + esc(initials) +
+            (user && user.photo_url ? '<img src="' + esc(user.photo_url) + '" alt="" onerror="this.remove()">' : '') +
+        '</span>' +
+        '<span><span class="sm-name">' + esc(name || 'Профиль') + '</span>' +
+        '<span class="sm-sub">' + (name ? 'Профиль ›' : 'Сборка, вход, приглашения ›') + '</span></span>';
+
+    const card = function (role, sub) {
+        const m = MODE_INFO[role];
+        return '<button class="start-btn" data-mode="' + role + '" onclick="goMode(\'' + role + '\')">' +
+                   '<span class="sb-ic">' + emo(m.icon) + ico(m.mi) + '</span>' +
+                   '<span class="sb-txt">' +
+                       '<span class="sb-name">' + esc(m.name) + '</span>' +
+                       '<span class="sb-sub">' + esc(sub || m.sub) + '</span>' +
+                   '</span>' +
+                   '<span class="arrow-icon arr"></span>' +
+               '</button>';
+    };
+
+    const nClients = trainerClients().length;
+    const nMine = selfClient() ? clientHistory(SELF_ID).length : 0;
+    const nProgs = programs().length + runs().length;
+    let html =
+        card('trainer', nClients ? 'Клиентов: ' + nClients : '') +
+        card('diary', nMine ? 'Тренировок: ' + nMine : '') +
+        card('programs', nProgs ? 'Программ: ' + nProgs : '');
+    // тренер, который ещё и чей-то клиент, — его тренировки у тренера
+    if (hasCabinetRole() && ownsTrainerApp()) {
+        const t = (cloudRoles() || {}).cabinetTrainer;
+        html += card('cabinet', t ? 'Тренер: ' + t : '');
+    }
+    box.innerHTML = html;
+}
+
+/* Прежние имена — для кнопок, которые их ещё зовут */
+function finishOnboarding(role) { startMode(role); }
+function showOnboarding() { goMenu(); }
 
 function enterTrainerMode() {
     enterRole('trainer');
@@ -17613,7 +17819,7 @@ function diaryAnalytics() {
    У тренера на тех же экранах остаётся стрелка: там назад есть куда. */
 function applyHeadMode() {
     const spots = [
-        ['#screen-client .back-chip', isDiaryMode() && clClientId === SELF_ID],
+        ['#screen-client .back-chip', false],
         ['#screen-workout .back-chip',
          isDiaryMode() && !!wkSession && wkSession.clientId === SELF_ID]
     ];
@@ -17630,7 +17836,9 @@ function applyHeadMode() {
         }
     });
 
-    renderTrainerAvatar();      // заполнит инициалами те, что стали аватарками
+    renderTrainerAvatar();      // «‹ Меню» на тех, что стали кнопкой меню
+    noteTab();                  // вкладку дневника уже знаем — запоминаем путь
+    syncBackButton();
 }
 
 /* Своя тренировка заводится без записи в расписание: себе на приём
@@ -17750,8 +17958,7 @@ function markSession(sessionId) {
 
     markSessionId = sessionId;
     $('mark-title').innerText = c.name;
-    $('mark-sub').innerText = 'Абонемент: ' + c.passLeft + ' ' +
-        plural(c.passLeft, 'занятие', 'занятия', 'занятий');
+    $('mark-sub').innerText = noteLine(c);
 
     const ago = daysBetween(s.date, todayISO());
     const agoTxt = ago <= 0 ? 'сегодня'
@@ -17804,13 +18011,9 @@ function finishMark(status) {
     renderClientsScreen();
     haptic('success');
 
-    // При пустом абонементе «не пришёл» ничего не списывает — так и говорим
-    const left = c ? ' · осталось ' + c.passLeft + ' зан.' : '';
-    const note = status === 'missed'
-        ? (s.passSpent ? 'занятие списано' + left : 'абонемент пуст, занятие не списано')
-        : 'занятие не списано' + left;
+    void c;
     const title = STATUS_LABEL[status].charAt(0).toUpperCase() + STATUS_LABEL[status].slice(1);
-    showToast(title + ' · ' + note);
+    showToast(title);
 }
 
 /* Отменённая запись и «не пришёл» время не держат — пока запись так стояла,
@@ -17865,15 +18068,14 @@ async function uiRestoreSession() {
     const c = getClient(s.clientId);
 
     const wasTime = s.time;
-    const ok = await reviveSession(s, 'Вернуть запись в запланированные?',
-        s.passSpent ? 'Списанное занятие вернётся на абонемент.' : '');
+    const ok = await reviveSession(s, 'Вернуть запись в запланированные?', '');
     if (!ok) return;
 
     closeSheet('sheet-client-menu');
     renderClientsScreen();
     haptic('success');
-    showToast('Запись снова запланирована' + (s.time !== wasTime ? ' на ' + s.time : '') +
-              (c ? ' · осталось ' + c.passLeft + ' зан.' : ''));
+    void c;
+    showToast('Запись снова запланирована' + (s.time !== wasTime ? ' на ' + s.time : ''));
 }
 
 /* Пометки рядом с названием: тренер должен видеть, что вводить */
@@ -18628,7 +18830,7 @@ const CLOUD_TABLES = {
             return { id: c.id, trainer_id: cloudUid, name: c.name, goal: c.goal || '',
                      body_weight: c.bodyWeight, pass_base: c.passBase,
                      lesson_price: c.lessonPrice, tg_id: c.tgId, photo_url: c.photoUrl,
-                     is_demo: !!c.demo, weigh_ins: c.weighIns || [] };
+                     is_demo: !!c.demo, weigh_ins: c.weighIns || [], notes: c.notes || '' };
         },
         in:   function (r) {
             return { id: r.id, name: r.name, goal: r.goal || '',
@@ -18636,7 +18838,8 @@ const CLOUD_TABLES = {
                      passBase: num(r.pass_base, 0), totalDebt: 0,
                      lessonPrice: num(r.lesson_price, 0), tgId: r.tg_id || null,
                      photoUrl: r.photo_url || null, demo: !!r.is_demo,
-                     weighIns: normalizeWeighIns(r.weigh_ins) };
+                     weighIns: normalizeWeighIns(r.weigh_ins),
+                     notes: typeof r.notes === 'string' ? r.notes : '' };
         }
     },
     sessions: {
@@ -18890,7 +19093,10 @@ async function cloudStart() {
 
         // Клиент попадает в свой кабинет, тренер — в приложение. Роль
         // запоминается при входе: сессия у них устроена одинаково.
-        if (cloudRole() === 'client') { await enterCabinet(); return; }
+        if (cloudRole() === 'client') {
+            if (!ownsTrainerApp()) { await enterCabinet(); return; }
+            setCloudRole('trainer');            // тренер, который ещё и клиент: кабинет — из меню
+        }
 
         cloudUid = session.user.id;
         await cloudPull();
@@ -19559,7 +19765,7 @@ function renderClientTg() {
         '<div class="tg-strip" onclick="openClientLink()">' +
             '<span class="tg-text"><b>Привязать Telegram</b>' +
                 '<span class="tg-sub">Чтобы отправлять клиенту отчёты, а позже открыть ему ' +
-                    'его тренировки и остаток занятий</span>' +
+                    'его тренировки и прогресс</span>' +
             '</span>' +
             '<span class="tg-go arr"></span>' +
         '</div>';
@@ -19648,7 +19854,7 @@ function shareClientLink() {
     if (!tgLinkCode) return;
     const c = getClient(tgLinkClientId);
     const text = 'Привет' + (c ? ', ' + c.name : '') + '! Открой — и я смогу показывать ' +
-                 'тебе твои тренировки и остаток занятий';
+                 'тебе твои тренировки и прогресс';
     const url = 'https://t.me/share/url?url=' + encodeURIComponent(clientInviteLink()) +
                 '&text=' + encodeURIComponent(text);
     haptic('light');
@@ -19735,7 +19941,7 @@ async function handleClientInvite() {
                     cabinetCard = { client_name: out.client_name, trainer_name: out.trainer_name };
                     showLinkPlate(out.again ? 'Вы уже на связи' : 'Готово!',
                         'Тренер ' + (out.trainer_name || '') + ' открыл вам доступ. ' +
-                        'Здесь ваши тренировки, прогресс и остаток занятий.');
+                        'Здесь ваши тренировки и прогресс.');
                     await enterCabinet();
                     return true;
                 }
@@ -19852,7 +20058,7 @@ function renderRoleSwitch() {
             '<div class="panel-title">Вы ещё и клиент</div>' +
             '<p class="panel-note" style="margin: 0 0 10px;">' +
                 'Ваш тренер' + (roles.cabinetTrainer ? ' — ' + esc(roles.cabinetTrainer) : '') +
-                '. Свои тренировки, прогресс и остаток занятий можно посмотреть, ' +
+                '. Свои тренировки и прогресс можно посмотреть, ' +
                 'не выходя из приложения.' +
             '</p>' +
             '<button class="btn-soft" style="width: 100%;" onclick="enterCabinet()">' +
@@ -19866,7 +20072,7 @@ async function leaveCabinet() {
     cabinetOn = false;
     setCloudRole('trainer');
     renderRoleHint();
-    showScreen('screen-schedule');
+    goMenu();
 
     if (!cloudUid && sb) {
         const session = (await sb.auth.getSession()).data.session;
@@ -19929,14 +20135,8 @@ function renderCabinet() {
     $('cab-name').setAttribute('data-text', card.client_name || 'Мои тренировки');
     $('cab-sub').innerText = card.trainer_name ? 'Тренер: ' + card.trainer_name : '';
 
-    const box = $('cab-balance');
-    box.className = 'pass-balance' + (left <= 0 ? ' empty' : '');
-    box.innerHTML =
-        '<div><span class="pb-num">' + left + '</span>' +
-        '<span class="pb-unit">' + plural(left, 'занятие', 'занятия', 'занятий') + '</span></div>' +
-        '<div class="pb-forecast">' +
-            (left > 0 ? 'осталось по абонементу' : 'занятия закончились — напишите тренеру') +
-        '</div>';
+    // остаток занятий клиенту больше не показываем: абонемента нет (24.10)
+    void left;
 
     // Своё приложение тренера есть — показываем выход; нет — предлагаем завести.
     // Одновременно обе кнопки не показываем: это была бы развилка на пустом месте.
